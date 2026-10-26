@@ -11,6 +11,7 @@ use crate::palette::{Palette, ParamKind, PortKind};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FindingCode {
+    NoBlocks,
     InvalidName,
     DuplicateName,
     UnknownClass,
@@ -31,6 +32,7 @@ pub enum FindingCode {
 impl FindingCode {
     pub fn as_str(self) -> &'static str {
         match self {
+            FindingCode::NoBlocks => "no-blocks",
             FindingCode::InvalidName => "invalid-name",
             FindingCode::DuplicateName => "duplicate-name",
             FindingCode::UnknownClass => "unknown-class",
@@ -90,6 +92,14 @@ impl Validator {
     }
 
     fn names(&mut self, graph: &BlockGraph) {
+        // The engine rejects a document whose root contains no blocks (`malformed-document`).
+        if graph.blocks.is_empty() {
+            self.push(
+                FindingCode::NoBlocks,
+                &graph.name,
+                "a sequence needs at least one block",
+            );
+        }
         if !is_identifier(&graph.name) {
             self.push(
                 FindingCode::InvalidName,

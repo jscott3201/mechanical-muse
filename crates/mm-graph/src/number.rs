@@ -1,6 +1,11 @@
 //! Real parameter literals, written exactly as Python's `repr(float)` writes them. The library's
 //! CXF was generated that way, so matching it lets our emitter reproduce library files byte for
-//! byte. Rust's `{:e}` gives the same shortest round-trip digits; only the layout differs.
+//! byte. Rust's `{:e}` gives shortest round-trip digits and we only change the layout.
+//!
+//! Known limit: for a few 16-17 digit values where two shortest strings both round-trip, Rust and
+//! CPython can pick different last digits (about 1 in 5,000 random doubles). Both parse to the
+//! same `f64`, so meaning and engine behaviour are unaffected; only byte equality with a
+//! Python-written file could differ.
 
 /// Formats a finite `f64` like Python's `repr`: `86400.0`, `0.3`, `1e-05`, `1e+16`.
 /// Returns `None` for NaN and the infinities, which CXF parameters must not carry.

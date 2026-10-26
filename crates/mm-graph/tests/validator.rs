@@ -185,3 +185,64 @@ fn emitter_refuses_an_invalid_graph() {
     let err = emit_cxf(&g, &Palette::pinned().unwrap(), &EmitOptions::default()).unwrap_err();
     assert!(matches!(err, EmitError::Invalid(f) if f.len() == 1));
 }
+
+#[test]
+fn a_graph_without_blocks_is_flagged() {
+    let mut g = ahu_0005();
+    g.blocks.clear();
+    g.connections = vec!["mat -> yFault".into()];
+    g.outputs[0].ty = SignalType::Real;
+    let found = codes(&g);
+    assert!(
+        found.contains(&("ahu_fc_005".into(), FindingCode::NoBlocks)),
+        "{found:?}"
+    );
+}
+
+#[test]
+fn edges_against_the_flow_are_flagged() {
+    let mut g = ahu_0005();
+    g.connections.push("gap.u1 -> mat".into());
+    let found = codes(&g);
+    assert!(found.contains(&("gap.u1 -> mat".into(), FindingCode::UnknownSource)));
+    assert!(found.contains(&("gap.u1 -> mat".into(), FindingCode::UnknownDestination)));
+}
+
+#[test]
+fn derived_real_params_can_be_set() {
+    let g: BlockGraph = serde_json::from_str(
+        r#"{"name":"hold_test","inputs":[{"name":"run","type":"bool","unit":"bool","description":""}],
+            "outputs":[{"name":"held","type":"bool","description":""}],
+            "blocks":[{"id":"hold","class":"Logical.TrueFalseHold","params":[
+              {"name":"trueHoldDuration","value":300},{"name":"falseHoldDuration","value":120}]}],
+            "connections":["run -> hold.u","hold.y -> held"]}"#,
+    )
+    .unwrap();
+    assert_eq!(codes(&g), vec![]);
+}
+
+#[test]
+fn classes_needing_enum_params_are_not_authorable() {
+    let palette = Palette::pinned().unwrap();
+    assert!(
+        !palette
+            .class("Reals.Sources.CalendarTime")
+            .unwrap()
+            .authorable
+    );
+}
+
+#[test]
+fn integer_params_are_written_as_integers() {
+    let g: BlockGraph = serde_json::from_str(
+        r#"{"name":"int_test","inputs":[{"name":"count","type":"int","unit":"1","description":""}],
+            "outputs":[{"name":"high","type":"bool","description":""}],
+            "blocks":[{"id":"gt","class":"Integers.GreaterThreshold","params":[{"name":"t","value":3}]}],
+            "connections":["count -> gt.u","gt.y -> high"]}"#,
+    )
+    .unwrap();
+    let cxf = emit_cxf(&g, &Palette::pinned().unwrap(), &EmitOptions::default()).unwrap();
+    let text = String::from_utf8(cxf).unwrap();
+    assert!(text.contains("\"@value\": \"3\""), "{text}");
+    assert!(text.contains("XMLSchema#integer"));
+}

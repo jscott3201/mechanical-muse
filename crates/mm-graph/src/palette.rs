@@ -113,6 +113,7 @@ impl Palette {
                 params: params(&entry),
                 stateful: entry.stateful,
                 authorable: all_named
+                    && !needs_unsupported_param(&params(&entry))
                     && !entry.reserved
                     && !entry.width_driven
                     && entry.naming != "width_driven",
@@ -186,6 +187,9 @@ fn params(entry: &RawEntry) -> BTreeMap<String, ParamSpec> {
                     "integer" => ParamKind::Integer,
                     "boolean" => ParamKind::Boolean,
                     "enum" => ParamKind::Enum,
+                    // A formula default (e.g. falseHoldDuration = trueHoldDuration). Every
+                    // derived default on an authorable class is a Real.
+                    "derived" => ParamKind::Real,
                     _ => ParamKind::Unspecified,
                 };
             }
@@ -193,6 +197,18 @@ fn params(entry: &RawEntry) -> BTreeMap<String, ParamSpec> {
         }
     }
     out
+}
+
+/// A required enum or string parameter (e.g. `CalendarTime.zerTim`) cannot be set yet, so the
+/// class could never validate.
+fn needs_unsupported_param(params: &BTreeMap<String, ParamSpec>) -> bool {
+    params.values().any(|p| {
+        p.required
+            && matches!(
+                p.kind,
+                ParamKind::Enum | ParamKind::String | ParamKind::Unspecified
+            )
+    })
 }
 
 #[derive(Deserialize)]
@@ -253,8 +269,10 @@ mod tests {
         let palette = Palette::pinned().unwrap();
         assert_eq!(palette.classes().count(), 133);
         let authorable = palette.classes().filter(|c| c.authorable).count();
-        // 105 named; the 25 width-driven classes and the 3 positional TimeTables need port synthesis.
-        assert_eq!(authorable, 105);
+        // 105 named classes, minus CalendarTime (enum zerTim) and Assert (string message), which
+        // need parameter kinds we cannot set yet. Width-driven and positional TimeTables need port
+        // synthesis.
+        assert_eq!(authorable, 103);
         assert!(!palette.class("Reals.Sources.TimeTable").unwrap().authorable);
     }
 
