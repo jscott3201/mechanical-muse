@@ -146,6 +146,12 @@ pub fn replay(
     })
 }
 
+/// Checks a vector file without running anything: schema, clock, limits, and that every
+/// expectation can be checked by at least one tick.
+pub fn check_vectors(vectors: &VectorFile, limits: &ReplayLimits) -> Result<(), ReplayError> {
+    check_file(vectors, limits).map(|_| ())
+}
+
 /// Validates the clock, windows and limits; returns the last tick index.
 fn check_file(vectors: &VectorFile, limits: &ReplayLimits) -> Result<u64, ReplayError> {
     let invalid = |code, detail: String| Err(ReplayError::Invalid { code, detail });

@@ -1,0 +1,16 @@
+{
+  "name": "ahu_0005",
+  "description": "Flag an air handler whose supply air leaves noticeably colder than the mixed air entering it while it should be heating or idle. Raise the fault only after the condition has lasted for the alarm delay.",
+  "inputs": [
+    {"name": "mat", "type": "real", "unit": "degC", "meaning": "Mixed air temperature, measured after outdoor and return air mix"},
+    {"name": "sat", "type": "real", "unit": "degC", "meaning": "Supply air temperature, measured at the discharge"}
+  ],
+  "outputs": [
+    {"name": "yFault", "type": "bool", "meaning": "True while supply air has stayed more than the gap threshold below mixed air for at least the alarm delay"}
+  ],
+  "params": [
+    {"name": "mat_sat_gap_threshold", "value": 3.0, "unit": "K", "meaning": "How far supply air may sit below mixed air before it counts"},
+    {"name": "alarm_delay", "value": 1800.0, "unit": "s", "meaning": "How long the condition must persist"}
+  ],
+  "logic": "gap = mat - sat\nfault_now = gap > mat_sat_gap_threshold\nyFault = fault_now held true for alarm_delay"
+}

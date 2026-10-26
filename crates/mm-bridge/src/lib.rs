@@ -16,7 +16,8 @@ pub use dto::{DiagnosticDto, EngineErrorDto, WireValue};
 pub use load::{ALLOWED_LOAD_WARNINGS, LoadFailure, Loaded, load_cxf};
 pub use names::{NameError, resolve_name};
 pub use replay::{
-    KNOWN_SCHEMAS, ReplayError, ReplayLimits, ReplayReport, ScenarioOutcome, ScenarioReport, replay,
+    KNOWN_SCHEMAS, ReplayError, ReplayLimits, ReplayReport, ScenarioOutcome, ScenarioReport,
+    check_vectors, replay,
 };
 pub use stepper::{FrameStepper, StepError};
 pub use vectors::{Clock, Expectation, InputSpec, Scalar, Scenario, Step, VectorFile};
