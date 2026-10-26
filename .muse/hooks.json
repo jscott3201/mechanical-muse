@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "sh .muse/hooks/stamp.sh", "timeout": 5 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "sh .muse/hooks/verify.sh", "timeout": 900, "statusMessage": "Running cargo and web checks" } ] }
+    ]
+  }
+}

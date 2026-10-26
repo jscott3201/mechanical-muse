@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MechanicalMuseBlockGraph",
+  "description": "Compact CDL block graph. A deterministic emitter expands it to CXF JSON-LD; the Open Control Engine verifies it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "inputs", "outputs", "blocks", "connections"],
+  "properties": {
+    "name": {"type": "string", "description": "snake_case name of the sequence, e.g. stale_override"},
+    "inputs": {"type": "array", "description": "Boundary inputs (sensor/command/setpoint points). Names are fixed by the task.",
+               "items": {"$ref": "#/$defs/input"}},
+    "outputs": {"type": "array", "description": "Boundary outputs. Names are fixed by the task. Each is the target of exactly one connection.",
+                "items": {"$ref": "#/$defs/output"}},
+    "blocks": {"type": "array", "description": "CDL block instances.", "items": {"$ref": "#/$defs/block"}},
+    "connections": {
+      "type": "array",
+      "description": "Edges written '<src> -> <dst>'. src is an input name or '<blockId>.<outPort>'. dst is an output name or '<blockId>.<inPort>'. Every block input and every output has exactly one incoming edge; an output port may fan out to many.",
+      "items": {"type": "string"}
+    }
+  },
+  "$defs": {
+    "signalType": {"type": "string", "enum": ["bool", "real", "int"]},
+    "input": {
+      "type": "object", "additionalProperties": false, "required": ["name", "type", "unit", "description"],
+      "properties": {
+        "name": {"type": "string", "description": "snake_case, no dots"},
+        "type": {"$ref": "#/$defs/signalType"},
+        "unit": {"type": "string", "description": "degC, %, Pa, kPa, L/s, kW, s, 1 or bool"},
+        "description": {"type": "string"}
+      }
+    },
+    "output": {
+      "type": "object", "additionalProperties": false, "required": ["name", "type", "description"],
+      "properties": {
+        "name": {"type": "string", "description": "e.g. yFault; no dots"},
+        "type": {"$ref": "#/$defs/signalType"},
+        "description": {"type": "string"}
+      }
+    },
+    "block": {
+      "type": "object", "additionalProperties": false, "required": ["id", "class", "params"],
+      "properties": {
+        "id": {"type": "string", "description": "camelCase instance id; unique across inputs, outputs and blocks; no dots"},
+        "class": {
+          "type": "string", "description": "CDL class path below Buildings.Controls.OBC.CDL",
+          "enum": [
+            "Logical.And", "Logical.TrueDelay", "Reals.GreaterThreshold", "Reals.Sources.Constant", "Reals.Subtract",
+            "Reals.Switch", "Logical.Not", "Reals.LessThreshold", "Integers.Sources.Constant", "Logical.Or",
+            "Reals.MultiplyByParameter", "Reals.Abs", "Integers.Equal", "Reals.Multiply", "Conversions.BooleanToReal",
+            "Conversions.BooleanToInteger", "Reals.Divide", "Reals.Greater", "Reals.MovingAverage", "Reals.Add",
+            "Reals.Line", "Integers.Switch", "Discrete.Sampler", "Reals.Max", "Logical.Switch",
+            "Reals.AddParameter", "Reals.Min", "Logical.Latch", "Logical.Sources.Constant", "Conversions.IntegerToReal",
+            "Logical.Timer", "Discrete.UnitDelay", "Reals.Less", "Logical.Edge", "Reals.PIDWithReset",
+            "Reals.Hysteresis", "Reals.PID", "Logical.TrueFalseHold", "Logical.Change", "Integers.GreaterThreshold",
+            "Logical.Pre", "Discrete.TriggeredSampler", "Integers.Add", "Logical.Xor", "Reals.Limiter",
+            "Logical.Sources.SampleTrigger", "Integers.Change", "Integers.Multiply", "Logical.Nor", "Integers.LessThreshold",
+            "Integers.LessEqualThreshold", "Integers.AddParameter", "Discrete.FirstOrderHold"
+          ]
+        },
+        "params": {"type": "array", "description": "Parameters to set; omit defaults. [] if none.", "items": {"$ref": "#/$defs/param"}}
+      }
+    },
+    "param": {
+      "type": "object", "additionalProperties": false, "required": ["name", "value"],
+      "properties": {
+        "name": {"type": "string", "description": "CDL parameter name, e.g. delayTime"},
+        "value": {"anyOf": [{"type": "number"}, {"type": "boolean"}, {"type": "string"}]}
+      }
+    }
+  }
+}

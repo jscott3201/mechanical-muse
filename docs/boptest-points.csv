@@ -1,0 +1,387 @@
+name,kind,unit,min,max,description,group,floor,zone,role
+floor1_reaAHU_CO2_AHUFre_y,measurement,ppm,,,Fresh air CO2 measurement for AHU,ahu,1,,y
+floor1_reaAHU_CO2_AHURet_y,measurement,ppm,,,Return air CO2 measurement for AHU,ahu,1,,y
+floor1_reaAHU_CO2_AHUSup_y,measurement,ppm,,,Supply air CO2 measurement for AHU,ahu,1,,y
+floor1_reaAHU_PFanRet_y,measurement,W,,,Electrical power measurement of return fan for AHU,ahu,1,,y
+floor1_reaAHU_PFanSup_y,measurement,W,,,Electrical power measurement of supply fan for AHU,ahu,1,,y
+floor1_reaAHU_PFreCoi_y,measurement,W,,,Electrical power measurement of freeze protection coil for AHU,ahu,1,,y
+floor1_reaAHU_TCooCoiRet_y,measurement,K,,,Cooling coil return water temperature measurement for AHU,ahu,1,,y
+floor1_reaAHU_TCooCoiSup_y,measurement,K,,,Cooling coil supply water temperature measurement for AHU,ahu,1,,y
+floor1_reaAHU_TFreCoiLea_y,measurement,K,,,Temperature of air leaving freeze protection coil,ahu,1,,y
+floor1_reaAHU_TMix_y,measurement,K,,,Mixed air temperature measurement for AHU,ahu,1,,y
+floor1_reaAHU_TRet_y,measurement,K,,,Return air temperature measurement for AHU,ahu,1,,y
+floor1_reaAHU_TSup_y,measurement,K,,,Supply air temperature measurement for AHU,ahu,1,,y
+floor1_reaAHU_V_flowOA_y,measurement,m3/s,,,Supply outdoor airflow rate measurement for AHU,ahu,1,,y
+floor1_reaAHU_V_flowRet_y,measurement,m3/s,,,Return air flowrate measurement for AHU,ahu,1,,y
+floor1_reaAHU_V_flowSup_y,measurement,m3/s,,,Supply air flowrate measurement for AHU,ahu,1,,y
+floor1_reaAHU_dp_y,measurement,Pa,,,Static pressure of supply fan for AHU,ahu,1,,y
+floor1_reaAHU_occ_y,measurement,1,,,"Occupancy status (1 occupied, 0 unoccupied)",ahu,1,,y
+floor1_reaAHU_phiAHURet_y,measurement,1,,,Return air relative humidity for AHU,ahu,1,,y
+floor1_reaAHU_phiAHUSup_y,measurement,1,,,Supply air relative humidity for AHU,ahu,1,,y
+floor1_reaAHU_yCooVal_y,measurement,1,,,AHU cooling coil valve position measurement,ahu,1,,y
+floor1_reaAHU_yOA_y,measurement,1,,,AHU OA damper position measurement,ahu,1,,y
+floor1_TSupAirSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_TSupAirSet_u where 1 activates, 0 deactivates (default value)",ahu,1,,activate
+floor1_TSupAirSet_u,input,K,285.15,313.15,Supply air temperature setpoint for AHU,ahu,1,,u
+floor1_dpSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_dpSet_u where 1 activates, 0 deactivates (default value)",ahu,1,,activate
+floor1_dpSet_u,input,Pa,50,410,Supply duct pressure setpoint for AHU,ahu,1,,u
+floor1_duaFanAirHanUni_cooCoi_yCoo_activate,input,1,0,1,"Activation signal to overwrite input floor1_duaFanAirHanUni_cooCoi_yCoo_u where 1 activates, 0 deactivates (default value)",ahu,1,,activate
+floor1_duaFanAirHanUni_cooCoi_yCoo_u,input,1,0,1,Cooling coil valve control signal for AHU,ahu,1,,u
+floor1_duaFanAirHanUni_frePro_oveFrePro_activate,input,1,0,1,"Activation signal to overwrite input floor1_duaFanAirHanUni_frePro_oveFrePro_u where 1 activates, 0 deactivates (default value)",ahu,1,,activate
+floor1_duaFanAirHanUni_frePro_oveFrePro_u,input,1,0,1,Control signal for freeze protection coil,ahu,1,,u
+floor1_duaFanAirHanUni_mixingBox_mixBox_yEA_activate,input,1,0,1,"Activation signal to overwrite input floor1_duaFanAirHanUni_mixingBox_mixBox_yEA_u where 1 activates, 0 deactivates (default value)",ahu,1,,activate
+floor1_duaFanAirHanUni_mixingBox_mixBox_yEA_u,input,1,0,1,Exhaust air damper position setpoint for AHU,ahu,1,,u
+floor1_duaFanAirHanUni_mixingBox_mixBox_yOA_activate,input,1,0,1,"Activation signal to overwrite input floor1_duaFanAirHanUni_mixingBox_mixBox_yOA_u where 1 activates, 0 deactivates (default value)",ahu,1,,activate
+floor1_duaFanAirHanUni_mixingBox_mixBox_yOA_u,input,1,0,1,Outside air damper position setpoint for AHU,ahu,1,,u
+floor1_duaFanAirHanUni_mixingBox_mixBox_yRet_activate,input,1,0,1,"Activation signal to overwrite input floor1_duaFanAirHanUni_mixingBox_mixBox_yRet_u where 1 activates, 0 deactivates (default value)",ahu,1,,activate
+floor1_duaFanAirHanUni_mixingBox_mixBox_yRet_u,input,1,0,1,Return air damper position setpoint for AHU,ahu,1,,u
+floor1_duaFanAirHanUni_oveSpeRetFan_activate,input,1,0,1,"Activation signal to overwrite input floor1_duaFanAirHanUni_oveSpeRetFan_u where 1 activates, 0 deactivates (default value)",ahu,1,,activate
+floor1_duaFanAirHanUni_oveSpeRetFan_u,input,1,0,1,AHU return fan speed control signal,ahu,1,,u
+floor1_duaFanAirHanUni_supFan_oveSpeSupFan_activate,input,1,0,1,"Activation signal to overwrite input floor1_duaFanAirHanUni_supFan_oveSpeSupFan_u where 1 activates, 0 deactivates (default value)",ahu,1,,activate
+floor1_duaFanAirHanUni_supFan_oveSpeSupFan_u,input,1,0,1,AHU supply fan speed control signal,ahu,1,,u
+floor2_reaAHU_CO2_AHUFre_y,measurement,ppm,,,Fresh air CO2 measurement for AHU,ahu,2,,y
+floor2_reaAHU_CO2_AHURet_y,measurement,ppm,,,Return air CO2 measurement for AHU,ahu,2,,y
+floor2_reaAHU_CO2_AHUSup_y,measurement,ppm,,,Supply air CO2 measurement for AHU,ahu,2,,y
+floor2_reaAHU_PFanRet_y,measurement,W,,,Electrical power measurement of return fan for AHU,ahu,2,,y
+floor2_reaAHU_PFanSup_y,measurement,W,,,Electrical power measurement of supply fan for AHU,ahu,2,,y
+floor2_reaAHU_PFreCoi_y,measurement,W,,,Electrical power measurement of freeze protection coil for AHU,ahu,2,,y
+floor2_reaAHU_TCooCoiRet_y,measurement,K,,,Cooling coil return water temperature measurement for AHU,ahu,2,,y
+floor2_reaAHU_TCooCoiSup_y,measurement,K,,,Cooling coil supply water temperature measurement for AHU,ahu,2,,y
+floor2_reaAHU_TFreCoiLea_y,measurement,K,,,Temperature of air leaving freeze protection coil,ahu,2,,y
+floor2_reaAHU_TMix_y,measurement,K,,,Mixed air temperature measurement for AHU,ahu,2,,y
+floor2_reaAHU_TRet_y,measurement,K,,,Return air temperature measurement for AHU,ahu,2,,y
+floor2_reaAHU_TSup_y,measurement,K,,,Supply air temperature measurement for AHU,ahu,2,,y
+floor2_reaAHU_V_flowOA_y,measurement,m3/s,,,Supply outdoor airflow rate measurement for AHU,ahu,2,,y
+floor2_reaAHU_V_flowRet_y,measurement,m3/s,,,Return air flowrate measurement for AHU,ahu,2,,y
+floor2_reaAHU_V_flowSup_y,measurement,m3/s,,,Supply air flowrate measurement for AHU,ahu,2,,y
+floor2_reaAHU_dp_y,measurement,Pa,,,Static pressure of supply fan for AHU,ahu,2,,y
+floor2_reaAHU_occ_y,measurement,1,,,"Occupancy status (1 occupied, 0 unoccupied)",ahu,2,,y
+floor2_reaAHU_phiAHURet_y,measurement,1,,,Return air relative humidity for AHU,ahu,2,,y
+floor2_reaAHU_phiAHUSup_y,measurement,1,,,Supply air relative humidity for AHU,ahu,2,,y
+floor2_reaAHU_yCooVal_y,measurement,1,,,AHU cooling coil valve position measurement,ahu,2,,y
+floor2_reaAHU_yOA_y,measurement,1,,,AHU OA damper position measurement,ahu,2,,y
+floor2_TSupAirSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_TSupAirSet_u where 1 activates, 0 deactivates (default value)",ahu,2,,activate
+floor2_TSupAirSet_u,input,K,285.15,313.15,Supply air temperature setpoint for AHU,ahu,2,,u
+floor2_dpSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_dpSet_u where 1 activates, 0 deactivates (default value)",ahu,2,,activate
+floor2_dpSet_u,input,Pa,50,410,Supply duct pressure setpoint for AHU,ahu,2,,u
+floor2_duaFanAirHanUni_cooCoi_yCoo_activate,input,1,0,1,"Activation signal to overwrite input floor2_duaFanAirHanUni_cooCoi_yCoo_u where 1 activates, 0 deactivates (default value)",ahu,2,,activate
+floor2_duaFanAirHanUni_cooCoi_yCoo_u,input,1,0,1,Cooling coil valve control signal for AHU,ahu,2,,u
+floor2_duaFanAirHanUni_frePro_oveFrePro_activate,input,1,0,1,"Activation signal to overwrite input floor2_duaFanAirHanUni_frePro_oveFrePro_u where 1 activates, 0 deactivates (default value)",ahu,2,,activate
+floor2_duaFanAirHanUni_frePro_oveFrePro_u,input,1,0,1,Control signal for freeze protection coil,ahu,2,,u
+floor2_duaFanAirHanUni_mixingBox_mixBox_yEA_activate,input,1,0,1,"Activation signal to overwrite input floor2_duaFanAirHanUni_mixingBox_mixBox_yEA_u where 1 activates, 0 deactivates (default value)",ahu,2,,activate
+floor2_duaFanAirHanUni_mixingBox_mixBox_yEA_u,input,1,0,1,Exhaust air damper position setpoint for AHU,ahu,2,,u
+floor2_duaFanAirHanUni_mixingBox_mixBox_yOA_activate,input,1,0,1,"Activation signal to overwrite input floor2_duaFanAirHanUni_mixingBox_mixBox_yOA_u where 1 activates, 0 deactivates (default value)",ahu,2,,activate
+floor2_duaFanAirHanUni_mixingBox_mixBox_yOA_u,input,1,0,1,Outside air damper position setpoint for AHU,ahu,2,,u
+floor2_duaFanAirHanUni_mixingBox_mixBox_yRet_activate,input,1,0,1,"Activation signal to overwrite input floor2_duaFanAirHanUni_mixingBox_mixBox_yRet_u where 1 activates, 0 deactivates (default value)",ahu,2,,activate
+floor2_duaFanAirHanUni_mixingBox_mixBox_yRet_u,input,1,0,1,Return air damper position setpoint for AHU,ahu,2,,u
+floor2_duaFanAirHanUni_oveSpeRetFan_activate,input,1,0,1,"Activation signal to overwrite input floor2_duaFanAirHanUni_oveSpeRetFan_u where 1 activates, 0 deactivates (default value)",ahu,2,,activate
+floor2_duaFanAirHanUni_oveSpeRetFan_u,input,1,0,1,AHU return fan speed control signal,ahu,2,,u
+floor2_duaFanAirHanUni_supFan_oveSpeSupFan_activate,input,1,0,1,"Activation signal to overwrite input floor2_duaFanAirHanUni_supFan_oveSpeSupFan_u where 1 activates, 0 deactivates (default value)",ahu,2,,activate
+floor2_duaFanAirHanUni_supFan_oveSpeSupFan_u,input,1,0,1,AHU supply fan speed control signal,ahu,2,,u
+floor3_reaAHU_CO2_AHUFre_y,measurement,ppm,,,Fresh air CO2 measurement for AHU,ahu,3,,y
+floor3_reaAHU_CO2_AHURet_y,measurement,ppm,,,Return air CO2 measurement for AHU,ahu,3,,y
+floor3_reaAHU_CO2_AHUSup_y,measurement,ppm,,,Supply air CO2 measurement for AHU,ahu,3,,y
+floor3_reaAHU_PFanRet_y,measurement,W,,,Electrical power measurement of return fan for AHU,ahu,3,,y
+floor3_reaAHU_PFanSup_y,measurement,W,,,Electrical power measurement of supply fan for AHU,ahu,3,,y
+floor3_reaAHU_PFreCoi_y,measurement,W,,,Electrical power measurement of freeze protection coil for AHU,ahu,3,,y
+floor3_reaAHU_TCooCoiRet_y,measurement,K,,,Cooling coil return water temperature measurement for AHU,ahu,3,,y
+floor3_reaAHU_TCooCoiSup_y,measurement,K,,,Cooling coil supply water temperature measurement for AHU,ahu,3,,y
+floor3_reaAHU_TFreCoiLea_y,measurement,K,,,Temperature of air leaving freeze protection coil,ahu,3,,y
+floor3_reaAHU_TMix_y,measurement,K,,,Mixed air temperature measurement for AHU,ahu,3,,y
+floor3_reaAHU_TRet_y,measurement,K,,,Return air temperature measurement for AHU,ahu,3,,y
+floor3_reaAHU_TSup_y,measurement,K,,,Supply air temperature measurement for AHU,ahu,3,,y
+floor3_reaAHU_V_flowOA_y,measurement,m3/s,,,Supply outdoor airflow rate measurement for AHU,ahu,3,,y
+floor3_reaAHU_V_flowRet_y,measurement,m3/s,,,Return air flowrate measurement for AHU,ahu,3,,y
+floor3_reaAHU_V_flowSup_y,measurement,m3/s,,,Supply air flowrate measurement for AHU,ahu,3,,y
+floor3_reaAHU_dp_y,measurement,Pa,,,Static pressure of supply fan for AHU,ahu,3,,y
+floor3_reaAHU_occ_y,measurement,1,,,"Occupancy status (1 occupied, 0 unoccupied)",ahu,3,,y
+floor3_reaAHU_phiAHURet_y,measurement,1,,,Return air relative humidity for AHU,ahu,3,,y
+floor3_reaAHU_phiAHUSup_y,measurement,1,,,Supply air relative humidity for AHU,ahu,3,,y
+floor3_reaAHU_yCooVal_y,measurement,1,,,AHU cooling coil valve position measurement,ahu,3,,y
+floor3_reaAHU_yOA_y,measurement,1,,,AHU OA damper position measurement,ahu,3,,y
+floor3_TSupAirSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_TSupAirSet_u where 1 activates, 0 deactivates (default value)",ahu,3,,activate
+floor3_TSupAirSet_u,input,K,285.15,313.15,Supply air temperature setpoint for AHU,ahu,3,,u
+floor3_dpSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_dpSet_u where 1 activates, 0 deactivates (default value)",ahu,3,,activate
+floor3_dpSet_u,input,Pa,50,410,Supply duct pressure setpoint for AHU,ahu,3,,u
+floor3_duaFanAirHanUni_cooCoi_yCoo_activate,input,1,0,1,"Activation signal to overwrite input floor3_duaFanAirHanUni_cooCoi_yCoo_u where 1 activates, 0 deactivates (default value)",ahu,3,,activate
+floor3_duaFanAirHanUni_cooCoi_yCoo_u,input,1,0,1,Cooling coil valve control signal for AHU,ahu,3,,u
+floor3_duaFanAirHanUni_frePro_oveFrePro_activate,input,1,0,1,"Activation signal to overwrite input floor3_duaFanAirHanUni_frePro_oveFrePro_u where 1 activates, 0 deactivates (default value)",ahu,3,,activate
+floor3_duaFanAirHanUni_frePro_oveFrePro_u,input,1,0,1,Control signal for freeze protection coil,ahu,3,,u
+floor3_duaFanAirHanUni_mixingBox_mixBox_yEA_activate,input,1,0,1,"Activation signal to overwrite input floor3_duaFanAirHanUni_mixingBox_mixBox_yEA_u where 1 activates, 0 deactivates (default value)",ahu,3,,activate
+floor3_duaFanAirHanUni_mixingBox_mixBox_yEA_u,input,1,0,1,Exhaust air damper position setpoint for AHU,ahu,3,,u
+floor3_duaFanAirHanUni_mixingBox_mixBox_yOA_activate,input,1,0,1,"Activation signal to overwrite input floor3_duaFanAirHanUni_mixingBox_mixBox_yOA_u where 1 activates, 0 deactivates (default value)",ahu,3,,activate
+floor3_duaFanAirHanUni_mixingBox_mixBox_yOA_u,input,1,0,1,Outside air damper position setpoint for AHU,ahu,3,,u
+floor3_duaFanAirHanUni_mixingBox_mixBox_yRet_activate,input,1,0,1,"Activation signal to overwrite input floor3_duaFanAirHanUni_mixingBox_mixBox_yRet_u where 1 activates, 0 deactivates (default value)",ahu,3,,activate
+floor3_duaFanAirHanUni_mixingBox_mixBox_yRet_u,input,1,0,1,Return air damper position setpoint for AHU,ahu,3,,u
+floor3_duaFanAirHanUni_oveSpeRetFan_activate,input,1,0,1,"Activation signal to overwrite input floor3_duaFanAirHanUni_oveSpeRetFan_u where 1 activates, 0 deactivates (default value)",ahu,3,,activate
+floor3_duaFanAirHanUni_oveSpeRetFan_u,input,1,0,1,AHU return fan speed control signal,ahu,3,,u
+floor3_duaFanAirHanUni_supFan_oveSpeSupFan_activate,input,1,0,1,"Activation signal to overwrite input floor3_duaFanAirHanUni_supFan_oveSpeSupFan_u where 1 activates, 0 deactivates (default value)",ahu,3,,activate
+floor3_duaFanAirHanUni_supFan_oveSpeSupFan_u,input,1,0,1,AHU supply fan speed control signal,ahu,3,,u
+floor1_reaZonCor_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone bot_floor_cor,zone,1,cor,y
+floor1_reaZonCor_TSup_y,measurement,K,,,Discharge air temperature measurement for zone bot_floor_cor,zone,1,cor,y
+floor1_reaZonCor_TZon_y,measurement,K,,,Zone air temperature measurement for zone bot_floor_cor,zone,1,cor,y
+floor1_reaZonCor_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone bot_floor_cor,zone,1,cor,y
+floor1_reaZonCor_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone bot_floor_cor,zone,1,cor,y
+floor1_reaZonCor_yDam_y,measurement,1,,,Damper position measurement for zone bot_floor_cor,zone,1,cor,y
+floor1_reaZonCor_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone bot_floor_cor,zone,1,cor,y
+floor1_fivZonVAV_vAV1_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV1_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,1,cor,activate
+floor1_fivZonVAV_vAV1_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone cor,zone,1,cor,u
+floor1_fivZonVAV_vAV1_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV1_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,1,cor,activate
+floor1_fivZonVAV_vAV1_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone cor,zone,1,cor,u
+floor1_oveZonCor_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonCor_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,1,cor,activate
+floor1_oveZonCor_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone bot_floor_cor,zone,1,cor,u
+floor1_oveZonCor_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonCor_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,1,cor,activate
+floor1_oveZonCor_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone bot_floor_cor,zone,1,cor,u
+floor1_reaZonSou_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone bot_floor_sou,zone,1,sou,y
+floor1_reaZonSou_TSup_y,measurement,K,,,Discharge air temperature measurement for zone bot_floor_sou,zone,1,sou,y
+floor1_reaZonSou_TZon_y,measurement,K,,,Zone air temperature measurement for zone bot_floor_sou,zone,1,sou,y
+floor1_reaZonSou_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone bot_floor_sou,zone,1,sou,y
+floor1_reaZonSou_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone bot_floor_sou,zone,1,sou,y
+floor1_reaZonSou_yDam_y,measurement,1,,,Damper position measurement for zone bot_floor_sou,zone,1,sou,y
+floor1_reaZonSou_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone bot_floor_sou,zone,1,sou,y
+floor1_fivZonVAV_vAV2_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV2_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,1,sou,activate
+floor1_fivZonVAV_vAV2_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone sou,zone,1,sou,u
+floor1_fivZonVAV_vAV2_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV2_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,1,sou,activate
+floor1_fivZonVAV_vAV2_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone sou,zone,1,sou,u
+floor1_oveZonSou_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonSou_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,1,sou,activate
+floor1_oveZonSou_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone bot_floor_sou,zone,1,sou,u
+floor1_oveZonSou_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonSou_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,1,sou,activate
+floor1_oveZonSou_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone bot_floor_sou,zone,1,sou,u
+floor1_reaZonEas_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone bot_floor_eas,zone,1,eas,y
+floor1_reaZonEas_TSup_y,measurement,K,,,Discharge air temperature measurement for zone bot_floor_eas,zone,1,eas,y
+floor1_reaZonEas_TZon_y,measurement,K,,,Zone air temperature measurement for zone bot_floor_eas,zone,1,eas,y
+floor1_reaZonEas_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone bot_floor_eas,zone,1,eas,y
+floor1_reaZonEas_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone bot_floor_eas,zone,1,eas,y
+floor1_reaZonEas_yDam_y,measurement,1,,,Damper position measurement for zone bot_floor_eas,zone,1,eas,y
+floor1_reaZonEas_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone bot_floor_eas,zone,1,eas,y
+floor1_fivZonVAV_vAV3_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV3_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,1,eas,activate
+floor1_fivZonVAV_vAV3_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone eas,zone,1,eas,u
+floor1_fivZonVAV_vAV3_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV3_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,1,eas,activate
+floor1_fivZonVAV_vAV3_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone eas,zone,1,eas,u
+floor1_oveZonEas_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonEas_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,1,eas,activate
+floor1_oveZonEas_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone bot_floor_eas,zone,1,eas,u
+floor1_oveZonEas_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonEas_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,1,eas,activate
+floor1_oveZonEas_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone bot_floor_eas,zone,1,eas,u
+floor1_reaZonNor_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone bot_floor_nor,zone,1,nor,y
+floor1_reaZonNor_TSup_y,measurement,K,,,Discharge air temperature measurement for zone bot_floor_nor,zone,1,nor,y
+floor1_reaZonNor_TZon_y,measurement,K,,,Zone air temperature measurement for zone bot_floor_nor,zone,1,nor,y
+floor1_reaZonNor_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone bot_floor_nor,zone,1,nor,y
+floor1_reaZonNor_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone bot_floor_nor,zone,1,nor,y
+floor1_reaZonNor_yDam_y,measurement,1,,,Damper position measurement for zone bot_floor_nor,zone,1,nor,y
+floor1_reaZonNor_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone bot_floor_nor,zone,1,nor,y
+floor1_fivZonVAV_vAV4_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV4_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,1,nor,activate
+floor1_fivZonVAV_vAV4_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone nor,zone,1,nor,u
+floor1_fivZonVAV_vAV4_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV4_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,1,nor,activate
+floor1_fivZonVAV_vAV4_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone nor,zone,1,nor,u
+floor1_oveZonNor_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonNor_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,1,nor,activate
+floor1_oveZonNor_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone bot_floor_nor,zone,1,nor,u
+floor1_oveZonNor_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonNor_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,1,nor,activate
+floor1_oveZonNor_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone bot_floor_nor,zone,1,nor,u
+floor1_reaZonWes_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone bot_floor_wes,zone,1,wes,y
+floor1_reaZonWes_TSup_y,measurement,K,,,Discharge air temperature measurement for zone bot_floor_wes,zone,1,wes,y
+floor1_reaZonWes_TZon_y,measurement,K,,,Zone air temperature measurement for zone bot_floor_wes,zone,1,wes,y
+floor1_reaZonWes_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone bot_floor_wes,zone,1,wes,y
+floor1_reaZonWes_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone bot_floor_wes,zone,1,wes,y
+floor1_reaZonWes_yDam_y,measurement,1,,,Damper position measurement for zone bot_floor_wes,zone,1,wes,y
+floor1_reaZonWes_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone bot_floor_wes,zone,1,wes,y
+floor1_fivZonVAV_vAV5_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV5_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,1,wes,activate
+floor1_fivZonVAV_vAV5_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone wes,zone,1,wes,u
+floor1_fivZonVAV_vAV5_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor1_fivZonVAV_vAV5_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,1,wes,activate
+floor1_fivZonVAV_vAV5_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone wes,zone,1,wes,u
+floor1_oveZonWes_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonWes_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,1,wes,activate
+floor1_oveZonWes_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone bot_floor_wes,zone,1,wes,u
+floor1_oveZonWes_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor1_oveZonWes_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,1,wes,activate
+floor1_oveZonWes_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone bot_floor_wes,zone,1,wes,u
+floor2_reaZonCor_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone mid_floor_cor,zone,2,cor,y
+floor2_reaZonCor_TSup_y,measurement,K,,,Discharge air temperature measurement for zone mid_floor_cor,zone,2,cor,y
+floor2_reaZonCor_TZon_y,measurement,K,,,Zone air temperature measurement for zone mid_floor_cor,zone,2,cor,y
+floor2_reaZonCor_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone mid_floor_cor,zone,2,cor,y
+floor2_reaZonCor_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone mid_floor_cor,zone,2,cor,y
+floor2_reaZonCor_yDam_y,measurement,1,,,Damper position measurement for zone mid_floor_cor,zone,2,cor,y
+floor2_reaZonCor_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone mid_floor_cor,zone,2,cor,y
+floor2_fivZonVAV_vAV1_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV1_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,2,cor,activate
+floor2_fivZonVAV_vAV1_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone cor,zone,2,cor,u
+floor2_fivZonVAV_vAV1_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV1_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,2,cor,activate
+floor2_fivZonVAV_vAV1_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone cor,zone,2,cor,u
+floor2_oveZonCor_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonCor_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,2,cor,activate
+floor2_oveZonCor_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone mid_floor_cor,zone,2,cor,u
+floor2_oveZonCor_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonCor_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,2,cor,activate
+floor2_oveZonCor_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone mid_floor_cor,zone,2,cor,u
+floor2_reaZonSou_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone mid_floor_sou,zone,2,sou,y
+floor2_reaZonSou_TSup_y,measurement,K,,,Discharge air temperature measurement for zone mid_floor_sou,zone,2,sou,y
+floor2_reaZonSou_TZon_y,measurement,K,,,Zone air temperature measurement for zone mid_floor_sou,zone,2,sou,y
+floor2_reaZonSou_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone mid_floor_sou,zone,2,sou,y
+floor2_reaZonSou_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone mid_floor_sou,zone,2,sou,y
+floor2_reaZonSou_yDam_y,measurement,1,,,Damper position measurement for zone mid_floor_sou,zone,2,sou,y
+floor2_reaZonSou_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone mid_floor_sou,zone,2,sou,y
+floor2_fivZonVAV_vAV2_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV2_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,2,sou,activate
+floor2_fivZonVAV_vAV2_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone sou,zone,2,sou,u
+floor2_fivZonVAV_vAV2_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV2_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,2,sou,activate
+floor2_fivZonVAV_vAV2_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone sou,zone,2,sou,u
+floor2_oveZonSou_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonSou_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,2,sou,activate
+floor2_oveZonSou_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone mid_floor_sou,zone,2,sou,u
+floor2_oveZonSou_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonSou_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,2,sou,activate
+floor2_oveZonSou_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone mid_floor_sou,zone,2,sou,u
+floor2_reaZonEas_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone mid_floor_eas,zone,2,eas,y
+floor2_reaZonEas_TSup_y,measurement,K,,,Discharge air temperature measurement for zone mid_floor_eas,zone,2,eas,y
+floor2_reaZonEas_TZon_y,measurement,K,,,Zone air temperature measurement for zone mid_floor_eas,zone,2,eas,y
+floor2_reaZonEas_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone mid_floor_eas,zone,2,eas,y
+floor2_reaZonEas_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone mid_floor_eas,zone,2,eas,y
+floor2_reaZonEas_yDam_y,measurement,1,,,Damper position measurement for zone mid_floor_eas,zone,2,eas,y
+floor2_reaZonEas_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone mid_floor_eas,zone,2,eas,y
+floor2_fivZonVAV_vAV3_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV3_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,2,eas,activate
+floor2_fivZonVAV_vAV3_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone eas,zone,2,eas,u
+floor2_fivZonVAV_vAV3_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV3_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,2,eas,activate
+floor2_fivZonVAV_vAV3_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone eas,zone,2,eas,u
+floor2_oveZonEas_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonEas_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,2,eas,activate
+floor2_oveZonEas_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone mid_floor_eas,zone,2,eas,u
+floor2_oveZonEas_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonEas_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,2,eas,activate
+floor2_oveZonEas_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone mid_floor_eas,zone,2,eas,u
+floor2_reaZonNor_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone mid_floor_nor,zone,2,nor,y
+floor2_reaZonNor_TSup_y,measurement,K,,,Discharge air temperature measurement for zone mid_floor_nor,zone,2,nor,y
+floor2_reaZonNor_TZon_y,measurement,K,,,Zone air temperature measurement for zone mid_floor_nor,zone,2,nor,y
+floor2_reaZonNor_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone mid_floor_nor,zone,2,nor,y
+floor2_reaZonNor_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone mid_floor_nor,zone,2,nor,y
+floor2_reaZonNor_yDam_y,measurement,1,,,Damper position measurement for zone mid_floor_nor,zone,2,nor,y
+floor2_reaZonNor_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone mid_floor_nor,zone,2,nor,y
+floor2_fivZonVAV_vAV4_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV4_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,2,nor,activate
+floor2_fivZonVAV_vAV4_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone nor,zone,2,nor,u
+floor2_fivZonVAV_vAV4_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV4_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,2,nor,activate
+floor2_fivZonVAV_vAV4_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone nor,zone,2,nor,u
+floor2_oveZonNor_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonNor_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,2,nor,activate
+floor2_oveZonNor_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone mid_floor_nor,zone,2,nor,u
+floor2_oveZonNor_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonNor_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,2,nor,activate
+floor2_oveZonNor_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone mid_floor_nor,zone,2,nor,u
+floor2_reaZonWes_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone mid_floor_wes,zone,2,wes,y
+floor2_reaZonWes_TSup_y,measurement,K,,,Discharge air temperature measurement for zone mid_floor_wes,zone,2,wes,y
+floor2_reaZonWes_TZon_y,measurement,K,,,Zone air temperature measurement for zone mid_floor_wes,zone,2,wes,y
+floor2_reaZonWes_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone mid_floor_wes,zone,2,wes,y
+floor2_reaZonWes_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone mid_floor_wes,zone,2,wes,y
+floor2_reaZonWes_yDam_y,measurement,1,,,Damper position measurement for zone mid_floor_wes,zone,2,wes,y
+floor2_reaZonWes_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone mid_floor_wes,zone,2,wes,y
+floor2_fivZonVAV_vAV5_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV5_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,2,wes,activate
+floor2_fivZonVAV_vAV5_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone wes,zone,2,wes,u
+floor2_fivZonVAV_vAV5_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor2_fivZonVAV_vAV5_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,2,wes,activate
+floor2_fivZonVAV_vAV5_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone wes,zone,2,wes,u
+floor2_oveZonWes_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonWes_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,2,wes,activate
+floor2_oveZonWes_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone mid_floor_wes,zone,2,wes,u
+floor2_oveZonWes_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor2_oveZonWes_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,2,wes,activate
+floor2_oveZonWes_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone mid_floor_wes,zone,2,wes,u
+floor3_reaZonCor_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone top_floor_cor,zone,3,cor,y
+floor3_reaZonCor_TSup_y,measurement,K,,,Discharge air temperature measurement for zone top_floor_cor,zone,3,cor,y
+floor3_reaZonCor_TZon_y,measurement,K,,,Zone air temperature measurement for zone top_floor_cor,zone,3,cor,y
+floor3_reaZonCor_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone top_floor_cor,zone,3,cor,y
+floor3_reaZonCor_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone top_floor_cor,zone,3,cor,y
+floor3_reaZonCor_yDam_y,measurement,1,,,Damper position measurement for zone top_floor_cor,zone,3,cor,y
+floor3_reaZonCor_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone top_floor_cor,zone,3,cor,y
+floor3_fivZonVAV_vAV1_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV1_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,3,cor,activate
+floor3_fivZonVAV_vAV1_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone cor,zone,3,cor,u
+floor3_fivZonVAV_vAV1_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV1_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,3,cor,activate
+floor3_fivZonVAV_vAV1_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone cor,zone,3,cor,u
+floor3_oveZonCor_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonCor_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,3,cor,activate
+floor3_oveZonCor_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone top_floor_cor,zone,3,cor,u
+floor3_oveZonCor_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonCor_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,3,cor,activate
+floor3_oveZonCor_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone top_floor_cor,zone,3,cor,u
+floor3_reaZonSou_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone top_floor_sou,zone,3,sou,y
+floor3_reaZonSou_TSup_y,measurement,K,,,Discharge air temperature measurement for zone top_floor_sou,zone,3,sou,y
+floor3_reaZonSou_TZon_y,measurement,K,,,Zone air temperature measurement for zone top_floor_sou,zone,3,sou,y
+floor3_reaZonSou_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone top_floor_sou,zone,3,sou,y
+floor3_reaZonSou_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone top_floor_sou,zone,3,sou,y
+floor3_reaZonSou_yDam_y,measurement,1,,,Damper position measurement for zone top_floor_sou,zone,3,sou,y
+floor3_reaZonSou_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone top_floor_sou,zone,3,sou,y
+floor3_fivZonVAV_vAV2_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV2_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,3,sou,activate
+floor3_fivZonVAV_vAV2_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone sou,zone,3,sou,u
+floor3_fivZonVAV_vAV2_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV2_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,3,sou,activate
+floor3_fivZonVAV_vAV2_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone sou,zone,3,sou,u
+floor3_oveZonSou_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonSou_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,3,sou,activate
+floor3_oveZonSou_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone top_floor_sou,zone,3,sou,u
+floor3_oveZonSou_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonSou_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,3,sou,activate
+floor3_oveZonSou_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone top_floor_sou,zone,3,sou,u
+floor3_reaZonEas_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone top_floor_eas,zone,3,eas,y
+floor3_reaZonEas_TSup_y,measurement,K,,,Discharge air temperature measurement for zone top_floor_eas,zone,3,eas,y
+floor3_reaZonEas_TZon_y,measurement,K,,,Zone air temperature measurement for zone top_floor_eas,zone,3,eas,y
+floor3_reaZonEas_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone top_floor_eas,zone,3,eas,y
+floor3_reaZonEas_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone top_floor_eas,zone,3,eas,y
+floor3_reaZonEas_yDam_y,measurement,1,,,Damper position measurement for zone top_floor_eas,zone,3,eas,y
+floor3_reaZonEas_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone top_floor_eas,zone,3,eas,y
+floor3_fivZonVAV_vAV3_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV3_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,3,eas,activate
+floor3_fivZonVAV_vAV3_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone eas,zone,3,eas,u
+floor3_fivZonVAV_vAV3_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV3_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,3,eas,activate
+floor3_fivZonVAV_vAV3_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone eas,zone,3,eas,u
+floor3_oveZonEas_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonEas_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,3,eas,activate
+floor3_oveZonEas_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone top_floor_eas,zone,3,eas,u
+floor3_oveZonEas_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonEas_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,3,eas,activate
+floor3_oveZonEas_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone top_floor_eas,zone,3,eas,u
+floor3_reaZonNor_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone top_floor_nor,zone,3,nor,y
+floor3_reaZonNor_TSup_y,measurement,K,,,Discharge air temperature measurement for zone top_floor_nor,zone,3,nor,y
+floor3_reaZonNor_TZon_y,measurement,K,,,Zone air temperature measurement for zone top_floor_nor,zone,3,nor,y
+floor3_reaZonNor_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone top_floor_nor,zone,3,nor,y
+floor3_reaZonNor_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone top_floor_nor,zone,3,nor,y
+floor3_reaZonNor_yDam_y,measurement,1,,,Damper position measurement for zone top_floor_nor,zone,3,nor,y
+floor3_reaZonNor_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone top_floor_nor,zone,3,nor,y
+floor3_fivZonVAV_vAV4_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV4_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,3,nor,activate
+floor3_fivZonVAV_vAV4_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone nor,zone,3,nor,u
+floor3_fivZonVAV_vAV4_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV4_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,3,nor,activate
+floor3_fivZonVAV_vAV4_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone nor,zone,3,nor,u
+floor3_oveZonNor_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonNor_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,3,nor,activate
+floor3_oveZonNor_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone top_floor_nor,zone,3,nor,u
+floor3_oveZonNor_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonNor_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,3,nor,activate
+floor3_oveZonNor_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone top_floor_nor,zone,3,nor,u
+floor3_reaZonWes_CO2Zon_y,measurement,ppm,,,Zone air CO2 measurement for zone top_floor_wes,zone,3,wes,y
+floor3_reaZonWes_TSup_y,measurement,K,,,Discharge air temperature measurement for zone top_floor_wes,zone,3,wes,y
+floor3_reaZonWes_TZon_y,measurement,K,,,Zone air temperature measurement for zone top_floor_wes,zone,3,wes,y
+floor3_reaZonWes_V_flowSet_y,measurement,m3/s,,,Zone airflow setpoint for zone top_floor_wes,zone,3,wes,y
+floor3_reaZonWes_V_flow_y,measurement,m3/s,,,Air flowrate measurement for zone top_floor_wes,zone,3,wes,y
+floor3_reaZonWes_yDam_y,measurement,1,,,Damper position measurement for zone top_floor_wes,zone,3,wes,y
+floor3_reaZonWes_yReheaVal_y,measurement,1,,,Reheat valve position measurement for zone top_floor_wes,zone,3,wes,y
+floor3_fivZonVAV_vAV5_oveZonLoc_yDam_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV5_oveZonLoc_yDam_u where 1 activates, 0 deactivates (default value)",zone,3,wes,activate
+floor3_fivZonVAV_vAV5_oveZonLoc_yDam_u,input,1,0,1,Damper position signal for zone wes,zone,3,wes,u
+floor3_fivZonVAV_vAV5_oveZonLoc_yReaHea_activate,input,1,0,1,"Activation signal to overwrite input floor3_fivZonVAV_vAV5_oveZonLoc_yReaHea_u where 1 activates, 0 deactivates (default value)",zone,3,wes,activate
+floor3_fivZonVAV_vAV5_oveZonLoc_yReaHea_u,input,1,0,1,Reheat control signal for zone wes,zone,3,wes,u
+floor3_oveZonWes_TZonCooSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonWes_TZonCooSet_u where 1 activates, 0 deactivates (default value)",zone,3,wes,activate
+floor3_oveZonWes_TZonCooSet_u,input,K,285.15,313.15,Zone air temperature cooling setpoint for zone top_floor_wes,zone,3,wes,u
+floor3_oveZonWes_TZonHeaSet_activate,input,1,0,1,"Activation signal to overwrite input floor3_oveZonWes_TZonHeaSet_u where 1 activates, 0 deactivates (default value)",zone,3,wes,activate
+floor3_oveZonWes_TZonHeaSet_u,input,K,285.15,313.15,Zone air temperature heating setpoint for zone top_floor_wes,zone,3,wes,u
+reaChiWatSys_TCHWRet_y,measurement,K,,,Chilled water return temperature measurement,plant_chw,,,y
+reaChiWatSys_TCHWSup_y,measurement,K,,,Chilled water supply temperature measurement,plant_chw,,,y
+reaChiWatSys_dp_y,measurement,Pa,,,Differential pressure of chilled water plant measurement,plant_chw,,,y
+reaChiWatSys_mCHWTot_y,measurement,kg/s,,,Total chilled water mass flow rate,plant_chw,,,y
+reaChiWatSys_reaPChi_y,measurement,W,,,Multiple chiller power consumption,plant_chw,,,y
+reaChiWatSys_reaPCooTow_y,measurement,W,,,Multiple cooling tower power consumption,plant_chw,,,y
+reaChiWatSys_reaPPum_y,measurement,W,,,Chilled water plant pump power consumption,plant_chw,,,y
+oveChiWatSys_TWSet_activate,input,1,0,1,"Activation signal to overwrite input oveChiWatSys_TWSet_u where 1 activates, 0 deactivates (default value)",plant_chw,,,activate
+oveChiWatSys_TWSet_u,input,K,278.15,288.15,Chilled/hot water supply setpoint,plant_chw,,,u
+oveChiWatSys_dpSet_activate,input,1,0,1,"Activation signal to overwrite input oveChiWatSys_dpSet_u where 1 activates, 0 deactivates (default value)",plant_chw,,,activate
+oveChiWatSys_dpSet_u,input,Pa,0,19130000,Differential pressure setpoint,plant_chw,,,u
+reaHotWatSys_THWRet_y,measurement,K,,,Hot water return temperature measurement,plant_hw,,,y
+reaHotWatSys_THWSup_y,measurement,K,,,Hot water supply temperature measurement,plant_hw,,,y
+reaHotWatSys_dp_y,measurement,Pa,,,Differential pressure of hot water plant measurement,plant_hw,,,y
+reaHotWatSys_mHWTot_y,measurement,kg/s,,,Total hot water mass flow rate,plant_hw,,,y
+reaHotWatSys_reaPBoi_y,measurement,W,,,Multiple gas boiler power consumption,plant_hw,,,y
+reaHotWatSys_reaPPum_y,measurement,W,,,Hot water plant pump power consumption,plant_hw,,,y
+oveHotWatSys_TWSet_activate,input,1,0,1,"Activation signal to overwrite input oveHotWatSys_TWSet_u where 1 activates, 0 deactivates (default value)",plant_hw,,,activate
+oveHotWatSys_TWSet_u,input,K,291.15,353.15,Chilled/hot water supply setpoint,plant_hw,,,u
+oveHotWatSys_dpSet_activate,input,1,0,1,"Activation signal to overwrite input oveHotWatSys_dpSet_u where 1 activates, 0 deactivates (default value)",plant_hw,,,activate
+oveHotWatSys_dpSet_u,input,Pa,0,19130000,Differential pressure setpoint,plant_hw,,,u
+weaSta_reaWeaCeiHei_y,measurement,m,,,Cloud cover ceiling height measurement,weather,,,y
+weaSta_reaWeaCloTim_y,measurement,s,,,Day number with units of seconds,weather,,,y
+weaSta_reaWeaHDifHor_y,measurement,W/m2,,,Horizontal diffuse solar radiation measurement,weather,,,y
+weaSta_reaWeaHDirNor_y,measurement,W/m2,,,Direct normal radiation measurement,weather,,,y
+weaSta_reaWeaHGloHor_y,measurement,W/m2,,,Global horizontal solar irradiation measurement,weather,,,y
+weaSta_reaWeaHHorIR_y,measurement,W/m2,,,Horizontal infrared irradiation measurement,weather,,,y
+weaSta_reaWeaLat_y,measurement,rad,,,Latitude of the location,weather,,,y
+weaSta_reaWeaLon_y,measurement,rad,,,Longitude of the location,weather,,,y
+weaSta_reaWeaNOpa_y,measurement,1,,,Opaque sky cover measurement,weather,,,y
+weaSta_reaWeaNTot_y,measurement,1,,,Sky cover measurement,weather,,,y
+weaSta_reaWeaPAtm_y,measurement,Pa,,,Atmospheric pressure measurement,weather,,,y
+weaSta_reaWeaRelHum_y,measurement,1,,,Outside relative humidity measurement,weather,,,y
+weaSta_reaWeaSolAlt_y,measurement,rad,,,Solar altitude angle measurement,weather,,,y
+weaSta_reaWeaSolDec_y,measurement,rad,,,Solar declination angle measurement,weather,,,y
+weaSta_reaWeaSolHouAng_y,measurement,rad,,,Solar hour angle measurement,weather,,,y
+weaSta_reaWeaSolTim_y,measurement,s,,,Solar time,weather,,,y
+weaSta_reaWeaSolZen_y,measurement,rad,,,Solar zenith angle measurement,weather,,,y
+weaSta_reaWeaTBlaSky_y,measurement,K,,,Black-body sky temperature measurement,weather,,,y
+weaSta_reaWeaTDewPoi_y,measurement,K,,,Dew point temperature measurement,weather,,,y
+weaSta_reaWeaTDryBul_y,measurement,K,,,Outside drybulb temperature measurement,weather,,,y
+weaSta_reaWeaTWetBul_y,measurement,K,,,Wet bulb temperature measurement,weather,,,y
+weaSta_reaWeaWinDir_y,measurement,rad,,,Wind direction measurement,weather,,,y
+weaSta_reaWeaWinSpe_y,measurement,m/s,,,Wind speed measurement,weather,,,y

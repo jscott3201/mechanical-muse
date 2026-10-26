@@ -1,0 +1,30 @@
+# Local research artifacts and working documents (not part of the submission)
+/research/
+
+# Rust
+/target/
+**/*.rs.bk
+
+# Web
+node_modules/
+web/dist/
+.vite/
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# BOPTEST / simulation outputs
+/runs/
+*.parquet
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Muse Code: keep worktrees, approvals and logs local; commit hooks only
+.muse/*
+!.muse/hooks.json
+!.muse/hooks/
