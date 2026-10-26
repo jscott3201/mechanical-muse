@@ -310,7 +310,9 @@ version = "0.1.0"
 dependencies = [
  "mm-graph",
  "oce-api",
+ "serde",
  "serde_json",
+ "thiserror",
 ]
 
 [[package]]

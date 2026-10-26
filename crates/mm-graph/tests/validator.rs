@@ -39,7 +39,8 @@ fn baseline_is_clean() {
 #[test]
 fn dropped_edge_leaves_an_input_undriven() {
     let mut g = ahu_0005();
-    let removed = g.connections.remove(0);
+    // The last edge drives yFault; dropping the first would also leave an input unread.
+    let removed = g.connections.pop().unwrap();
     let dest = removed.split(" -> ").nth(1).unwrap().to_owned();
     assert_eq!(codes(&g), vec![(dest, FindingCode::Undriven)]);
 }
@@ -245,4 +246,12 @@ fn integer_params_are_written_as_integers() {
     let text = String::from_utf8(cxf).unwrap();
     assert!(text.contains("\"@value\": \"3\""), "{text}");
     assert!(text.contains("XMLSchema#integer"));
+}
+
+#[test]
+fn an_input_nothing_reads_is_flagged() {
+    let mut g = ahu_0005();
+    g.connections.retain(|e| !e.starts_with("sat ->"));
+    g.connections.push("mat -> gap.u2".into());
+    assert_eq!(codes(&g), vec![("sat".into(), FindingCode::UnusedInput)]);
 }

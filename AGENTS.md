@@ -19,7 +19,7 @@ Mechanical Muse turns a written building-control sequence into a verified, runna
 6. A React web app shows the authoring trace, verification results, live trends, KPIs, and
    explanations.
 
-Status: `mm-graph` (validator + deterministic emitter) round-trips all 137 library rules and its output loads cleanly in the pinned engine; `mm-bridge` vector replay is next. Update this line when milestones land.
+Status: `mm-graph` (validator + deterministic emitter) and `mm-bridge` (load receipts, frame stepper, vector replay) work offline; all 1,760 library scenarios pass on the pinned engine. Next: `mm-agent` with recorded fixtures. Update this line when milestones land.
 
 ## Hard rules (these override convenience)
 
