@@ -176,6 +176,21 @@ def scenarios():
             "long as staging lasts.",
             lambda t: (0, True, 3000 <= t < 4800), 5400,
             {3000: 0.88, 4740: 0.88, 4800: 0.86, 5100: 0.84}),
+        "staging_retrigger": (
+            "Two staging changes 1,200 s apart (3000-3300 s and 4200-4500 s). Each start "
+            "freezes updates for its own 900 s hold, so the update at 4200 s is frozen even "
+            "though the first hold has ended; updates resume at 5100 s.",
+            lambda t: (0, True, 3000 <= t < 3300 or 4200 <= t < 4500), 6000,
+            {3000: 0.88, 3600: 0.88, 3900: 0.86, 4200: 0.86, 4800: 0.86, 5100: 0.84,
+             5400: 0.82}),
+        "off_grid_edges": (
+            "Staging and request changes between update instants: staging from 3030 to 3090 s "
+            "and from 4020 to 4080 s, and four requests from 5130 s. A hold that starts between "
+            "updates still freezes the next updates; requests that arrive between updates are "
+            "counted at the next update (5400 s).",
+            lambda t: (4 if t >= 5130 else 0, True, 3030 <= t < 3090 or 4020 <= t < 4080),
+            6600, {3000: 0.86, 3300: 0.86, 3900: 0.86, 4200: 0.86, 4800: 0.86, 5100: 0.84,
+                   5400: 0.88}),
         "disable_and_reenable": (
             "The plant is disabled from 9000 s to 9900 s: the setpoints return to design at "
             "once, and the start delay begins again at re-enable.",

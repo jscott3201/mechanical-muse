@@ -96,16 +96,42 @@ fn chw_plant_reset_vectors_catch_common_mistakes() {
             }),
         ),
         (
-            "no staging hold",
+            "staging hold of 1 s instead of 900 s",
             Box::new(move |g| {
                 set_param(g, "stagingHold", "trueHoldDuration", n(1.0));
+            }),
+        ),
+        (
+            // Left at its default, the false hold equals the true hold: a second staging
+            // start within 900 s of the end of the first is then not seen.
+            "false hold of 900 s",
+            Box::new(move |g| {
+                set_param(g, "stagingHold", "falseHoldDuration", n(900.0));
+            }),
+        ),
+        (
+            "hold applied continuously instead of at updates",
+            Box::new(|g| {
+                rewire(
+                    g,
+                    "frozen.y -> heldChange.u2",
+                    "stagingHold.y -> heldChange.u2",
+                );
+            }),
+        ),
+        (
+            "requests used without sampling",
+            Box::new(|g| {
+                rewire(g, "reqSampled.y -> excess.u", "reqReal.y -> excess.u");
             }),
         ),
         (
             "temperature and pressure halves swapped",
             Box::new(|g| {
                 rewire(g, "half.y -> tempMap.x1", "zero.y -> tempMap.x1");
+                rewire(g, "one.y -> tempMap.x2", "half.y -> tempMap.x2");
                 rewire(g, "zero.y -> dpMap.x1", "half.y -> dpMap.x1");
+                rewire(g, "half.y -> dpMap.x2", "one.y -> dpMap.x2");
             }),
         ),
         (

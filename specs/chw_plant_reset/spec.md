@@ -7,8 +7,9 @@ highest differential pressure); as `r` falls the supply water is allowed to warm
 then is the pressure setpoint lowered.
 
 Written in our own words from the behaviour of the Modelica Buildings Library's plant reset
-sequence (`Templates/Plants/Controls/Setpoints/PlantReset.mo` at commit `a131864e`) and the
-plant reset intent in the 2024 Guideline 36 addendum drafts. Nothing here is copied from either.
+sequence (`Templates/Plants/Controls/Setpoints/PlantReset.mo` at commit `a131864e`). The plant
+reset intent in the public-review draft of a 2024 Guideline 36 addendum was read only to confirm
+the defaults and the shape of the reset. Nothing here is copied from either.
 This is the demo's hero sequence on BOPTEST `multizone_office_complex_air`.
 
 ## Interface
@@ -65,20 +66,27 @@ the stored value only changes at updates, so the feedback path needs a sampled s
 
 - One pressure sensor (the library allows several, each with its own setpoint array).
 - The library's sign-check assertions are omitted; they do not affect the outputs.
-- Time is the engine's host tick (60 s steps in the vectors). The library is continuous: when an
-  enable lands between update instants it shows the next update early. Our vectors enable on the
-  update grid, where the two agree.
+- Time is the engine's host tick (60 s steps in the vectors). Inputs that change between
+  frames take effect at the next frame. Enables in the vectors fall on the update grid; staging
+  and request changes also fall between updates (`off_grid_edges`).
 
 ## Validation (done before any model sees this spec)
 
 - `reference.py` is an independent model of the behaviour (stdlib Python, no engine code). Its
-  self-check compares it with checkpoints worked out by hand; the same model, written for the
-  G36 inventory, reproduced the library's own Dymola validation results with no mismatches. It
-  writes `vectors.json`: 8 scenarios covering the start delay and trim cadence, ignore/respond/cap,
-  the ceiling, saturation then release, short and long staging holds, disable and re-enable, and
-  recovery from the floor.
+  self-check compares it with checkpoints worked out by hand. It is a rewrite of an earlier
+  research model that reproduced the library's own Dymola validation results with no
+  mismatches; the two agree tick for tick on these scenarios and on further off-grid stress
+  cases (checked during review). It writes `vectors.json`: 10 scenarios covering the start delay
+  and trim cadence, ignore/respond/cap, the ceiling, saturation then release, short and long
+  staging holds, a second staging start soon after the first hold, staging and request changes
+  between updates, disable and re-enable, and recovery from the floor.
 - `graph.json` is a hand-built block graph (33 blocks). `crates/mm-bridge/tests/specs.rs` checks
   that it passes every scenario on the pinned engine, and that each of these mistakes fails at
   least one: start delay without the extra period, ignore count compared with "at least",
-  uncapped respond, wrong respond amount, disabled output at 0, no staging hold, temperature and
-  pressure halves swapped, no clamp at 100 %, wrong trim.
+  uncapped respond, wrong respond amount, disabled output at 0, a 1 s staging hold, the hold's
+  false duration left at its 900 s default, the hold applied continuously instead of at updates,
+  requests used without sampling, temperature and pressure halves swapped, no clamp at 100 %,
+  wrong trim.
+- `task.json` is the current task (v2: edge instants stated). `task.v1.json` is the first
+  wording, kept so earlier runs can be reproduced; run records hash both the task and the
+  vectors.

@@ -38,36 +38,47 @@ passed by the best attempt: 1,750, 1,744 and 1,749 of 1,760. Constant-false pass
 
 ## Control sequence: chilled-water plant reset (run of 2026-10-26)
 
-Our own spec (`specs/chw_plant_reset/`): trim and respond with a staging hold driving the
-chilled-water supply temperature and differential pressure setpoints. Before any model saw it,
-a hand-built 33-block reference graph passed all 8 scenarios on the pinned engine, and 9
-deliberate mistakes each failed at least one scenario (`crates/mm-bridge/tests/specs.rs`). The
-vectors come from an independent reference model, not from the engine. Model:
-`muse-spark-1.3` (standard tier; the spec is unpublished), up to 3 attempts, validator-only
-repair feedback, 3 runs per effort.
+Our own spec (`specs/chw_plant_reset/`): trim and respond with a staging hold, driving the
+chilled-water supply temperature and differential pressure setpoints.
+
+**Validation before any model saw it:**
+- A hand-built 33-block reference graph passes all 10 scenarios on the pinned engine.
+- Twelve deliberate mistakes each fail at least one scenario (`crates/mm-bridge/tests/specs.rs`).
+- The vectors come from an independent reference model, not from the engine.
+
+**Run setup:** `muse-spark-1.3`, the standard tier (the spec is unpublished); up to 3 attempts;
+validator-only repair feedback; 3 runs per effort.
 
 | Task version | Effort | First try | After repair | Best scenarios per run |
 | --- | --- | --- | --- | --- |
-| v1 | medium | 0 of 3 | 1 of 3 | 1, 8, 3 of 8 |
-| v1 | high | 0 of 3 | 1 of 3 | 8, 1, 3 of 8 |
-| v2 | medium | 0 of 3 | 2 of 3 | 8, 1, 8 of 8 |
-| v2 | high | 0 of 3 | 3 of 3 | 8, 8, 8 of 8 |
+| v1 (prose) | medium | 0 of 3 | 0 of 3 | 8, 1, 8 of 10 |
+| v1 (prose) | high | 0 of 3 | 1 of 3 | 1, 10, 8 of 10 |
+| v2 (edge instants stated, plus a structural hint) | medium | 0 of 3 | 0 of 3 | 7, 8, 8 of 10 |
+| v2 (edge instants stated, plus a structural hint) | high | 0 of 3 | 0 of 3 | 8, 8, 8 of 10 |
 
-Constant baselines pass 0 of 8 scenarios.
+Constant baselines pass 0 of 10 scenarios.
 
-- **No first draft passed, in 12 runs.**
-- **Feedback loops are the main structural weakness.** In v2 every first draft used
-  `Discrete.TriggeredSampler` as the stored copy in the trim-and-respond feedback loop. A
-  triggered sampler passes its input through at the trigger instant, so the loop is still
-  algebraic and the engine refuses it. A unit delay is needed. This happened even though the v2
-  task says the stored copy may only change at updates.
-- **v1 also missed edge-instant timing.** The first change landed one update late. Requests
-  that changed at an update instant were read one update late. An update at the instant staging
-  starts was not frozen. The v1 prose left these open, so v2 states them with worked times. The
-  v1 numbers mix model error with spec ambiguity.
-- **v1 repair was hampered by our bug.** For an algebraic loop the engine returns no diagnostic
-  records (engine #340), and our repair message dropped the engine's explanation. That is fixed
-  in v2, which is part of why repair recovers.
+- **1 of 12 runs produced a fully passing graph, and none passed on the first try.**
+- **A second staging start is missed.** This is the most common replay failure. When staging
+  starts again soon after the first hold ends, it should freeze updates again. The model's hold
+  block keeps its default false-hold duration, which equals the true-hold duration, so it ignores
+  a new start for 900 s after release. The task says each staging start freezes updates.
+- **The feedback loop's store is the wrong block.** Most first drafts are refused by the engine
+  as algebraic loops. In v2, every first draft in the earlier batch used `Discrete.TriggeredSampler`
+  as the store; a triggered sampler passes its input through at the trigger instant, so it
+  cannot break the loop. A unit delay is needed.
+- **v1 misses edge instants.** The first change lands one update late, and a request that
+  changes at an update instant is read one update late. v2 states these instants and adds one
+  structural hint: the stored value may only change at updates.
+
+**An earlier version of these results was wrong.** It used 8 scenarios whose input changes all
+fell on the update grid and had a single staging pulse each, so a wrong false-hold duration
+went undetected. On those weaker vectors it reported after-repair passes of 2 of 6 (v1) and 5 of
+6 (v2). Review caught this; those numbers are withdrawn.
+
+**Repair feedback bug, now fixed.** Engine refusals of algebraic loops carry no diagnostic records
+(engine #340). The repair message dropped the engine's explanation in the earliest runs; it is
+passed on in all runs reported here.
 
 ## Held-out test set
 

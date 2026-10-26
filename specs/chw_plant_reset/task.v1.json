@@ -1,0 +1,106 @@
+{
+  "name": "chw_plant_reset",
+  "description": "Chilled-water plant reset. Keep one reset value between 0 and 1 and drive two plant setpoints from it: at 1 the plant runs at design (coldest supply water, highest differential pressure); lower values first let the supply water warm, then lower the pressure. While the plant is disabled the reset value is 1, effective immediately. After the plant is enabled the value stays at 1 until the start delay plus one update period has passed; this delay starts again at every re-enable. The value only changes at multiples of the update period counted from time 0. At each update read the number of requests: if it is greater than the ignored count, the change is the trim plus respond_amount for each request above the ignored count, with that respond part limited to respond_cap; otherwise the change is just the trim. Add the change to the value from the previous update and keep the result between 0 and 1. When chiller staging starts, freeze the value for at least staging_hold, or for as long as staging lasts if that is longer. The supply temperature setpoint is the warmest temperature when the reset value is 0.5 or lower and moves linearly to the design temperature at 1. The pressure setpoint is the lowest pressure at 0 and moves linearly to the design pressure at 0.5, staying there above 0.5.",
+  "inputs": [
+    {
+      "name": "nReqRes",
+      "type": "int",
+      "unit": "1",
+      "meaning": "Number of chilled-water reset requests from the air handlers"
+    },
+    {
+      "name": "u1Ena",
+      "type": "bool",
+      "unit": "bool",
+      "meaning": "The chilled-water plant is enabled"
+    },
+    {
+      "name": "u1StaPro",
+      "type": "bool",
+      "unit": "bool",
+      "meaning": "A chiller staging change is in progress"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "TSupSet",
+      "type": "real",
+      "unit": "K",
+      "meaning": "Chilled-water supply temperature setpoint"
+    },
+    {
+      "name": "dpSet",
+      "type": "real",
+      "unit": "Pa",
+      "meaning": "Chilled-water differential pressure setpoint"
+    }
+  ],
+  "params": [
+    {
+      "name": "design_supply_temperature",
+      "value": 278.71,
+      "unit": "K",
+      "meaning": "Supply temperature setpoint at a reset value of 1"
+    },
+    {
+      "name": "warmest_supply_temperature",
+      "value": 282.15,
+      "unit": "K",
+      "meaning": "Supply temperature setpoint at a reset value of 0.5 or lower"
+    },
+    {
+      "name": "design_pressure",
+      "value": 239125.0,
+      "unit": "Pa",
+      "meaning": "Pressure setpoint at a reset value of 0.5 or higher"
+    },
+    {
+      "name": "lowest_pressure",
+      "value": 95650.0,
+      "unit": "Pa",
+      "meaning": "Pressure setpoint at a reset value of 0"
+    },
+    {
+      "name": "start_delay",
+      "value": 900.0,
+      "unit": "s",
+      "meaning": "Wait after enable, before the extra update period, before any change"
+    },
+    {
+      "name": "update_period",
+      "value": 300.0,
+      "unit": "s",
+      "meaning": "The reset value changes only at multiples of this period"
+    },
+    {
+      "name": "ignored_requests",
+      "value": 2.0,
+      "unit": "1",
+      "meaning": "Request counts up to this value do not count"
+    },
+    {
+      "name": "trim",
+      "value": -0.02,
+      "unit": "1",
+      "meaning": "Change per update when not responding, and part of every change"
+    },
+    {
+      "name": "respond_amount",
+      "value": 0.03,
+      "unit": "1",
+      "meaning": "Added per request above the ignored count"
+    },
+    {
+      "name": "respond_cap",
+      "value": 0.07,
+      "unit": "1",
+      "meaning": "Largest total the respond part may add in one update"
+    },
+    {
+      "name": "staging_hold",
+      "value": 900.0,
+      "unit": "s",
+      "meaning": "Minimum time updates stay frozen after staging starts"
+    }
+  ]
+}

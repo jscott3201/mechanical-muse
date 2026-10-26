@@ -6,7 +6,11 @@
 //!   [--model muse-spark-1.3-contributor] [--effort medium] [--attempts 3] [--runs 1] \
 //!   [--feedback validator-only|with-vectors] [--exemplars 0..8] [--concurrency 4] \
 //!   [--out runs/<name>.json] [--dry-run] [--show <ID>]
+//! mm-bench --spec specs/<name> [--task task.json] [--model muse-spark-1.3] [--effort ...] ...
 //! ```
+//! `--spec` runs one of our own validated specs. It is unpublished work, so it defaults to the
+//! standard model and refuses the contributor tier (which may train on inputs).
+//!
 //! The key comes from `MODEL_API_KEY` (`make bench` maps the local `.env`). `--dry-run` makes no
 //! model call: it scrubs every task, checks for leaks and computes the baselines.
 
@@ -119,14 +123,24 @@ async fn main() -> Result<(), Error> {
     let mut exemplars = Vec::new();
     let mut exemplar_ids = Vec::new();
     let exemplar_count: usize = args.number("exemplars", 0)?;
+    let mut input_hashes: Vec<(String, String)> = Vec::new();
+    let is_spec = args.0.contains_key("spec");
     let (subset, library_commit) = if let Some(spec) = args.0.get("spec") {
         // One of our own sequence specs: task.json and vectors.json, already validated against
         // a reference graph (crates/mm-bridge/tests/specs.rs). The task is ours, so no scrubbing.
         let dir = PathBuf::from(spec);
-        let task: mm_agent::TaskSpec =
-            serde_json::from_slice(&std::fs::read(dir.join("task.json"))?)?;
-        let vectors: mm_bridge::VectorFile =
-            serde_json::from_slice(&std::fs::read(dir.join("vectors.json"))?)?;
+        let task_bytes = std::fs::read(dir.join(args.get("task", "task.json")))?;
+        let vector_bytes = std::fs::read(dir.join("vectors.json"))?;
+        input_hashes.push((
+            "task".to_owned(),
+            prompt_hash(&String::from_utf8_lossy(&task_bytes)),
+        ));
+        input_hashes.push((
+            "vectors".to_owned(),
+            prompt_hash(&String::from_utf8_lossy(&vector_bytes)),
+        ));
+        let task: mm_agent::TaskSpec = serde_json::from_slice(&task_bytes)?;
+        let vectors: mm_bridge::VectorFile = serde_json::from_slice(&vector_bytes)?;
         if exemplar_count > 0 {
             bail!("--exemplars needs --library; spec runs are zero-shot for now");
         }
@@ -209,7 +223,15 @@ async fn main() -> Result<(), Error> {
     };
     let config = BenchConfig {
         author: AuthorConfig {
-            model: args.get("model", "muse-spark-1.3-contributor"),
+            model: if is_spec {
+                let model = args.get("model", "muse-spark-1.3");
+                if model.ends_with("-contributor") {
+                    bail!("--spec tasks are unpublished: use a standard (non-contributor) model");
+                }
+                model
+            } else {
+                args.get("model", "muse-spark-1.3-contributor")
+            },
             effort: effort(&args.get("effort", "medium"))?,
             max_output_tokens: args.number("max-output-tokens", 32_000)?,
             max_attempts: args.number("attempts", 3)?,
@@ -260,6 +282,7 @@ async fn main() -> Result<(), Error> {
         config,
         engine_rev: ENGINE_REV,
         prompt_hash: hash,
+        input_hashes,
         rules: rule_ids,
         skipped,
         baseline_constant_false: constant_false,

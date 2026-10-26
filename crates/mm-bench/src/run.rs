@@ -169,6 +169,9 @@ pub struct RunRecord {
     pub config: BenchConfig,
     pub engine_rev: &'static str,
     pub prompt_hash: String,
+    /// Hashes of the task and vector files for spec runs (empty for library runs, which pin
+    /// the library commit instead).
+    pub input_hashes: Vec<(String, String)>,
     pub rules: Vec<String>,
     /// Rules dropped before running and why (e.g. tier B pseudo-code that names a class).
     pub skipped: Vec<(String, String)>,
