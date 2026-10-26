@@ -5,6 +5,11 @@
 //! applies from the first tick with `t >= step.t` and holds until the next; every input is
 //! submitted on every frame; Reals compare within a tolerance (default 1e-9), everything else
 //! exactly; the first violation ends the scenario.
+//!
+//! Every verdict must rest on checks that ran: a file with no scenarios, a scenario with no
+//! expectations, or a window that contains no tick is rejected before anything runs.
+//! Tick times are `k as f64 * step_s`; with a fractional `step_s` the last tick can fall short of
+//! `horizon_s` by rounding, so our own specs use whole-second steps.
 
 use std::collections::BTreeMap;
 
@@ -18,6 +23,9 @@ use crate::stepper::{FrameStepper, StepError, type_name};
 use crate::vectors::{Clock, Expectation, InputSpec, Scalar, Scenario, VectorFile};
 
 const DEFAULT_TOLERANCE: f64 = 1e-9;
+
+/// The library's vector format, and ours (the same shape plus optional `defaults`).
+pub const KNOWN_SCHEMAS: &[&str] = &["cxf-library/vectors/v1", "mechanical-muse/vectors/v1"];
 
 /// Safety limits, the same as the library's old verifier.
 #[derive(Debug, Clone, Copy)]
@@ -64,10 +72,13 @@ pub struct ReplayReport {
 }
 
 impl ReplayReport {
+    /// True only when there is at least one scenario and every one passed.
     pub fn passed(&self) -> bool {
-        self.scenarios
-            .iter()
-            .all(|s| s.outcome == ScenarioOutcome::Pass)
+        !self.scenarios.is_empty()
+            && self
+                .scenarios
+                .iter()
+                .all(|s| s.outcome == ScenarioOutcome::Pass)
     }
 
     pub fn pass_count(&self) -> usize {
@@ -138,6 +149,9 @@ pub fn replay(
 /// Validates the clock, windows and limits; returns the last tick index.
 fn check_file(vectors: &VectorFile, limits: &ReplayLimits) -> Result<u64, ReplayError> {
     let invalid = |code, detail: String| Err(ReplayError::Invalid { code, detail });
+    if !KNOWN_SCHEMAS.contains(&vectors.schema.as_str()) {
+        return invalid("unknown-schema", format!("schema {}", vectors.schema));
+    }
     let Clock { step_s, horizon_s } = vectors.clock;
     if !(step_s.is_finite() && step_s > 0.0) {
         return invalid(
@@ -170,20 +184,58 @@ fn check_file(vectors: &VectorFile, limits: &ReplayLimits) -> Result<u64, Replay
     if total > limits.max_samples_total {
         return invalid("too-many-samples", format!("{total} ticks in total"));
     }
+    // A verdict must rest on checks that actually ran: no empty files, no empty expectation
+    // lists, and every window must contain at least one tick.
+    if vectors.scenarios.is_empty() {
+        return invalid("no-scenarios", "the file has no scenarios".into());
+    }
     for scenario in &vectors.scenarios {
+        if scenario.expect.is_empty() {
+            return invalid(
+                "no-expectations",
+                format!("{} checks nothing", scenario.name),
+            );
+        }
         for e in &scenario.expect {
+            let what = format!(
+                "{}: {} window {}..{}",
+                scenario.name, e.output, e.from_s, e.to_s
+            );
             if !(e.from_s.is_finite() && e.to_s.is_finite() && e.from_s <= e.to_s) {
-                return invalid(
-                    "bad-window",
-                    format!(
-                        "{}: {} window {}..{}",
-                        scenario.name, e.output, e.from_s, e.to_s
-                    ),
-                );
+                return invalid("bad-window", what);
+            }
+            if first_tick_in(e.from_s, e.to_s, step_s, last).is_none() {
+                return invalid("window-misses-ticks", format!("{what} contains no tick"));
+            }
+            if let Some(tol) = e.tolerance {
+                if !(tol.is_finite() && tol >= 0.0) {
+                    return invalid("bad-tolerance", format!("{what}: tolerance {tol}"));
+                }
+                if matches!(e.equals, Scalar::Bool(_)) {
+                    return invalid(
+                        "bad-tolerance",
+                        format!("{what}: tolerance on a Boolean expectation"),
+                    );
+                }
             }
         }
     }
     Ok(last)
+}
+
+/// The first tick index `k <= last` whose time `k * step_s` lies in `[from_s, to_s]`, using the
+/// same tick-time arithmetic as the replay loop (the candidates around the estimate absorb
+/// rounding in the division).
+fn first_tick_in(from_s: f64, to_s: f64, step_s: f64, last: u64) -> Option<u64> {
+    let estimate = (from_s / step_s).ceil().max(0.0);
+    if estimate > last as f64 + 1.0 {
+        return None;
+    }
+    let start = (estimate as u64).saturating_sub(1);
+    (start..=last.min(start + 2)).find(|&k| {
+        let t = k as f64 * step_s;
+        t >= from_s && t <= to_s
+    })
 }
 
 fn error(code: &str, detail: String, t: Option<f64>) -> ScenarioOutcome {
@@ -240,8 +292,18 @@ fn build_events(stepper: &FrameStepper, scenario: &Scenario) -> Result<Events, S
             ));
         }
     }
+    // A default only fills an input the scenario leaves unset; two defaults for one input are
+    // a mistake.
+    let mut defaulted = std::collections::BTreeSet::new();
     for (name, scalar) in &scenario.defaults {
         let path = resolve(name)?;
+        if !defaulted.insert(path.clone()) {
+            return Err(error(
+                "duplicate-input",
+                format!("{path} has two defaults"),
+                None,
+            ));
+        }
         let value = convert(&path, *scalar)?;
         events
             .entry(path)
@@ -327,7 +389,7 @@ fn run_scenario(
                         ScenarioOutcome::Fail {
                             t,
                             output: expect.output.clone(),
-                            expected: scalar_wire(expect.equals),
+                            expected: expected_wire(expect.equals, actual),
                             actual: WireValue::from_value(actual),
                             from_s: expect.from_s,
                             to_s: expect.to_s,
@@ -367,6 +429,12 @@ fn to_value(scalar: Scalar, ty: ValueType) -> Option<Value> {
 
 fn matches(expect: &Expectation, actual: &Value) -> Result<bool, String> {
     let tolerance = expect.tolerance.unwrap_or(DEFAULT_TOLERANCE);
+    if expect.tolerance.is_some() && !matches!(actual, Value::Real(_)) {
+        return Err(format!(
+            "{} has a tolerance but the output is not a Real",
+            expect.output
+        ));
+    }
     match (expect.equals, actual) {
         (Scalar::Bool(want), Value::Boolean(got)) => Ok(want == *got),
         (Scalar::Number(want), Value::Real(got)) => Ok((got - want).abs() <= tolerance),
@@ -379,9 +447,15 @@ fn matches(expect: &Expectation, actual: &Value) -> Result<bool, String> {
     }
 }
 
-fn scalar_wire(scalar: Scalar) -> WireValue {
-    match scalar {
-        Scalar::Bool(b) => WireValue::Boolean(b),
-        Scalar::Number(x) => WireValue::Real(x),
+/// The expected value, typed like the output it was compared with.
+fn expected_wire(scalar: Scalar, actual: &Value) -> WireValue {
+    match (scalar, actual) {
+        (Scalar::Bool(b), _) => WireValue::Boolean(b),
+        (Scalar::Number(x), Value::Integer(_)) => WireValue::Integer(x as i64),
+        (Scalar::Number(x), Value::Enum { class, .. }) => WireValue::Enum {
+            class: class.0,
+            ordinal: x as u32,
+        },
+        (Scalar::Number(x), _) => WireValue::Real(x),
     }
 }

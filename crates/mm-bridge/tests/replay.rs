@@ -113,6 +113,11 @@ fn a_wrong_threshold_fails_a_scenario() {
     let broken = text.replacen("\"@value\": \"3.0\"", "\"@value\": \"30.0\"", 1);
     let report = replay(broken.as_bytes(), &vectors, &ReplayLimits::default()).unwrap();
     assert!(!report.passed());
+    // A real Fail on yFault, not merely an error.
+    assert!(report.scenarios.iter().any(|s| matches!(
+        &s.outcome,
+        ScenarioOutcome::Fail { output, .. } if output == "yFault"
+    )));
 }
 
 #[test]
@@ -277,4 +282,71 @@ fn whole_library_replays_on_the_pinned_engine() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+/// Files that would let a verdict rest on checks that never ran are rejected up front.
+#[test]
+fn vacuous_checks_are_rejected() {
+    let reject = |edit: &dyn Fn(&mut serde_json::Value)| {
+        let (cxf, vectors) = rule("AHU-0005"); // step_s 300, horizon_s 5400
+        let mut v = serde_json::to_value(&vectors).unwrap();
+        edit(&mut v);
+        let file: VectorFile = serde_json::from_value(v).unwrap();
+        replay(&cxf, &file, &ReplayLimits::default())
+            .unwrap_err()
+            .code()
+            .to_owned()
+    };
+    let window = |from: f64, to: f64| {
+        move |v: &mut serde_json::Value| {
+            v["scenarios"][0]["expect"][0]["from_s"] = serde_json::json!(from);
+            v["scenarios"][0]["expect"][0]["to_s"] = serde_json::json!(to);
+        }
+    };
+    assert_eq!(reject(&window(100.0, 200.0)), "window-misses-ticks");
+    assert_eq!(reject(&window(6000.0, 9000.0)), "window-misses-ticks");
+    assert_eq!(reject(&window(-900.0, -1.0)), "window-misses-ticks");
+    assert_eq!(reject(&window(200.0, 100.0)), "bad-window");
+    assert_eq!(
+        reject(&|v| v["scenarios"][0]["expect"] = serde_json::json!([])),
+        "no-expectations"
+    );
+    assert_eq!(
+        reject(&|v| v["scenarios"] = serde_json::json!([])),
+        "no-scenarios"
+    );
+    assert_eq!(
+        reject(&|v| v["schema"] = serde_json::json!("bogus/v9")),
+        "unknown-schema"
+    );
+    assert_eq!(
+        reject(&|v| v["scenarios"][0]["expect"][0]["tolerance"] = serde_json::json!(0.5)),
+        "bad-tolerance",
+        "tolerance on a Boolean expectation"
+    );
+}
+
+#[test]
+fn windows_on_tick_edges_are_accepted() {
+    // A one-tick window exactly at t = 300 and one at the horizon both contain a tick.
+    let (cxf, vectors) = rule("AHU-0005");
+    for (from, to) in [(300.0, 300.0), (5400.0, 5400.0), (0.0, 0.0)] {
+        let mut v = serde_json::to_value(&vectors).unwrap();
+        v["scenarios"][0]["expect"][0]["from_s"] = serde_json::json!(from);
+        v["scenarios"][0]["expect"][0]["to_s"] = serde_json::json!(to);
+        let file: VectorFile = serde_json::from_value(v).unwrap();
+        assert!(
+            replay(&cxf, &file, &ReplayLimits::default()).is_ok(),
+            "{from}..{to}"
+        );
+    }
+}
+
+#[test]
+fn an_empty_report_is_not_a_pass() {
+    let report = mm_bridge::ReplayReport {
+        content_id: "cxf:none".into(),
+        scenarios: vec![],
+    };
+    assert!(!report.passed());
 }
