@@ -1,7 +1,10 @@
-# Common commands. Rust checks match the Stop hook; web targets arrive with web/.
-.PHONY: check fmt fmt-check clippy test test-live live bench env-keys run fetch
+# Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
+# (.github/workflows/ci.yml). Web targets arrive with web/.
+.PHONY: check ci fmt fmt-check clippy test doctest specs lint deny test-live live bench env-keys run fetch
 
 check: fmt-check clippy test
+
+ci: lint clippy test doctest specs deny
 
 fmt:
 	cargo fmt --all
@@ -12,8 +15,29 @@ fmt-check:
 clippy:
 	cargo clippy --workspace --all-targets -- -D warnings
 
+# nextest when installed (each test in its own process, see .config/nextest.toml), else cargo test.
 test:
-	cargo test --workspace
+	@if cargo nextest --version >/dev/null 2>&1; then \
+		cargo nextest run --workspace --locked; \
+	else \
+		cargo test --workspace --locked; \
+	fi
+
+# nextest does not run doctests.
+doctest:
+	cargo test --doc --workspace --locked
+
+# Each spec's reference model self-checks and must regenerate its committed vectors exactly.
+specs:
+	@for ref in specs/*/reference.py; do [ -f "$$ref" ] || continue; python3 -I "$$ref" || exit 1; done
+	git diff --exit-code -- specs/
+
+lint: fmt-check
+	bash scripts/ci/check-file-size.sh
+	bash scripts/ci/check-no-secrets.sh
+
+deny:
+	cargo deny --locked check
 
 # Needs BOPTEST up and/or MODEL_API_KEY.
 test-live:

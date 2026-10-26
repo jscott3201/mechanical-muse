@@ -10,7 +10,7 @@ use serde_json::json;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 
-const KEY: &str = "LLM_test_key_do_not_echo";
+const KEY: &str = "fake-test-credential-do-not-echo";
 
 /// Serves one canned HTTP response per connection, in order, and counts requests.
 async fn serve(responses: Vec<(u16, &'static str, String)>) -> (String, Arc<AtomicUsize>) {

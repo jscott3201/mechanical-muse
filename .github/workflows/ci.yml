@@ -1,0 +1,158 @@
+name: CI
+
+# Linux CI on GitHub-hosted Ubuntu 24.04 runners, adapted from rusty-bacnet's ci.yml. Each job
+# installs the toolchain that rust-toolchain.toml pins; tools come from .github/ci-pins.env and are
+# checked against their SHA-256. Actions are pinned to commit SHAs. See docs/ci.md.
+#
+#   Lint    rustfmt, the file-size cap, the no-secret scan, the pins file format
+#   Clippy  every target, warnings denied
+#   Test    nextest (ci profile) and doctests; each spec's reference model self-checks and must
+#           regenerate its committed vectors byte for byte
+#   Deny    advisories, licenses, duplicate versions, dependency sources
+#   CI OK   the required status: fails if any job above did not succeed
+#
+# Everything runs offline from the Meta API and BOPTEST: live tests stay #[ignore]d.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  schedule:
+    # Advisory databases change without code changes.
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A newer push to the same PR or branch cancels the superseded run; pushes to main never do,
+  # so every merge gets its own result.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  # CI builds start cold or from a restored cache; incremental state is dead weight.
+  CARGO_INCREMENTAL: "0"
+  # Test binaries without native debug info: less codegen, linking and cache.
+  CARGO_PROFILE_TEST_DEBUG: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - &checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Install the channel rust-toolchain.toml pins, with the minimal profile plus its listed
+      # components, make it the default, and drop the image's own toolchains so the cache key
+      # does not move with runner image updates.
+      - &toolchain
+        name: Install the pinned Rust toolchain
+        run: |
+          channel=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
+          components=$(sed -n 's/^components = \[\(.*\)\]$/\1/p' rust-toolchain.toml | tr -d '" ')
+          [[ $channel =~ ^[0-9A-Za-z.-]+$ && $components =~ ^[a-z,-]+$ ]] \
+            || { echo "::error::no channel or components line in rust-toolchain.toml"; exit 1; }
+          rustup toolchain install "$channel" --profile minimal --component "$components"
+          rustup default "$channel"
+          rustup toolchain list | awk -v ours="$channel-" 'index($1, ours) != 1 { print $1 }' \
+            | xargs -r -n1 rustup toolchain uninstall
+          rustc -vV
+      - name: Check the pins file
+        run: |
+          pins=.github/ci-pins.env
+          fail=0
+          if bad=$(grep -nvE '^(#.*|[A-Z0-9_]+=[0-9A-Za-z][0-9A-Za-z.-]*)?$' "$pins"); then
+            echo "::error::malformed lines in $pins:"; echo "$bad"; fail=1
+          fi
+          if bad=$(grep -nE '^[A-Z0-9_]+_SHA256=' "$pins" | grep -vE '^[0-9]+:[A-Z0-9_]+_SHA256=[0-9a-f]{64}$'); then
+            echo "::error::digests in $pins that are not 64 lowercase hex digits:"; echo "$bad"; fail=1
+          fi
+          channel=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
+          if ! [[ $channel =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::rust-toolchain.toml's channel is \"$channel\", not an exact release"; fail=1
+          fi
+          exit $fail
+      - name: Rustfmt
+        run: cargo fmt --all --check
+      - name: File-size cap (500 lines of code)
+        run: bash scripts/ci/check-file-size.sh
+      - name: No-secret scan
+        run: bash scripts/ci/check-no-secrets.sh
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - *checkout
+      - *toolchain
+      - &cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          cache-bin: false
+          # Only main saves caches; PRs restore them (a PR's own saves would be scoped to it).
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Clippy (all targets, warnings denied)
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - *checkout
+      - *toolchain
+      - *cache
+      - name: Install cargo-nextest
+        run: bash scripts/ci/install-tools.sh cargo-nextest
+      # nextest runs each test in its own process (.config/nextest.toml); it does not run
+      # doctests, so cargo test --doc covers those.
+      - name: Tests (nextest)
+        run: cargo nextest run --workspace --locked --profile ci
+      - name: Doctests
+        run: cargo test --doc --workspace --locked
+      # A spec's vectors are generated by its independent reference model. The model must pass
+      # its own self-check and reproduce the committed vectors exactly (determinism, and no
+      # hand edits to vectors.json).
+      - name: Spec reference models
+        run: |
+          shopt -s nullglob
+          for ref in specs/*/reference.py; do
+            echo "== $ref"
+            python3 -I "$ref"
+          done
+          git diff --exit-code -- specs/
+
+  deny:
+    name: Deny
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - *checkout
+      - name: Install cargo-deny
+        run: bash scripts/ci/install-tools.sh cargo-deny
+      - name: Advisories, licenses, bans, sources
+        run: cargo deny --locked check
+
+  ci-ok:
+    name: CI OK
+    if: ${{ always() }}
+    needs: [lint, clippy, test, deny]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every required job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$NEEDS" | jq -e 'all(to_entries[]; .value.result == "success")' >/dev/null
