@@ -1,0 +1,473 @@
+{
+  "schema": "cxf-library/points/v1",
+  "equipment": "ahu",
+  "namespaces": {
+    "brick": {
+      "iri": "https://brickschema.org/schema/Brick#",
+      "verified_version": "1.4.4"
+    },
+    "s223": {
+      "iri": "http://data.ashrae.org/standard223#",
+      "verified_version": "1.0.0-ppr.2.1"
+    },
+    "s223_g36": {
+      "iri": "http://data.ashrae.org/standard223/1.0/extensions/g36#",
+      "verified_version": "1.0.0-ppr.2.1"
+    },
+    "quantitykind": {
+      "iri": "http://qudt.org/vocab/quantitykind/",
+      "verified_version": "QUDT 3.1.4"
+    },
+    "unit": {
+      "iri": "http://qudt.org/vocab/unit/",
+      "verified_version": "QUDT 3.1.4"
+    }
+  },
+  "notes": "Brick terms were checked against Brick 1.4.4. ASHRAE 223 terms were checked against the public-review artifact 223p-1.0.0-ppr2.1.ttl (owl:versionInfo 1.0.0-ppr.2.1), including its G36 extension and, where noted, the guideline36-2021-A-9 reference model (github.com/open223/models.open223.info). This artifact is a compatibility baseline, not the final published standard. provisional=true marks mappings with genuine ambiguity or unattested patterns; every s223 entry additionally awaits confirmation against the formal ASHRAE 223 standard text, which we do not yet hold.",
+  "points": [
+    {
+      "name": "sat",
+      "description": "Supply (discharge) air temperature",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": "Supply_Air_Temperature_Sensor",
+      "s223": {
+        "pattern": "Sensor observes QuantifiableObservableProperty attached to the AHU supply-air OutletConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Fluid-Air",
+        "aspects": [
+          "Role-Supply"
+        ]
+      },
+      "provisional": false,
+      "notes": "Brick Discharge_Air_Temperature_Sensor is brick:aliasOf this class. 223P pattern verbatim from reference instance MultipleZoneAhu-sa-temp; medium comes from hasMedium on the owning ConnectionPoint."
+    },
+    {
+      "name": "sat_sp",
+      "description": "Supply air temperature setpoint",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": "Supply_Air_Temperature_Setpoint",
+      "s223": {
+        "pattern": "QuantifiableActuatableProperty linked from the observed property via hasSetpoint",
+        "property_class": "QuantifiableActuatableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Fluid-Air",
+        "aspects": [
+          "Aspect-Setpoint"
+        ]
+      },
+      "provisional": false,
+      "notes": "Aspect-Setpoint is inferred by the SHACL rule on QuantifiablePropertyShape when hasSetpoint targets the property; asserting it explicitly is safe but redundant under a reasoner."
+    },
+    {
+      "name": "mat",
+      "description": "Mixed air temperature (after OA and RA mix)",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": "Mixed_Air_Temperature_Sensor",
+      "s223": {
+        "pattern": "Sensor observes QuantifiableObservableProperty located topologically downstream of the OA/RA mixing junction via hasObservationLocation",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Fluid-Air",
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "223P has no mixed-air role or aspect (EnumerationKind-Role has 21 members, none mixed-air); the reference model disambiguates purely by observation location. A property-only export loses the 'mixed' semantics — topology must accompany it."
+    },
+    {
+      "name": "oat",
+      "description": "Outdoor air temperature",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": "Outside_Air_Temperature_Sensor",
+      "s223": {
+        "pattern": "Sensor observes QuantifiableObservableProperty at the outdoor-air intake",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Fluid-Air",
+        "aspects": [
+          "Role-OutdoorAirIntake"
+        ]
+      },
+      "provisional": false,
+      "notes": "Brick spelling is Outside_ (Outdoor_Air_Temperature_Sensor does not exist). Role-OutdoorAirIntake is 223P's only outdoor role; used by reference instance oa-temp."
+    },
+    {
+      "name": "rat",
+      "description": "Return air temperature",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": "Return_Air_Temperature_Sensor",
+      "s223": {
+        "pattern": "Sensor observes QuantifiableObservableProperty at the AHU return-air InletConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Fluid-Air",
+        "aspects": [
+          "Role-Return"
+        ]
+      },
+      "provisional": false,
+      "notes": "Verbatim from reference instance MultipleZoneAhu-ra-temp."
+    },
+    {
+      "name": "htg_vlv_cmd",
+      "description": "Heating coil valve command (0 = closed, 100 = full open)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": "Valve_Position_Command",
+      "s223": {
+        "pattern": "QuantifiableActuatableProperty on the hot-water Valve via hasProperty; Actuator actuatedByProperty this command and actuates the valve",
+        "property_class": "QuantifiableActuatableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "PERCENT",
+        "medium": null,
+        "aspects": [
+          "Binary-Position"
+        ]
+      },
+      "provisional": true,
+      "notes": "Brick has no Heating_Valve_Command; attach Valve_Position_Command via isPointOf to a brick:Heating_Valve / Hot_Water_Valve (coil carries s223 hasRole Role-Heating). Provisional only for the class choice: brick:Heating_Command is the alternative if the point is abstract heating demand rather than physical valve position. 223P side verified at g36:HotWaterValveOrShape1; Binary-Position as an aspect on an analog command is counterintuitive but attested."
+    },
+    {
+      "name": "clg_vlv_cmd",
+      "description": "Cooling coil valve command (0 = closed, 100 = full open)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": "Valve_Position_Command",
+      "s223": {
+        "pattern": "QuantifiableActuatableProperty on the chilled-water Valve via hasProperty",
+        "property_class": "QuantifiableActuatableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "PERCENT",
+        "medium": null,
+        "aspects": [
+          "Binary-Position"
+        ]
+      },
+      "provisional": true,
+      "notes": "Attach via isPointOf to brick:Cooling_Valve / Chilled_Water_Valve (coil: s223 hasRole Role-Cooling). Same class-choice caveat as htg_vlv_cmd (brick:Cooling_Command for abstract demand). 223P verified at g36:ChilledWaterValveOrShape1 and instance MultipleZoneAhu-clg-coil-valve-command."
+    },
+    {
+      "name": "oa_dmpr_cmd",
+      "description": "Outdoor air damper command (0 = closed, 100 = full open)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": "Damper_Position_Command",
+      "s223": {
+        "pattern": "QuantifiableActuatableProperty on the Damper via hasProperty; Actuator actuates the damper",
+        "property_class": "QuantifiableActuatableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "PERCENT",
+        "medium": null,
+        "aspects": [
+          "Binary-Position"
+        ]
+      },
+      "provisional": false,
+      "notes": "Attach via isPointOf to brick:Outside_Damper or Economizer_Damper. In the 223P reference model the damper equipment carries hasRole Role-Economizer (Role-OutdoorAirIntake for a non-economizer minimum-OA damper). Verified at g36:DamperOrShape1 and instance MultipleZoneAhu-economizer-oa-damper-command."
+    },
+    {
+      "name": "sf_status",
+      "description": "Supply fan run status",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "Fan_On_Off_Status",
+      "s223": {
+        "pattern": "EnumeratedObservableProperty on the Fan via hasProperty",
+        "property_class": "EnumeratedObservableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Binary-OnOff"
+      },
+      "provisional": false,
+      "notes": "Attach via isPointOf to brick:Supply_Fan. Deliberately not brick:Run_Status — its inherited definition routes equipment run status to the On/Off branch. 223P: hasEnumerationKind Binary-OnOff (OnOff-On/OnOff-Off), verified at instance MultipleZoneAhu-sa-fan-start-status; fan carries hasRole Role-Supply."
+    },
+    {
+      "name": "sf_speed",
+      "description": "Supply fan speed (VFD feedback)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": "Speed_Sensor",
+      "s223": {
+        "pattern": "QuantifiableObservableProperty on the Fan via hasProperty",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "PERCENT",
+        "medium": null,
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "Brick unit conflict: Speed_Status is deprecated (1.4.0) in favor of Speed_Sensor, but brick:Speed's applicable units exclude PERCENT, so a %-valued instance fails unit validation; brick:Fan_Speed_Sensor does not exist. Use Fan_Speed_Command if the tag is a commanded-speed readback. 223P side is exact (reference instance MultipleZoneAhu-sa-fan-speed-status: DimensionlessRatio/PERCENT)."
+    },
+    {
+      "name": "dsp",
+      "description": "Duct static pressure (measured in supply duct)",
+      "kind": "real",
+      "unit": "Pa",
+      "qudt_unit": "PA",
+      "brick": "Supply_Air_Static_Pressure_Sensor",
+      "s223": {
+        "pattern": "Sensor observes QuantifiableObservableProperty on the supply duct Connection/ConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Pressure",
+        "unit": "PA",
+        "medium": "Fluid-Air",
+        "aspects": [
+          "Role-Supply"
+        ]
+      },
+      "provisional": true,
+      "notes": "Brick Discharge_Air_Static_Pressure_Sensor is an alias. 223P quantitykind is contested: the reference model asserts plain quantitykind:Pressure, while s223:GaugePressureSensor's SHACL shape (GaugePressure + isDeltaQuantity true) arguably describes duct static better. Following the reference model; confirm against the formal standard text."
+    },
+    {
+      "name": "dsp_sp",
+      "description": "Duct static pressure setpoint",
+      "kind": "real",
+      "unit": "Pa",
+      "qudt_unit": "PA",
+      "brick": "Supply_Air_Static_Pressure_Setpoint",
+      "s223": {
+        "pattern": "QuantifiableActuatableProperty on the supply duct ConnectionPoint, linked via hasSetpoint from dsp",
+        "property_class": "QuantifiableActuatableProperty",
+        "quantitykind": "Pressure",
+        "unit": "PA",
+        "medium": "Fluid-Air",
+        "aspects": [
+          "Aspect-Setpoint"
+        ]
+      },
+      "provisional": true,
+      "notes": "Judgment call vs brick:Duct_Air_Static_Pressure_Setpoint (literally closer name but disconnected from the Supply/Discharge alias pair); chose the Supply form for interoperability. Same Aspect-Setpoint inference caveat as sat_sp."
+    },
+    {
+      "name": "occ_schedule",
+      "description": "Occupancy schedule state (true = scheduled occupied)",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "Occupancy_Command",
+      "s223": {
+        "pattern": "EnumeratedObservableProperty (EnumeratedActuatableProperty if the schedule writes to the controller) on the Zone or AHU",
+        "property_class": "EnumeratedObservableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Occupancy-Occupied"
+      },
+      "provisional": true,
+      "notes": "Neither ontology has a schedule concept. Brick three-way choice by point direction: Occupancy_Command (schedule output driving the unit — our reading), Occupied_Mode_Status (mode read-back), Occupancy_Status (physical room occupancy — wrong here). 223P occupancy enumeration verified from the g36:Zone SHACL shape (Occupied-True/Occupied-False)."
+    },
+    {
+      "name": "zone_dmpr_pos_max",
+      "description": "Highest zone damper position across all zones served by this AHU (host-derived aggregate of zone damper feedback)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "derived": true,
+      "brick": null,
+      "s223": null,
+      "provisional": true,
+      "notes": "Aggregate point, not a physical sensor: the host computes max() over the zone damper positions. Semantic tags belong on the underlying per-zone points (VAV damper position feedback) and will be grounded with the VAV dictionary; tagging the aggregate itself is deferred."
+    },
+    {
+      "name": "override_active",
+      "description": "Manual override active flag",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "Overridden_Status",
+      "s223": {
+        "pattern": "EnumeratedObservableProperty with hasEnumerationKind Binary-Logical on the overridden Equipment",
+        "property_class": "EnumeratedObservableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [
+          "Aspect-OperatingMode"
+        ],
+        "enumerationkind": "Binary-Logical"
+      },
+      "provisional": true,
+      "notes": "Brick exact (Overridden_Status; Override_Command is the write side). 223P has no override vocabulary at all — this pattern is assembled from verified primitives (Binary-Logical + Aspect-OperatingMode) but unattested in the standard or reference models. Highest-priority item for the formal 223 text review."
+    },
+    {
+      "name": "actuator_cmd",
+      "description": "Actuator command for the bound valve or damper (0 = closed, 100 = full open) — template point, one instance bound per monitored actuator",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": null,
+      "s223": null,
+      "provisional": true,
+      "notes": "Template point (HVAC FDD Reference AHU-0020): the rule instantiates once per actuated device, binding this to the device's own command point (oa_dmpr_cmd, htg_vlv_cmd, ...). Semantic tags live on the bound instance (e.g. Brick Damper_Position_Command vs Valve_Position_Command), so the template itself carries none by design."
+    },
+    {
+      "name": "actuator_pos",
+      "description": "Actuator position feedback for the bound valve or damper (0 = closed, 100 = full open) — template point, paired with actuator_cmd",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": null,
+      "s223": null,
+      "provisional": true,
+      "notes": "Template point paired with actuator_cmd; binds the measured position feedback of the same device. Semantic tags live on the bound instance (e.g. Brick Damper_Position_Sensor vs Valve_Position_Sensor), so the template itself carries none by design. No role suffix: position is a measured quantity per the dictionary's suffix convention."
+    },
+    {
+      "name": "zone_reheat_fraction",
+      "description": "Fraction of zones served by this AHU with active reheat (host-derived: zones whose reheat valve command exceeds the host's reheat-active threshold, over total zones reporting)",
+      "kind": "real",
+      "unit": "1",
+      "qudt_unit": "UNITLESS",
+      "derived": true,
+      "brick": null,
+      "s223": null,
+      "provisional": true,
+      "notes": "Aggregate point like zone_dmpr_pos_max: the host computes the fraction over per-zone reheat valve commands (reference point rht_vlv_cmd_all, AHU-0019). Value range 0-1. Semantic tags belong on the underlying per-zone points (VAV reheat valve command) and will be grounded with the VAV dictionary. The reheat-active counting threshold (typically >5%) is host configuration, not part of this dictionary."
+    },
+    {
+      "name": "expected_mode",
+      "description": "Expected AHU operating mode for current conditions (host-derived: determine_g36_mode over oat, zone demands, and the occupancy schedule, per G36 Section 5.16). Integer encoding defined by this library: 1 = HEATING, 2 = ECONOMIZER, 3 = MECHANICAL_COOLING_MIN_OA",
+      "kind": "int",
+      "unit": "1",
+      "qudt_unit": "UNITLESS",
+      "derived": true,
+      "brick": null,
+      "s223": null,
+      "provisional": true,
+      "notes": "First integer point in the dictionary (AHU-0029). The mode enumeration is this library's convention for the derived point, ordered cold-to-hot along the G36 supply-air sequence; neither ontology defines these composite AHU modes, and G36 Section 5.16 states the sequence without numbering it. Hosts map their own mode enum (or compute the mode from scratch) when binding; the three code constants are exposed as rule parameters so a host with a different enum can rebind without editing the graph. Semantic grounding deferred with the other derived aggregates."
+    },
+    {
+      "name": "operating_state",
+      "description": "Current AHU operating state as reported by the control sequence (host-derived integer). Recommended binding: G36 Section 5.16.14's operating-state index OS#1-OS#5; any stable enumeration works, because the only in-library consumer (AHU-0004) counts transitions and never interprets specific values",
+      "kind": "int",
+      "unit": "1",
+      "qudt_unit": "UNITLESS",
+      "derived": true,
+      "brick": null,
+      "s223": null,
+      "provisional": true,
+      "notes": "Distinct from expected_mode: that point is what the mode SHOULD be given conditions (AHU-0029 compares actuators against it); this one is what the sequence says the state IS (AHU-0004 counts how often it changes). Hosts typically read it from the BAS mode/state enum or derive it per G36 Section 5.16.14. Value-level semantics are deliberately unspecified here since only transitions are consumed; a host must simply keep the encoding stable, as any re-mapping mid-stream registers as a spurious transition."
+    },
+    {
+      "name": "zone_dmpr_fraction_open",
+      "description": "Fraction of served zones whose damper command exceeds a high-open threshold",
+      "kind": "real",
+      "unit": "1",
+      "qudt_unit": "UNITLESS",
+      "brick": null,
+      "s223": {
+        "pattern": "QuantifiableObservableProperty, host-computed aggregate",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": null,
+        "medium": null,
+        "aspects": [
+          "derived"
+        ]
+      },
+      "derived": true,
+      "notes": "Aggregate point (zone_reheat_fraction precedent): the host computes the fraction of zones whose damper command exceeds the high-open counting threshold (PNNL-27338 §2.3 uses 90%; host configuration, not dictionary). Value range 0-1. Consumed by AHU-0035 as the cooling-starvation population signal."
+    },
+    {
+      "name": "zone_dmpr_high_avg",
+      "description": "Average damper command over the top half of served zones (dampers sorted descending)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": null,
+      "s223": {
+        "pattern": "QuantifiableObservableProperty, host-computed aggregate",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "PERCENT",
+        "medium": null,
+        "aspects": [
+          "derived"
+        ]
+      },
+      "derived": true,
+      "notes": "Aggregate point: sort every served zone's damper command, average the top half. PNNL-27338 §2.6's population-percentile signal — TOGETHER with zone_dmpr_low_avg it distinguishes a starved trunk (both halves elevated) from a few busy zones (top only). Consumed by AHU-0036; the host documents the zone population like zone_reheat_fraction."
+    },
+    {
+      "name": "zone_dmpr_low_avg",
+      "description": "Average damper command over the bottom half of served zones (dampers sorted descending)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": null,
+      "s223": {
+        "pattern": "QuantifiableObservableProperty, host-computed aggregate",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "PERCENT",
+        "medium": null,
+        "aspects": [
+          "derived"
+        ]
+      },
+      "derived": true,
+      "notes": "Aggregate point, the bottom-half mate of zone_dmpr_high_avg (one sorted pass yields both). Consumed by AHU-0036."
+    },
+    {
+      "name": "clg_vlv_baseline",
+      "description": "Expected cooling-coil valve command for the current operating condition (host-fitted baseline)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": null,
+      "s223": {
+        "pattern": "QuantifiableObservableProperty, host-computed",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "PERCENT",
+        "medium": null,
+        "aspects": [
+          "derived"
+        ]
+      },
+      "derived": true,
+      "notes": "HOST-DERIVED virtual point (cond_split_baseline precedent): the commissioning-period valve command fitted against the load condition (OAT band and supply setpoint), published for the CURRENT condition each tick. The fit window must be known-clean — a baseline fitted on a fouled coil learns the fouling as normal (the SYS-0006 training caveat). Consumed by AHU-0038: under temperature control a fouling coil holds its heat duty by opening the valve, so the hydraulic excess — not the temperatures — is the observable."
+    },
+    {
+      "name": "sf_cmd",
+      "description": "Supply fan run command (true = commanded on)",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "Start_Stop_Command",
+      "s223": {
+        "pattern": "EnumeratedActuatableProperty on the supply Fan via hasProperty",
+        "property_class": "EnumeratedActuatableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Binary-OnOff"
+      },
+      "provisional": false,
+      "notes": "brick:Start_Stop_Command attached via isPointOf to brick:Supply_Fan (pump_cmd precedent — the class is equipment-agnostic and grep-verified in Brick 1.4.4). The command HALF of the sf_status pair; AHU-0039 proof-of-operation compares the two. On VFD-driven fans bind the run enable, not the speed reference (sf_speed carries that)."
+    }
+  ]
+}

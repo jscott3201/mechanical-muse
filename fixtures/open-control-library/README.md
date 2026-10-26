@@ -4,7 +4,8 @@ Copied unmodified from [open-control-library](https://github.com/jscott3201/open
 commit `124427b` (the pin in the README's "Pre-existing dependencies" table), under its MIT OR
 Apache-2.0 license. They are test data, not work done during the hackathon.
 
-Each folder holds one fault rule's `rule.cxf.jsonld` and `vectors.json` from `faults/<family>/<ID>/`.
+Each folder holds one fault rule's `card.md`, `rule.cxf.jsonld` and `vectors.json` from
+`faults/<family>/<ID>/`. `points/` holds the point dictionaries for the families used here.
 
 | Rule | Why it is here |
 | --- | --- |

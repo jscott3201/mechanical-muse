@@ -17,7 +17,7 @@ Everything in this repository was written during the event, starting October 26,
 | Engine bridge: load receipts, frame stepping, vector replay | `crates/mm-bridge` | Working offline: replays all 1,760 library scenarios on the pinned engine |
 | Block-graph schema and CXF emitter | `crates/mm-graph` | Working offline: validator and emitter round-trip all 137 library rules |
 | Muse Spark authoring agent: prompt, Responses client, draft-verify-repair loop | `crates/mm-agent` | Working offline against scripted replies; not yet run against the live API |
-| Library benchmark harness | `crates/` | Planned |
+| Library benchmark harness: scrubbed tasks, baselines, run records | `crates/mm-bench` | First results in `docs/benchmark-results.md` |
 | BOPTEST runtime host | `crates/` | Planned |
 | BACnet device mirror | `crates/` | Planned |
 | Web app | `web/` | Planned |

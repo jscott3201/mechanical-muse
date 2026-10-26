@@ -1,0 +1,313 @@
+{
+  "schema": "cxf-library/points/v1",
+  "equipment": "hw",
+  "namespaces": {
+    "brick": {
+      "iri": "https://brickschema.org/schema/Brick#",
+      "verified_version": "1.4.4"
+    },
+    "s223": {
+      "iri": "http://data.ashrae.org/standard223#",
+      "verified_version": "1.0.0-ppr.2.1"
+    },
+    "s223_g36": {
+      "iri": "http://data.ashrae.org/standard223/1.0/extensions/g36#",
+      "verified_version": "1.0.0-ppr.2.1"
+    },
+    "quantitykind": {
+      "iri": "http://qudt.org/vocab/quantitykind/",
+      "verified_version": "QUDT 3.1.4"
+    },
+    "unit": {
+      "iri": "http://qudt.org/vocab/unit/",
+      "verified_version": "QUDT 3.1.4"
+    }
+  },
+  "notes": "Hot-water and boiler-plant point dictionary. Owning equipment is brick:Boiler (brick:Natural_Gas_Boiler for the gas-fired subclass); multi-boiler machine rules bind one coherent boiler and plant rules define their configured fleet and header explicitly. ASHRAE 223 mappings were checked against 223p-1.0.0-ppr2.1.ttl (owl:versionInfo 1.0.0-ppr.2.1; SHA-256 1f156f9938c0be430d2216e01e31bb183c438ba318d8d4a23d2f074ebcd6f573), not an inferred final 2026 release. That artifact imports QUDT 3.1.8; the quantity-kind and unit local names here were independently checked against the repository-declared QUDT 3.1.4 artifacts. The legacy reference covers HW-0001..0003; later loop and regulation rules are library-authored expansions.",
+  "points": [
+    {
+      "name": "boiler_status",
+      "description": "Boiler firing status (true = firing)",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "Run_Status",
+      "s223": {
+        "pattern": "EnumeratedObservableProperty on the Boiler via hasProperty",
+        "property_class": "EnumeratedObservableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Binary-OnOff"
+      },
+      "provisional": false,
+      "notes": "brick:Run_Status grep-verified, isPointOf brick:Boiler (verified). Reference Haystack markers: boiler, run. 'Firing' vs 'enabled' matters for HW-0001's start counting: bind the FIRING/flame status where available — an enable status hides burner cycling and undercounts starts (comp_status OR-undercount precedent). Consumed by HW-0001 (edge counting) and HW-0003 (lockout)."
+    },
+    {
+      "name": "thermal_power",
+      "description": "Boiler useful thermal output (host-derived from aligned flow and water temperatures)",
+      "kind": "real",
+      "unit": "kW",
+      "qudt_unit": "KiloW",
+      "brick": null,
+      "s223": {
+        "pattern": "Host Function hasOutput a QuantifiableProperty for useful boiler HeatFlowRate",
+        "property_class": "QuantifiableProperty",
+        "quantitykind": "HeatFlowRate",
+        "unit": "KiloW",
+        "medium": null,
+        "aspects": []
+      },
+      "provisional": true,
+      "derived": true,
+      "notes": "HOST-DERIVED for this canonical contract: aligned HW flow x leaving/entering delta-T x density x specific heat, with sign and unit conventions recorded. PPR2.1 provides Function/hasOutput/QuantifiableProperty but no exact derived-useful-heat aspect. A physical BTU meter is an alternative source, but its observable sensor model is distinct from this calculation. HW-0002 efficiency numerator."
+    },
+    {
+      "name": "fuel_power",
+      "description": "Boiler fuel input power (fuel flow x heating value)",
+      "kind": "real",
+      "unit": "kW",
+      "qudt_unit": "KiloW",
+      "brick": null,
+      "s223": {
+        "pattern": "Host Function hasOutput a QuantifiableProperty for fuel input Power derived from fuel flow and heating value",
+        "property_class": "QuantifiableProperty",
+        "quantitykind": "Power",
+        "unit": "KiloW",
+        "medium": "Fluid-NaturalGas",
+        "aspects": []
+      },
+      "provisional": true,
+      "derived": true,
+      "notes": "HOST-DERIVED from fuel flow x HHV or LHV; pick one declared convention and keep it consistent with the fitted baseline. Brick 1.4.4 has gas usage/flow sensors but no exact fuel-input-power point. Fluid-NaturalGas is the verified PPR2.1 medium. HW-0002 efficiency denominator and divide guard."
+    },
+    {
+      "name": "boiler_firing_rate",
+      "description": "Boiler firing rate (percent of maximum fire)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": null,
+      "s223": {
+        "pattern": "QuantifiableObservableProperty on the Boiler via hasProperty",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "PERCENT",
+        "medium": null,
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "No exact Brick 1.4.4 percent-firing-rate class. Bind actual normalized burner modulation feedback when available; a command is a disclosed proxy, not the same observable property. A plant aggregate must be capacity-weighted (total applicable input divided by total applicable rated input), never a simple average across unequal boilers. Consumed by HW-0002 and HW-0011."
+    },
+    {
+      "name": "hw_pump_status",
+      "description": "HW pump run status (true = running)",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "Pump_On_Off_Status",
+      "s223": {
+        "pattern": "EnumeratedObservableProperty on the Pump via hasProperty",
+        "property_class": "EnumeratedObservableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Binary-OnOff"
+      },
+      "provisional": false,
+      "notes": "brick:Pump_On_Off_Status grep-verified (carried from pmp pump_status). Second branch of HW-0003's lockout OR — pumps circulating above lockout waste energy even with the boiler off."
+    },
+    {
+      "name": "oat",
+      "description": "Outdoor air temperature",
+      "kind": "real",
+      "unit": "degC",
+      "qudt_unit": "DEG_C",
+      "brick": "Outside_Air_Temperature_Sensor",
+      "s223": {
+        "pattern": "TemperatureSensor observes a QuantifiableObservableProperty in an OutdoorPhysicalSpace representative of the plant",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Fluid-Air",
+        "aspects": []
+      },
+      "provisional": false,
+      "notes": "Carried from the ahu/erv dictionaries (brick:Outside_Air_Temperature_Sensor, grep-verified there). HW-0003's lockout comparator; its diagnosis list includes an OAT sensor reading low — pair with sensor-health rules when phase 3 opens."
+    },
+    {
+      "name": "hws_temp",
+      "description": "Hot water supply temperature (loop supply / boiler leaving)",
+      "kind": "real",
+      "unit": "degC",
+      "qudt_unit": "DEG_C",
+      "brick": "Leaving_Hot_Water_Temperature_Sensor",
+      "s223": {
+        "pattern": "TemperatureSensor observes a QuantifiableObservableProperty at the hot-water plant or boiler outlet ConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Water-HotWater",
+        "aspects": []
+      },
+      "provisional": false,
+      "notes": "brick:Leaving_Hot_Water_Temperature_Sensor is the active Brick 1.4.4 class; the former supply form is deprecated. PPR2.1 expresses leaving/supply direction through outlet topology, not a free-text aspect. Bind the same controlled header or boiler outlet required by the consuming card."
+    },
+    {
+      "name": "hwr_temp",
+      "description": "Hot water return temperature",
+      "kind": "real",
+      "unit": "degC",
+      "qudt_unit": "DEG_C",
+      "brick": "Entering_Hot_Water_Temperature_Sensor",
+      "s223": {
+        "pattern": "TemperatureSensor observes a QuantifiableObservableProperty at the hot-water plant or boiler inlet ConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Water-HotWater",
+        "aspects": []
+      },
+      "provisional": false,
+      "notes": "brick:Entering_Hot_Water_Temperature_Sensor is the active Brick 1.4.4 class; the former return form is deprecated. PPR2.1 expresses entering/return direction through inlet topology. HW-0004 delta-T subtrahend."
+    },
+    {
+      "name": "hws_temp_sp",
+      "description": "Hot water supply temperature setpoint",
+      "kind": "real",
+      "unit": "degC",
+      "qudt_unit": "DEG_C",
+      "brick": "Leaving_Hot_Water_Temperature_Setpoint",
+      "s223": {
+        "pattern": "QuantifiableActuatableProperty with Aspect-Setpoint controlling the hot-water plant or boiler outlet ConnectionPoint",
+        "property_class": "QuantifiableActuatableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Water-HotWater",
+        "aspects": [
+          "Aspect-Setpoint"
+        ]
+      },
+      "provisional": false,
+      "notes": "brick:Leaving_Hot_Water_Temperature_Setpoint is exact in Brick 1.4.4. PPR2.1 uses Water-HotWater plus Aspect-Setpoint; outlet direction is topology. Bind the final active target controlling the same hws_temp location, not an upstream reset request."
+    },
+    {
+      "name": "hw_dp",
+      "description": "HW loop differential pressure",
+      "kind": "real",
+      "unit": "kPa",
+      "qudt_unit": "KiloPA",
+      "brick": "Hot_Water_Differential_Pressure_Sensor",
+      "s223": {
+        "pattern": "QuantifiableObservableProperty for hot-water loop pressure with Aspect-Delta",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Pressure",
+        "unit": "KiloPA",
+        "medium": "Water-HotWater",
+        "aspects": [
+          "Aspect-Delta"
+        ]
+      },
+      "provisional": false,
+      "notes": "brick:Hot_Water_Differential_Pressure_Sensor grep-verified. Context point for the DP rules; HW-0005's primary evidence is pump speed, not DP itself."
+    },
+    {
+      "name": "hw_dp_sp",
+      "description": "HW loop differential pressure setpoint",
+      "kind": "real",
+      "unit": "kPa",
+      "qudt_unit": "KiloPA",
+      "brick": "Hot_Water_Differential_Pressure_Setpoint",
+      "s223": {
+        "pattern": "QuantifiableActuatableProperty for hot-water loop pressure with Aspect-Delta and Aspect-Setpoint",
+        "property_class": "QuantifiableActuatableProperty",
+        "quantitykind": "Pressure",
+        "unit": "KiloPA",
+        "medium": "Water-HotWater",
+        "aspects": [
+          "Aspect-Delta",
+          "Aspect-Setpoint"
+        ]
+      },
+      "provisional": false,
+      "notes": "brick:Hot_Water_Differential_Pressure_Setpoint grep-verified. HW-0006 watches this point's RANGE (AHU-0024/CHW-0003 idiom)."
+    },
+    {
+      "name": "hw_pump_vfd_speed",
+      "description": "HW pump VFD speed feedback (0-100%)",
+      "kind": "real",
+      "unit": "%",
+      "qudt_unit": "PERCENT",
+      "brick": "Motor_Speed_Sensor",
+      "s223": {
+        "pattern": "QuantifiableObservableProperty on the equipment via hasProperty",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "PERCENT",
+        "medium": null,
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "PPR2.1 supports an observable DimensionlessRatio/PERCENT property on the pump motor or VFD. Brick 1.4.4 has Motor_Speed_Sensor, but its inherited physical Speed unit list does not include PERCENT, so the normalized-percent mapping is provisional. Bind actual feedback where possible; command or EnergyPlus flow fraction is a documented proxy."
+    },
+    {
+      "name": "boiler_cmd",
+      "description": "Boiler enable command (true = commanded to fire)",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "Start_Stop_Command",
+      "s223": {
+        "pattern": "EnumeratedActuatableProperty on the Boiler via hasProperty",
+        "property_class": "EnumeratedActuatableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Binary-OnOff"
+      },
+      "provisional": false,
+      "notes": "brick:Start_Stop_Command attached via isPointOf to brick:Boiler (pump_cmd precedent). The command HALF of the boiler_status pair; HW-0009 proof-of-operation compares the two. Bind the plant-level enable the BAS actually writes — a lead/lag sequencer's internal stage command is upstream of what this point means."
+    },
+    {
+      "name": "boiler_stage_count",
+      "description": "Number of staging units in the configured boiler fleet currently proven firing",
+      "kind": "int",
+      "unit": "1",
+      "qudt_unit": "NUM",
+      "brick": null,
+      "s223": {
+        "pattern": "Host aggregation represented as a Function whose hasOutput is a QuantifiableProperty for Count in NUM",
+        "property_class": "QuantifiableProperty",
+        "quantitykind": "Count",
+        "unit": "NUM",
+        "medium": null,
+        "aspects": []
+      },
+      "derived": true,
+      "provisional": true,
+      "notes": "HOST-DERIVED sum of valid per-unit firing statuses, not enable or availability states. Record fleet membership, status freshness, aggregation timestamp, and whether a staging unit is a whole boiler or modular burner section. Do not mix unlike stage units in one scalar count."
+    },
+    {
+      "name": "hw_plant_load_fraction",
+      "description": "Current useful hot-water plant heating load divided by the commissioned capacity of the configured eligible staging fleet",
+      "kind": "real",
+      "unit": "1",
+      "qudt_unit": "UNITLESS",
+      "brick": null,
+      "s223": {
+        "pattern": "Host calculation represented as a Function whose hasOutput is a QuantifiableProperty for DimensionlessRatio in UNITLESS",
+        "property_class": "QuantifiableProperty",
+        "quantitykind": "DimensionlessRatio",
+        "unit": "UNITLESS",
+        "medium": null,
+        "aspects": []
+      },
+      "derived": true,
+      "provisional": true,
+      "notes": "HOST-DERIVED 0..1 ratio. Record the thermal-load derivation, numerator averaging, capacity source/version, eligible-fleet membership, and denominator-change policy. The capacity basis must remain stable through one evaluation window; if membership or denominator changes, restart evaluation or report NO_EVAL."
+    }
+  ]
+}

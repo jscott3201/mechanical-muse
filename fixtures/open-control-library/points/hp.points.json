@@ -1,0 +1,285 @@
+{
+  "schema": "cxf-library/points/v1",
+  "equipment": "hp",
+  "namespaces": {
+    "brick": {
+      "iri": "https://brickschema.org/schema/Brick#",
+      "verified_version": "1.4.4"
+    },
+    "s223": {
+      "iri": "http://data.ashrae.org/standard223#",
+      "verified_version": "1.0.0-ppr.2.1"
+    },
+    "s223_g36": {
+      "iri": "http://data.ashrae.org/standard223/1.0/extensions/g36#",
+      "verified_version": "1.0.0-ppr.2.1"
+    },
+    "quantitykind": {
+      "iri": "http://qudt.org/vocab/quantitykind/",
+      "verified_version": "QUDT 3.1.4"
+    },
+    "unit": {
+      "iri": "http://qudt.org/vocab/unit/",
+      "verified_version": "QUDT 3.1.4"
+    }
+  },
+  "notes": "Heat pump point dictionary. Air-side and compressor points carry from the AHU/RTU dictionaries. Thermal power is canonically a host-derived Function output; active electrical power uses the meter pattern. Mode command remains Brick-only until a deployment models its custom enumeration, and defrost status remains provisional. Owning equipment: the packaged heat pump unit. EXPANSION 2026-08-17: refrigerant-side points added for the refrigerant-side HP-0004/0005/0006 family (NIST SP 1087 grounding); the two saturation temperatures are HOST-DERIVED virtual points per SCHEMA.md's virtual-point convention. ASHRAE 223 mappings are pinned to the public-review artifact 223p-1.0.0-ppr2.1.ttl (owl:versionInfo 1.0.0-ppr.2.1; SHA-256 1f156f9938c0be430d2216e01e31bb183c438ba318d8d4a23d2f074ebcd6f573), not an inferred final 2026 release. That artifact imports QUDT 3.1.8; the quantity-kind and unit local names here were independently checked against the repository-declared QUDT 3.1.4 artifacts.",
+  "points": [
+    {
+      "name": "thermal_power",
+      "description": "Delivered thermal output (heating or cooling), kW",
+      "kind": "real",
+      "unit": "kW",
+      "qudt_unit": "KiloW",
+      "brick": null,
+      "s223": {
+        "pattern": "Host calculation represented as a Function whose hasOutput is a QuantifiableProperty",
+        "property_class": "QuantifiableProperty",
+        "quantitykind": "HeatFlowRate",
+        "unit": "KiloW",
+        "medium": null,
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "Canonical host-derived useful heating or cooling output (for example airflow x cp x temperature difference), represented as a Function output. Record derivation, mode sign convention, averaging, and sensor provenance. A physical thermal meter is a separate observable binding.",
+      "derived": true
+    },
+    {
+      "name": "elec_power",
+      "description": "Compressor electrical input power, kW",
+      "kind": "real",
+      "unit": "kW",
+      "qudt_unit": "KiloW",
+      "brick": "Active_Power_Sensor",
+      "s223": {
+        "pattern": "ElectricityMeter reports a QuantifiableObservableProperty with ActivePower/KiloW at the compressor electrical Connection or ConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "ActivePower",
+        "unit": "KiloW",
+        "medium": null,
+        "aspects": []
+      },
+      "provisional": false,
+      "notes": "Brick 1.4.4 has no Electrical_Power_Sensor class; Active_Power_Sensor (verified) is the correct real-power reading. Bind the compressor circuit, not the whole unit, or fan energy pollutes the COP."
+    },
+    {
+      "name": "oat",
+      "description": "Outdoor air temperature",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": "Outside_Air_Temperature_Sensor",
+      "s223": {
+        "pattern": "Sensor observes QuantifiableObservableProperty at the outdoor-air intake",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Fluid-Air",
+        "aspects": [
+          "Role-OutdoorAirIntake"
+        ]
+      },
+      "provisional": false,
+      "notes": "Brick spelling is Outside_ (Outdoor_Air_Temperature_Sensor does not exist). Role-OutdoorAirIntake is 223P's only outdoor role; used by reference instance oa-temp. [HP dictionary] Brick class and 223P pattern carried over (equipment-independent); used by the COP baseline (regression axis) and defrost sanity test."
+    },
+    {
+      "name": "sat",
+      "description": "Supply (discharge) air temperature",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": "Supply_Air_Temperature_Sensor",
+      "s223": {
+        "pattern": "Sensor observes QuantifiableObservableProperty attached to the AHU supply-air OutletConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Fluid-Air",
+        "aspects": [
+          "Role-Supply"
+        ]
+      },
+      "provisional": false,
+      "notes": "Brick Discharge_Air_Temperature_Sensor is brick:aliasOf this class. 223P pattern verbatim from reference instance MultipleZoneAhu-sa-temp; medium comes from hasMedium on the owning ConnectionPoint. [HP dictionary] Brick class and 223P pattern carried over (equipment-independent); for HP-0003 the discharge temperature is the reversing-valve witness."
+    },
+    {
+      "name": "comp_cmd",
+      "description": "Final run command for the bound heat-pump compressor or compressor scope",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "Start_Stop_Command",
+      "s223": {
+        "pattern": "EnumeratedActuatableProperty on the bound Compressor via hasProperty",
+        "property_class": "EnumeratedActuatableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Binary-OnOff"
+      },
+      "provisional": true,
+      "notes": "brick:Start_Stop_Command and brick:Compressor are exact Brick 1.4.4 classes. PPR2.1 Compressor, EnumeratedActuatableProperty, and Binary-OnOff are exact, but no public reference-model compressor command instance was found, so the attachment remains provisional. Default binding is one compressor/circuit after normal sequenced permissives; an aggregate OR is a lossy documented exception and must use the identical scope as comp_status."
+    },
+    {
+      "name": "comp_status",
+      "description": "Independent run proof for the bound heat-pump compressor or compressor scope",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "On_Off_Status",
+      "s223": {
+        "pattern": "EnumeratedObservableProperty on the Compressor via hasProperty",
+        "property_class": "EnumeratedObservableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Binary-OnOff"
+      },
+      "provisional": true,
+      "notes": "Brick 1.4.4 On_Off_Status and Compressor are exact generic classes; PPR2.1 EnumeratedObservableProperty and Binary-OnOff are exact, but no public compressor-property instance was found, so the attachment remains provisional. Default to one compressor/circuit. An aggregate OR is allowed only as an explicit matched command/status scope and hides a lag failure while another compressor remains on."
+    },
+    {
+      "name": "aux_heat_status",
+      "description": "Independent active-production status for the explicitly classified auxiliary heat source",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": "Heating_Start_Stop_Status",
+      "s223": {
+        "pattern": "EnumeratedObservableProperty with Binary-OnOff on explicitly classified auxiliary heating Equipment such as an ElectricResistanceElement or Furnace; Role-Heating and containment/topology establish scope",
+        "property_class": "EnumeratedObservableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Binary-OnOff"
+      },
+      "provisional": true,
+      "notes": "brick:Heating_Start_Stop_Status and the generic PPR2.1 heating/status terms are exact, but neither ontology has an exact auxiliary role. Deployment must identify separate auxiliary equipment and independent current, fuel-flow, thermal, contactor, or local-stage proof that it is actively producing heat. Do not bind availability, demand, command echo, crankcase heat, base-pan heat, or defrost heat."
+    },
+    {
+      "name": "defrost_status",
+      "description": "Defrost cycle active (true while the unit is in defrost)",
+      "kind": "bool",
+      "unit": "bool",
+      "qudt_unit": null,
+      "brick": null,
+      "s223": {
+        "pattern": "EnumeratedObservableProperty (Binary-OnOff) on the defrost sequence via hasProperty",
+        "property_class": "EnumeratedObservableProperty",
+        "quantitykind": null,
+        "unit": null,
+        "medium": null,
+        "aspects": [],
+        "enumerationkind": "Binary-OnOff"
+      },
+      "provisional": true,
+      "notes": "Brick 1.4.4 has no Defrost_Status class (grep-verified absent); bind the BAS/unit defrost-active flag and tag the generic Status pattern. Sampling caveat for HP-0002: a defrost cycle shorter than the host tick is invisible to the edge counter — tick well below the ~5-10 min cycle length."
+    },
+    {
+      "name": "mode_command",
+      "description": "Commanded operating mode (host-mapped integer; library encoding 1 = HEATING, 2 = COOLING)",
+      "kind": "int",
+      "unit": "1",
+      "qudt_unit": "UNITLESS",
+      "brick": "Mode_Command",
+      "s223": null,
+      "provisional": true,
+      "notes": "brick:Mode_Command grep-verified in Brick 1.4.4. The 1/2 encoding is this library's convention (expected_mode precedent); HP-0003 exposes both codes as rule params so hosts with their own enum rebind without editing the graph. PPR2.1 has no standard EnumerationKind for the library's site-mapped 1/2 mode encoding, so the s223 mapping is null until a deployment supplies a custom enumeration."
+    },
+    {
+      "name": "suction_temp",
+      "description": "Compressor suction line refrigerant temperature (surface-mount acceptable)",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": null,
+      "s223": {
+        "pattern": "Sensor observes a QuantifiableObservableProperty at the Compressor suction ConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Constituent-Refrigerant",
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "No Brick 1.4.4 suction-temperature class (only Refrigerant_Level_Sensor exists refrigerant-side); null mapping per defrost_status precedent. Superheat = suction_temp - evap_sat_temp."
+    },
+    {
+      "name": "liquid_temp",
+      "description": "Liquid line refrigerant temperature (surface-mount acceptable)",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": null,
+      "s223": {
+        "pattern": "Sensor observes a QuantifiableObservableProperty at the condenser liquid-line outlet ConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Constituent-Refrigerant",
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "No Brick 1.4.4 class; null mapping. Subcooling = cond_sat_temp - liquid_temp."
+    },
+    {
+      "name": "evap_sat_temp",
+      "description": "Evaporating saturation temperature (HOST-DERIVED: suction pressure via refrigerant P-T lookup, or coil-surface proxy)",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": null,
+      "s223": {
+        "pattern": "Function hasOutput a QuantifiableProperty derived from refrigerant pressure and a refrigerant-specific pressure-temperature relation",
+        "property_class": "QuantifiableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Constituent-Refrigerant",
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "HOST-DERIVED virtual point (zone_reheat_fraction/chw_valve_max precedent): the P-T relationship is refrigerant-specific and lives at the host, never in a rule graph. Derivation MUST match the site's refrigerant.",
+      "derived": true
+    },
+    {
+      "name": "cond_sat_temp",
+      "description": "Condensing saturation temperature (HOST-DERIVED: discharge/liquid pressure via refrigerant P-T lookup)",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": null,
+      "s223": {
+        "pattern": "Function hasOutput a QuantifiableProperty derived from refrigerant pressure and a refrigerant-specific pressure-temperature relation",
+        "property_class": "QuantifiableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Constituent-Refrigerant",
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "HOST-DERIVED virtual point, same convention and refrigerant caveat as evap_sat_temp.",
+      "derived": true
+    },
+    {
+      "name": "comp_discharge_temp",
+      "description": "Compressor discharge line refrigerant temperature (surface-mount acceptable)",
+      "kind": "real",
+      "unit": "°C",
+      "qudt_unit": "DEG_C",
+      "brick": null,
+      "s223": {
+        "pattern": "Sensor observes a QuantifiableObservableProperty at the Compressor discharge ConnectionPoint",
+        "property_class": "QuantifiableObservableProperty",
+        "quantitykind": "Temperature",
+        "unit": "DEG_C",
+        "medium": "Constituent-Refrigerant",
+        "aspects": []
+      },
+      "provisional": true,
+      "notes": "No Brick 1.4.4 class models refrigerant-line temperatures (suction_temp precedent; discharge-AIR classes are the wrong medium). Refrigerant side, hot-gas line between compressor and reversing valve. Consumed by the reversing-valve internal-leakage rule (HP-0006): NIST SP 1087 (2008) found leakage raises discharge and evaporating temperature while condensing temperature and subcooling fall, with superheat unaffected."
+    }
+  ]
+}
