@@ -308,12 +308,20 @@ dependencies = [
 name = "mm-bridge"
 version = "0.1.0"
 dependencies = [
+ "mm-graph",
  "oce-api",
+ "serde_json",
 ]
 
 [[package]]
 name = "mm-graph"
 version = "0.1.0"
+dependencies = [
+ "oce-api",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
 
 [[package]]
 name = "mm-runtime"

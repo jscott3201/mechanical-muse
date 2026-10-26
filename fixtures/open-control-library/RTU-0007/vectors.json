@@ -1,0 +1,248 @@
+{
+  "schema": "cxf-library/vectors/v1",
+  "clock": {
+    "step_s": 60,
+    "horizon_s": 3600
+  },
+  "scenarios": [
+    {
+      "name": "clean_condenser_running",
+      "description": "NO_FAULT: 50 °C off the coil against 35 °C outdoor air is a 15 K split where the host's fit expects 14 K — 7% over, a coil worth hosing next spring and nothing this rule should say. yRuntimeOk turns true at exactly 900 s because delayOnInit holds the compressor condition from the first tick.",
+      "inputs": {
+        "cond_leaving_temp": 50.0,
+        "oat": 35.0,
+        "cond_split_baseline": 14.0,
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 3600, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 0, "to_s": 840, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "fouled_condenser_alarms_at_the_runtime_edge",
+      "description": "FAULT: the same unit discharging 55 °C is a 20 K split against the same 14 K fit — 43% excess, well past the 30% line. The alarm lands on the tick the runtime gate arms, which is the whole timing story of this rule: excess is not debounced, arming is.",
+      "inputs": {
+        "cond_leaving_temp": 55.0,
+        "oat": 35.0,
+        "cond_split_baseline": 14.0,
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 840, "equals": false },
+        { "output": "yFault", "from_s": 900, "to_s": 3600, "equals": true },
+        { "output": "yRuntimeOk", "from_s": 0, "to_s": 840, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "compressor_off_is_no_eval",
+      "description": "NO_EVAL: the fouled numbers with the compressor off. A condenser rejecting no heat holds whatever split the last cycle left in the sheet metal, so the reading is not evidence either way — yRuntimeOk false is what tells the host that the silence is not a clean coil.",
+      "inputs": {
+        "cond_leaving_temp": 55.0,
+        "oat": 35.0,
+        "cond_split_baseline": 14.0,
+        "comp_status": false
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 3600, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 0, "to_s": 3600, "equals": false }
+      ]
+    },
+    {
+      "name": "excess_exactly_at_the_threshold",
+      "description": "Boundary, bit-exact: 43.0 − 30.0 is exactly 13.0, minus a 10.0 baseline is exactly 3.0, and 3.0/10.0 is the same double the parameter 0.30 rounds to. Reals.GreaterThreshold is strict, so a unit sitting exactly on the line reads healthy by the strictness rather than by rounding.",
+      "inputs": {
+        "cond_leaving_temp": 43.0,
+        "oat": 30.0,
+        "cond_split_baseline": 10.0,
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 3600, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 0, "to_s": 840, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "excess_just_above_the_threshold",
+      "description": "Boundary from above: 10 mK more off the coil puts the ratio at 0.3010 and the rule alarms on the normal schedule.",
+      "inputs": {
+        "cond_leaving_temp": 43.01,
+        "oat": 30.0,
+        "cond_split_baseline": 10.0,
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 840, "equals": false },
+        { "output": "yFault", "from_s": 900, "to_s": 3600, "equals": true },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "excess_just_below_the_threshold",
+      "description": "Boundary from below: 10 mK less puts the ratio at 0.2990 and nothing fires, however long the compressor runs.",
+      "inputs": {
+        "cond_leaving_temp": 42.99,
+        "oat": 30.0,
+        "cond_split_baseline": 10.0,
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 3600, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "compressor_start_arms_the_rule",
+      "description": "The mid-run rising edge: a fouled unit whose compressor starts at t = 600 s. The gate arms at exactly 1500 s and the alarm lands on the same tick — T + delayTime, whether the condition arrives at init or mid-run.",
+      "inputs": {
+        "cond_leaving_temp": 55.0,
+        "oat": 35.0,
+        "cond_split_baseline": 14.0,
+        "comp_status": [
+          { "t": 0, "value": false },
+          { "t": 600, "value": true }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 1440, "equals": false },
+        { "output": "yFault", "from_s": 1500, "to_s": 3600, "equals": true },
+        { "output": "yRuntimeOk", "from_s": 0, "to_s": 1440, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 1500, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "short_cycling_unit_never_reaches_the_runtime_gate",
+      "description": "A fouled unit that also short-cycles: 10 min on, 10 min off, 10 min on. Each stop resets the delay, so the first window that completes 900 s of continuous running starts at 1200 s and arms at 2100 s. Below a 15-minute duty cycle this rule reports nothing at all and RTU-0001 is the finding.",
+      "inputs": {
+        "cond_leaving_temp": 55.0,
+        "oat": 35.0,
+        "cond_split_baseline": 14.0,
+        "comp_status": [
+          { "t": 0, "value": true },
+          { "t": 600, "value": false },
+          { "t": 1200, "value": true }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 2040, "equals": false },
+        { "output": "yFault", "from_s": 2100, "to_s": 3600, "equals": true },
+        { "output": "yRuntimeOk", "from_s": 0, "to_s": 2040, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 2100, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "condenser_cleaned_mid_run",
+      "description": "Recovery: the alarm asserts at 900 s and the coil is hosed off at t = 1800 s, dropping the split back to 15 K. yFault falls on that tick while yRuntimeOk stays true — the compressor never stopped, so the gate never re-armed.",
+      "inputs": {
+        "cond_leaving_temp": [
+          { "t": 0, "value": 55.0 },
+          { "t": 1800, "value": 50.0 }
+        ],
+        "oat": 35.0,
+        "cond_split_baseline": 14.0,
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 840, "equals": false },
+        { "output": "yFault", "from_s": 900, "to_s": 1740, "equals": true },
+        { "output": "yFault", "from_s": 1800, "to_s": 3600, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "compressor_stops_after_alarm",
+      "description": "The evaluability release: an alarming unit stages off at t = 2400 s with the split unchanged. yFault and yRuntimeOk fall on the same tick, and only the pair distinguishes a cleaned coil from a unit that stopped cooling.",
+      "inputs": {
+        "cond_leaving_temp": 55.0,
+        "oat": 35.0,
+        "cond_split_baseline": 14.0,
+        "comp_status": [
+          { "t": 0, "value": true },
+          { "t": 2400, "value": false }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 840, "equals": false },
+        { "output": "yFault", "from_s": 900, "to_s": 2340, "equals": true },
+        { "output": "yFault", "from_s": 2400, "to_s": 3600, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 2340, "equals": true },
+        { "output": "yRuntimeOk", "from_s": 2400, "to_s": 3600, "equals": false }
+      ]
+    },
+    {
+      "name": "baseline_steps_under_a_running_rule",
+      "description": "The derived point moves: the split holds at 20 K while the host republishes the fit from 16 K to 14 K at t = 1800 s — a stage-up, or the OAT bin changing under the curve. The ratio crosses 0.30 on that tick and, with the gate already armed, so does yFault. Nothing in the graph waits for the physical split to catch up with the new baseline.",
+      "inputs": {
+        "cond_leaving_temp": 55.0,
+        "oat": 35.0,
+        "cond_split_baseline": [
+          { "t": 0, "value": 16.0 },
+          { "t": 1800, "value": 14.0 }
+        ],
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 1740, "equals": false },
+        { "output": "yFault", "from_s": 1800, "to_s": 3600, "equals": true },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "excess_flickering_across_the_threshold_chatters",
+      "description": "Blind spot, pinned: a unit whose relative excess alternates between 0.35 and 0.25 every 300 s — a condenser fan cycling on head pressure, or a marginal coil in gusty wind. yFault follows every crossing because the rule debounces arming, not excess. A host that alarms on the raw output gets one alarm per crossing.",
+      "inputs": {
+        "cond_leaving_temp": [
+          { "t": 0, "value": 43.5 },
+          { "t": 1200, "value": 42.5 },
+          { "t": 1500, "value": 43.5 },
+          { "t": 1800, "value": 42.5 },
+          { "t": 2100, "value": 43.5 }
+        ],
+        "oat": 30.0,
+        "cond_split_baseline": 10.0,
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 840, "equals": false },
+        { "output": "yFault", "from_s": 900, "to_s": 1140, "equals": true },
+        { "output": "yFault", "from_s": 1200, "to_s": 1440, "equals": false },
+        { "output": "yFault", "from_s": 1500, "to_s": 1740, "equals": true },
+        { "output": "yFault", "from_s": 1800, "to_s": 2040, "equals": false },
+        { "output": "yFault", "from_s": 2100, "to_s": 3600, "equals": true },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "outdoor_air_sensor_reading_high_hides_fouling",
+      "description": "The other blind spot, pinned: a sun-baked outdoor-air sensor reads 40 °C on a 35 °C day while the coil is genuinely fouled at 55 °C leaving. The measured split shrinks to 15 K and the ratio lands on 0.0714 — the identical number the clean scenario produces. oat is on both sides of this test, the split and the fit that predicts it, and a bias on it is invisible to the graph in the false-negative direction.",
+      "inputs": {
+        "cond_leaving_temp": 55.0,
+        "oat": 40.0,
+        "cond_split_baseline": 14.0,
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 3600, "equals": false },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    },
+    {
+      "name": "zero_baseline_violates_the_point_contract_and_alarms",
+      "description": "Contract violation, pinned so the failure direction is on the record: a host publishes cond_split_baseline = 0 — an unfitted instance, or a default that leaked — against a real 20 K split. The graph has no divide guard, the quotient goes non-finite, and the strict comparison passes, so the rule alarms permanently instead of going quiet. Loud is the survivable direction for a misconfiguration, but the point dictionary requires a strictly positive baseline and this is what happens when that is not honoured.",
+      "inputs": {
+        "cond_leaving_temp": 55.0,
+        "oat": 35.0,
+        "cond_split_baseline": 0.0,
+        "comp_status": true
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 840, "equals": false },
+        { "output": "yFault", "from_s": 900, "to_s": 3600, "equals": true },
+        { "output": "yRuntimeOk", "from_s": 900, "to_s": 3600, "equals": true }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,367 @@
+{
+  "@context": {
+    "S231": "http://data.ashrae.org/S231P#",
+    "base": "urn:cxf-library:rtu-0007#"
+  },
+  "@graph": [
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007",
+      "@type": "S231:Block",
+      "S231:label": "rtu_0007",
+      "S231:containsBlock": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.split"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.excessHigh"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate"
+        }
+      ],
+      "S231:hasInput": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.cond_leaving_temp"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.oat"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.cond_split_baseline"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.comp_status"
+        }
+      ],
+      "S231:hasOutput": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.yFault"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.yRuntimeOk"
+        }
+      ]
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.split",
+      "@type": "urn:cxf-library:rtu-0007#Buildings.Controls.OBC.CDL.Reals.Subtract",
+      "S231:label": "split",
+      "S231:hasInput": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.split.u1"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.split.u2"
+        }
+      ],
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.split.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.split.u1",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.split.u2",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.split.y",
+      "@type": "S231:RealOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess.u1"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess",
+      "@type": "urn:cxf-library:rtu-0007#Buildings.Controls.OBC.CDL.Reals.Subtract",
+      "S231:label": "excess",
+      "S231:hasInput": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess.u1"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess.u2"
+        }
+      ],
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess.u1",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess.u2",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess.y",
+      "@type": "S231:RealOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio.u1"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio",
+      "@type": "urn:cxf-library:rtu-0007#Buildings.Controls.OBC.CDL.Reals.Divide",
+      "S231:label": "ratio",
+      "S231:hasInput": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio.u1"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio.u2"
+        }
+      ],
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio.u1",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio.u2",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio.y",
+      "@type": "S231:RealOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.excessHigh.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.excessHigh",
+      "@type": "urn:cxf-library:rtu-0007#Buildings.Controls.OBC.CDL.Reals.GreaterThreshold",
+      "S231:label": "excessHigh",
+      "S231:hasParameter": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.excessHigh.t"
+      },
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.excessHigh.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.excessHigh.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.excessHigh.t",
+      "S231:value": {
+        "@value": "0.30",
+        "@type": "http://www.w3.org/2001/XMLSchema#double"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.excessHigh.u",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.excessHigh.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate.u1"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk",
+      "@type": "urn:cxf-library:rtu-0007#Buildings.Controls.OBC.CDL.Logical.TrueDelay",
+      "S231:label": "runtimeOk",
+      "S231:hasParameter": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk.delayTime"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk.delayOnInit"
+        }
+      ],
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk.delayTime",
+      "S231:value": {
+        "@value": "900.0",
+        "@type": "http://www.w3.org/2001/XMLSchema#double"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk.delayOnInit",
+      "S231:value": {
+        "@value": "true",
+        "@type": "http://www.w3.org/2001/XMLSchema#boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk.u",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate.u2"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.yRuntimeOk"
+        }
+      ]
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate",
+      "@type": "urn:cxf-library:rtu-0007#Buildings.Controls.OBC.CDL.Logical.And",
+      "S231:label": "gate",
+      "S231:hasInput": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate.u1"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate.u2"
+        }
+      ],
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate.u1",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate.u2",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.gate.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.yFault"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.cond_leaving_temp",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.split.u1"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.oat",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.split.u2"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.cond_split_baseline",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": [
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.excess.u2"
+        },
+        {
+          "@id": "urn:cxf-library:rtu-0007#rtu_0007.ratio.u2"
+        }
+      ]
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.comp_status",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:rtu-0007#rtu_0007.runtimeOk.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.yFault",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:rtu-0007#rtu_0007.yRuntimeOk",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    }
+  ]
+}

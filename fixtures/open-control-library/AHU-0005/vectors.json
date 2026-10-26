@@ -1,0 +1,116 @@
+{
+  "schema": "cxf-library/vectors/v1",
+  "clock": { "step_s": 300, "horizon_s": 5400 },
+  "scenarios": [
+    {
+      "name": "heating_air_leaves_warmer_than_it_arrived",
+      "description": "Healthy OS#1 operation: 15 °C mixed air leaves at 25 °C after the fan and an active heating coil. The gap runs negative, which no `>` against a positive threshold can satisfy",
+      "inputs": { "mat": 15.0, "sat": 25.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 5400, "equals": false }
+      ]
+    },
+    {
+      "name": "sensor_spread_absorbed_by_threshold",
+      "description": "SAT reads 2 °C below MAT — inside the combined eSAT + eMAT − dTSF band, so a pair of sensors at their rated accuracy plus a fan that adds less rise than assumed cannot fire the rule",
+      "inputs": { "mat": 20.0, "sat": 18.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 5400, "equals": false }
+      ]
+    },
+    {
+      "name": "cooling_coil_leaking_through_heating",
+      "description": "SAT 6 °C below MAT while the unit is in heating: a leaking or stuck-open cooling coil valve is stripping more heat than the fan and heating coil put in. Alarms one alarm_delay (1800 s) after the condition appears",
+      "inputs": { "mat": 20.0, "sat": 14.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 1500, "equals": false },
+        { "output": "yFault", "from_s": 2100, "to_s": 5400, "equals": true }
+      ]
+    },
+    {
+      "name": "dx_stuck_on_deep_gap",
+      "description": "SAT 10 °C below MAT — DX cooling stuck on against a heating call. Same verdict as a leaking valve; the rule reports the contradiction, not which device caused it",
+      "inputs": { "mat": 18.0, "sat": 8.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 1500, "equals": false },
+        { "output": "yFault", "from_s": 2100, "to_s": 5400, "equals": true }
+      ]
+    },
+    {
+      "name": "gap_exactly_at_threshold",
+      "description": "Threshold edge: mat − sat = 3.0 °C exactly. `gapBig` is a strict `>`, so a gap sitting precisely on mat_sat_gap_threshold reads healthy — G36's `<=` would call this a fault",
+      "inputs": { "mat": 20.0, "sat": 17.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 5400, "equals": false }
+      ]
+    },
+    {
+      "name": "gap_just_over_threshold",
+      "description": "Threshold edge, other side: mat − sat = 3.1 °C clears the strict comparison and alarms after alarm_delay",
+      "inputs": { "mat": 20.0, "sat": 16.9 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 1500, "equals": false },
+        { "output": "yFault", "from_s": 2100, "to_s": 5400, "equals": true }
+      ]
+    },
+    {
+      "name": "no_temperature_rise_is_not_this_fault",
+      "description": "SAT equals MAT — the heating coil is contributing nothing, which is a real problem and not this one. The gap is zero, so this rule stays silent and the finding belongs to the inactive-coil rules",
+      "inputs": { "mat": 18.0, "sat": 18.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 5400, "equals": false }
+      ]
+    },
+    {
+      "name": "transient_gap_clears_before_delay",
+      "description": "Transient: a 6 °C gap opens at load and closes at t = 1200 s as the hot-water loop comes up to temperature. Twenty minutes is short of alarm_delay, so nothing alarms",
+      "inputs": {
+        "mat": 20.0,
+        "sat": [
+          { "t": 0, "value": 14.0 },
+          { "t": 1200, "value": 22.0 }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 5400, "equals": false }
+      ]
+    },
+    {
+      "name": "oscillating_gap_never_persists",
+      "description": "Honesty case for the instantaneous-sampling deviation: SAT alternates every 600 s between 6 °C below MAT and 2 °C above it. The mean sits outside the band, so G36's 5-minute rolling average would fault; persistence resets on every compliant tick and this rule never does",
+      "inputs": {
+        "mat": 20.0,
+        "sat": [
+          { "t": 0, "value": 14.0 },
+          { "t": 600, "value": 22.0 },
+          { "t": 1200, "value": 14.0 },
+          { "t": 1800, "value": 22.0 },
+          { "t": 2400, "value": 14.0 },
+          { "t": 3000, "value": 22.0 },
+          { "t": 3600, "value": 14.0 },
+          { "t": 4200, "value": 22.0 },
+          { "t": 4800, "value": 14.0 }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 5400, "equals": false }
+      ]
+    },
+    {
+      "name": "fault_clears_on_recovery",
+      "description": "A sustained 6 °C gap alarms at 1800 s; the leaking cooling valve is isolated at t = 3000 s and SAT climbs above MAT, dropping the alarm on that tick — TrueDelay has no off-delay",
+      "inputs": {
+        "mat": 20.0,
+        "sat": [
+          { "t": 0, "value": 14.0 },
+          { "t": 3000, "value": 22.0 }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 1500, "equals": false },
+        { "output": "yFault", "from_s": 2100, "to_s": 2700, "equals": true },
+        { "output": "yFault", "from_s": 3300, "to_s": 5400, "equals": false }
+      ]
+    }
+  ]
+}

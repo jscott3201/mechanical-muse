@@ -1,0 +1,9575 @@
+{
+  "schema": "cxf-library/vectors/v1",
+  "clock": {
+    "step_s": 60,
+    "horizon_s": 14400
+  },
+  "scenarios": [
+    {
+      "name": "constant_firing_rate_first_sample_artifact",
+      "description": "Constant firing_rate and satisfied HWS temperature remain clear. The firing_rate-mean crossing branch has a zero-area initialization pulse and one harmless fill artifact, neither of which can satisfy both firing_rate criteria.",
+      "inputs": {
+        "boiler_firing_rate": 50.0,
+        "hws_temp": 60.0,
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "load_step_monotonic_recovery",
+      "description": "After a settled baseline, firing rate moves once from 50% to 65% while HWS carries a 3 K error for only ten minutes. The response is monotonic and cannot satisfy both rolling instability lanes.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 50.0
+          },
+          {
+            "t": 3600,
+            "value": 65.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 60.0
+          },
+          {
+            "t": 3600,
+            "value": 63.0
+          },
+          {
+            "t": 4200,
+            "value": 60.0
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "fast_shallow_dither",
+      "description": "A four-minute firing-rate cycle crosses often but stays at +/-6 percentage points; its settled MAD is below the strict 7.5-point materiality threshold. HWS remains satisfied.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 56.0
+          },
+          {
+            "t": 240,
+            "value": 44.0
+          },
+          {
+            "t": 480,
+            "value": 56.0
+          },
+          {
+            "t": 720,
+            "value": 44.0
+          },
+          {
+            "t": 960,
+            "value": 56.0
+          },
+          {
+            "t": 1200,
+            "value": 44.0
+          },
+          {
+            "t": 1440,
+            "value": 56.0
+          },
+          {
+            "t": 1680,
+            "value": 44.0
+          },
+          {
+            "t": 1920,
+            "value": 56.0
+          },
+          {
+            "t": 2160,
+            "value": 44.0
+          },
+          {
+            "t": 2400,
+            "value": 56.0
+          },
+          {
+            "t": 2640,
+            "value": 44.0
+          },
+          {
+            "t": 2880,
+            "value": 56.0
+          },
+          {
+            "t": 3120,
+            "value": 44.0
+          },
+          {
+            "t": 3360,
+            "value": 56.0
+          },
+          {
+            "t": 3600,
+            "value": 44.0
+          },
+          {
+            "t": 3840,
+            "value": 56.0
+          },
+          {
+            "t": 4080,
+            "value": 44.0
+          },
+          {
+            "t": 4320,
+            "value": 56.0
+          },
+          {
+            "t": 4560,
+            "value": 44.0
+          },
+          {
+            "t": 4800,
+            "value": 56.0
+          },
+          {
+            "t": 5040,
+            "value": 44.0
+          },
+          {
+            "t": 5280,
+            "value": 56.0
+          },
+          {
+            "t": 5520,
+            "value": 44.0
+          },
+          {
+            "t": 5760,
+            "value": 56.0
+          },
+          {
+            "t": 6000,
+            "value": 44.0
+          },
+          {
+            "t": 6240,
+            "value": 56.0
+          },
+          {
+            "t": 6480,
+            "value": 44.0
+          },
+          {
+            "t": 6720,
+            "value": 56.0
+          },
+          {
+            "t": 6960,
+            "value": 44.0
+          },
+          {
+            "t": 7200,
+            "value": 56.0
+          },
+          {
+            "t": 7440,
+            "value": 44.0
+          },
+          {
+            "t": 7680,
+            "value": 56.0
+          },
+          {
+            "t": 7920,
+            "value": 44.0
+          },
+          {
+            "t": 8160,
+            "value": 56.0
+          },
+          {
+            "t": 8400,
+            "value": 44.0
+          },
+          {
+            "t": 8640,
+            "value": 56.0
+          },
+          {
+            "t": 8880,
+            "value": 44.0
+          },
+          {
+            "t": 9120,
+            "value": 56.0
+          },
+          {
+            "t": 9360,
+            "value": 44.0
+          },
+          {
+            "t": 9600,
+            "value": 56.0
+          },
+          {
+            "t": 9840,
+            "value": 44.0
+          },
+          {
+            "t": 10080,
+            "value": 56.0
+          },
+          {
+            "t": 10320,
+            "value": 44.0
+          },
+          {
+            "t": 10560,
+            "value": 56.0
+          },
+          {
+            "t": 10800,
+            "value": 44.0
+          },
+          {
+            "t": 11040,
+            "value": 56.0
+          },
+          {
+            "t": 11280,
+            "value": 44.0
+          },
+          {
+            "t": 11520,
+            "value": 56.0
+          },
+          {
+            "t": 11760,
+            "value": 44.0
+          },
+          {
+            "t": 12000,
+            "value": 56.0
+          },
+          {
+            "t": 12240,
+            "value": 44.0
+          },
+          {
+            "t": 12480,
+            "value": 56.0
+          },
+          {
+            "t": 12720,
+            "value": 44.0
+          },
+          {
+            "t": 12960,
+            "value": 56.0
+          },
+          {
+            "t": 13200,
+            "value": 44.0
+          },
+          {
+            "t": 13440,
+            "value": 56.0
+          },
+          {
+            "t": 13680,
+            "value": 44.0
+          },
+          {
+            "t": 13920,
+            "value": 56.0
+          },
+          {
+            "t": 14160,
+            "value": 44.0
+          }
+        ],
+        "hws_temp": 60.0,
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "firing_mad_just_below_threshold",
+      "description": "A +/-7.35-point square firing-rate wave brackets the strict 7.5-point rolling-MAD boundary from the clear side while the temperature lane is independently active.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 57.35
+          },
+          {
+            "t": 240,
+            "value": 42.65
+          },
+          {
+            "t": 480,
+            "value": 57.35
+          },
+          {
+            "t": 720,
+            "value": 42.65
+          },
+          {
+            "t": 960,
+            "value": 57.35
+          },
+          {
+            "t": 1200,
+            "value": 42.65
+          },
+          {
+            "t": 1440,
+            "value": 57.35
+          },
+          {
+            "t": 1680,
+            "value": 42.65
+          },
+          {
+            "t": 1920,
+            "value": 57.35
+          },
+          {
+            "t": 2160,
+            "value": 42.65
+          },
+          {
+            "t": 2400,
+            "value": 57.35
+          },
+          {
+            "t": 2640,
+            "value": 42.65
+          },
+          {
+            "t": 2880,
+            "value": 57.35
+          },
+          {
+            "t": 3120,
+            "value": 42.65
+          },
+          {
+            "t": 3360,
+            "value": 57.35
+          },
+          {
+            "t": 3600,
+            "value": 42.65
+          },
+          {
+            "t": 3840,
+            "value": 57.35
+          },
+          {
+            "t": 4080,
+            "value": 42.65
+          },
+          {
+            "t": 4320,
+            "value": 57.35
+          },
+          {
+            "t": 4560,
+            "value": 42.65
+          },
+          {
+            "t": 4800,
+            "value": 57.35
+          },
+          {
+            "t": 5040,
+            "value": 42.65
+          },
+          {
+            "t": 5280,
+            "value": 57.35
+          },
+          {
+            "t": 5520,
+            "value": 42.65
+          },
+          {
+            "t": 5760,
+            "value": 57.35
+          },
+          {
+            "t": 6000,
+            "value": 42.65
+          },
+          {
+            "t": 6240,
+            "value": 57.35
+          },
+          {
+            "t": 6480,
+            "value": 42.65
+          },
+          {
+            "t": 6720,
+            "value": 57.35
+          },
+          {
+            "t": 6960,
+            "value": 42.65
+          },
+          {
+            "t": 7200,
+            "value": 57.35
+          },
+          {
+            "t": 7440,
+            "value": 42.65
+          },
+          {
+            "t": 7680,
+            "value": 57.35
+          },
+          {
+            "t": 7920,
+            "value": 42.65
+          },
+          {
+            "t": 8160,
+            "value": 57.35
+          },
+          {
+            "t": 8400,
+            "value": 42.65
+          },
+          {
+            "t": 8640,
+            "value": 57.35
+          },
+          {
+            "t": 8880,
+            "value": 42.65
+          },
+          {
+            "t": 9120,
+            "value": 57.35
+          },
+          {
+            "t": 9360,
+            "value": 42.65
+          },
+          {
+            "t": 9600,
+            "value": 57.35
+          },
+          {
+            "t": 9840,
+            "value": 42.65
+          },
+          {
+            "t": 10080,
+            "value": 57.35
+          },
+          {
+            "t": 10320,
+            "value": 42.65
+          },
+          {
+            "t": 10560,
+            "value": 57.35
+          },
+          {
+            "t": 10800,
+            "value": 42.65
+          },
+          {
+            "t": 11040,
+            "value": 57.35
+          },
+          {
+            "t": 11280,
+            "value": 42.65
+          },
+          {
+            "t": 11520,
+            "value": 57.35
+          },
+          {
+            "t": 11760,
+            "value": 42.65
+          },
+          {
+            "t": 12000,
+            "value": 57.35
+          },
+          {
+            "t": 12240,
+            "value": 42.65
+          },
+          {
+            "t": 12480,
+            "value": 57.35
+          },
+          {
+            "t": 12720,
+            "value": 42.65
+          },
+          {
+            "t": 12960,
+            "value": 57.35
+          },
+          {
+            "t": 13200,
+            "value": 42.65
+          },
+          {
+            "t": 13440,
+            "value": 57.35
+          },
+          {
+            "t": 13680,
+            "value": 42.65
+          },
+          {
+            "t": 13920,
+            "value": 57.35
+          },
+          {
+            "t": 14160,
+            "value": 42.65
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "firing_mad_just_above_threshold",
+      "description": "A +/-7.65-point square firing-rate wave brackets the strict 7.5-point rolling-MAD boundary from the active side; fast crossings and unstable temperature permit the combined fault.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 57.65
+          },
+          {
+            "t": 240,
+            "value": 42.35
+          },
+          {
+            "t": 480,
+            "value": 57.65
+          },
+          {
+            "t": 720,
+            "value": 42.35
+          },
+          {
+            "t": 960,
+            "value": 57.65
+          },
+          {
+            "t": 1200,
+            "value": 42.35
+          },
+          {
+            "t": 1440,
+            "value": 57.65
+          },
+          {
+            "t": 1680,
+            "value": 42.35
+          },
+          {
+            "t": 1920,
+            "value": 57.65
+          },
+          {
+            "t": 2160,
+            "value": 42.35
+          },
+          {
+            "t": 2400,
+            "value": 57.65
+          },
+          {
+            "t": 2640,
+            "value": 42.35
+          },
+          {
+            "t": 2880,
+            "value": 57.65
+          },
+          {
+            "t": 3120,
+            "value": 42.35
+          },
+          {
+            "t": 3360,
+            "value": 57.65
+          },
+          {
+            "t": 3600,
+            "value": 42.35
+          },
+          {
+            "t": 3840,
+            "value": 57.65
+          },
+          {
+            "t": 4080,
+            "value": 42.35
+          },
+          {
+            "t": 4320,
+            "value": 57.65
+          },
+          {
+            "t": 4560,
+            "value": 42.35
+          },
+          {
+            "t": 4800,
+            "value": 57.65
+          },
+          {
+            "t": 5040,
+            "value": 42.35
+          },
+          {
+            "t": 5280,
+            "value": 57.65
+          },
+          {
+            "t": 5520,
+            "value": 42.35
+          },
+          {
+            "t": 5760,
+            "value": 57.65
+          },
+          {
+            "t": 6000,
+            "value": 42.35
+          },
+          {
+            "t": 6240,
+            "value": 57.65
+          },
+          {
+            "t": 6480,
+            "value": 42.35
+          },
+          {
+            "t": 6720,
+            "value": 57.65
+          },
+          {
+            "t": 6960,
+            "value": 42.35
+          },
+          {
+            "t": 7200,
+            "value": 57.65
+          },
+          {
+            "t": 7440,
+            "value": 42.35
+          },
+          {
+            "t": 7680,
+            "value": 57.65
+          },
+          {
+            "t": 7920,
+            "value": 42.35
+          },
+          {
+            "t": 8160,
+            "value": 57.65
+          },
+          {
+            "t": 8400,
+            "value": 42.35
+          },
+          {
+            "t": 8640,
+            "value": 57.65
+          },
+          {
+            "t": 8880,
+            "value": 42.35
+          },
+          {
+            "t": 9120,
+            "value": 57.65
+          },
+          {
+            "t": 9360,
+            "value": 42.35
+          },
+          {
+            "t": 9600,
+            "value": 57.65
+          },
+          {
+            "t": 9840,
+            "value": 42.35
+          },
+          {
+            "t": 10080,
+            "value": 57.65
+          },
+          {
+            "t": 10320,
+            "value": 42.35
+          },
+          {
+            "t": 10560,
+            "value": 57.65
+          },
+          {
+            "t": 10800,
+            "value": 42.35
+          },
+          {
+            "t": 11040,
+            "value": 57.65
+          },
+          {
+            "t": 11280,
+            "value": 42.35
+          },
+          {
+            "t": 11520,
+            "value": 57.65
+          },
+          {
+            "t": 11760,
+            "value": 42.35
+          },
+          {
+            "t": 12000,
+            "value": 57.65
+          },
+          {
+            "t": 12240,
+            "value": 42.35
+          },
+          {
+            "t": 12480,
+            "value": 57.65
+          },
+          {
+            "t": 12720,
+            "value": 42.35
+          },
+          {
+            "t": 12960,
+            "value": 57.65
+          },
+          {
+            "t": 13200,
+            "value": 42.35
+          },
+          {
+            "t": 13440,
+            "value": 57.65
+          },
+          {
+            "t": 13680,
+            "value": 42.35
+          },
+          {
+            "t": 13920,
+            "value": 57.65
+          },
+          {
+            "t": 14160,
+            "value": 42.35
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 4800,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "firing_rate_hunting_temperature_stable",
+      "description": "Material fast firing_rate motion is present, but HWS temperature stays on setpoint; the firing_rate diagnostic can guide tuning without producing the combined fault.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 65.0
+          },
+          {
+            "t": 240,
+            "value": 35.0
+          },
+          {
+            "t": 480,
+            "value": 65.0
+          },
+          {
+            "t": 720,
+            "value": 35.0
+          },
+          {
+            "t": 960,
+            "value": 65.0
+          },
+          {
+            "t": 1200,
+            "value": 35.0
+          },
+          {
+            "t": 1440,
+            "value": 65.0
+          },
+          {
+            "t": 1680,
+            "value": 35.0
+          },
+          {
+            "t": 1920,
+            "value": 65.0
+          },
+          {
+            "t": 2160,
+            "value": 35.0
+          },
+          {
+            "t": 2400,
+            "value": 65.0
+          },
+          {
+            "t": 2640,
+            "value": 35.0
+          },
+          {
+            "t": 2880,
+            "value": 65.0
+          },
+          {
+            "t": 3120,
+            "value": 35.0
+          },
+          {
+            "t": 3360,
+            "value": 65.0
+          },
+          {
+            "t": 3600,
+            "value": 35.0
+          },
+          {
+            "t": 3840,
+            "value": 65.0
+          },
+          {
+            "t": 4080,
+            "value": 35.0
+          },
+          {
+            "t": 4320,
+            "value": 65.0
+          },
+          {
+            "t": 4560,
+            "value": 35.0
+          },
+          {
+            "t": 4800,
+            "value": 65.0
+          },
+          {
+            "t": 5040,
+            "value": 35.0
+          },
+          {
+            "t": 5280,
+            "value": 65.0
+          },
+          {
+            "t": 5520,
+            "value": 35.0
+          },
+          {
+            "t": 5760,
+            "value": 65.0
+          },
+          {
+            "t": 6000,
+            "value": 35.0
+          },
+          {
+            "t": 6240,
+            "value": 65.0
+          },
+          {
+            "t": 6480,
+            "value": 35.0
+          },
+          {
+            "t": 6720,
+            "value": 65.0
+          },
+          {
+            "t": 6960,
+            "value": 35.0
+          },
+          {
+            "t": 7200,
+            "value": 65.0
+          },
+          {
+            "t": 7440,
+            "value": 35.0
+          },
+          {
+            "t": 7680,
+            "value": 65.0
+          },
+          {
+            "t": 7920,
+            "value": 35.0
+          },
+          {
+            "t": 8160,
+            "value": 65.0
+          },
+          {
+            "t": 8400,
+            "value": 35.0
+          },
+          {
+            "t": 8640,
+            "value": 65.0
+          },
+          {
+            "t": 8880,
+            "value": 35.0
+          },
+          {
+            "t": 9120,
+            "value": 65.0
+          },
+          {
+            "t": 9360,
+            "value": 35.0
+          },
+          {
+            "t": 9600,
+            "value": 65.0
+          },
+          {
+            "t": 9840,
+            "value": 35.0
+          },
+          {
+            "t": 10080,
+            "value": 65.0
+          },
+          {
+            "t": 10320,
+            "value": 35.0
+          },
+          {
+            "t": 10560,
+            "value": 65.0
+          },
+          {
+            "t": 10800,
+            "value": 35.0
+          },
+          {
+            "t": 11040,
+            "value": 65.0
+          },
+          {
+            "t": 11280,
+            "value": 35.0
+          },
+          {
+            "t": 11520,
+            "value": 65.0
+          },
+          {
+            "t": 11760,
+            "value": 35.0
+          },
+          {
+            "t": 12000,
+            "value": 65.0
+          },
+          {
+            "t": 12240,
+            "value": 35.0
+          },
+          {
+            "t": 12480,
+            "value": 65.0
+          },
+          {
+            "t": 12720,
+            "value": 35.0
+          },
+          {
+            "t": 12960,
+            "value": 65.0
+          },
+          {
+            "t": 13200,
+            "value": 35.0
+          },
+          {
+            "t": 13440,
+            "value": 65.0
+          },
+          {
+            "t": 13680,
+            "value": 35.0
+          },
+          {
+            "t": 13920,
+            "value": 65.0
+          },
+          {
+            "t": 14160,
+            "value": 35.0
+          }
+        ],
+        "hws_temp": 60.0,
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "slow_deep_firing_motion",
+      "description": "A deep twenty-minute firing-rate cycle has large MAD but no more than six mean crossings per 1800-second window. HWS instability alone cannot create the combined fault.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 72.5
+          },
+          {
+            "t": 600,
+            "value": 27.5
+          },
+          {
+            "t": 1200,
+            "value": 72.5
+          },
+          {
+            "t": 1800,
+            "value": 27.5
+          },
+          {
+            "t": 2400,
+            "value": 72.5
+          },
+          {
+            "t": 3000,
+            "value": 27.5
+          },
+          {
+            "t": 3600,
+            "value": 72.5
+          },
+          {
+            "t": 4200,
+            "value": 27.5
+          },
+          {
+            "t": 4800,
+            "value": 72.5
+          },
+          {
+            "t": 5400,
+            "value": 27.5
+          },
+          {
+            "t": 6000,
+            "value": 72.5
+          },
+          {
+            "t": 6600,
+            "value": 27.5
+          },
+          {
+            "t": 7200,
+            "value": 72.5
+          },
+          {
+            "t": 7800,
+            "value": 27.5
+          },
+          {
+            "t": 8400,
+            "value": 72.5
+          },
+          {
+            "t": 9000,
+            "value": 27.5
+          },
+          {
+            "t": 9600,
+            "value": 72.5
+          },
+          {
+            "t": 10200,
+            "value": 27.5
+          },
+          {
+            "t": 10800,
+            "value": 72.5
+          },
+          {
+            "t": 11400,
+            "value": 27.5
+          },
+          {
+            "t": 12000,
+            "value": 72.5
+          },
+          {
+            "t": 12600,
+            "value": 27.5
+          },
+          {
+            "t": 13200,
+            "value": 72.5
+          },
+          {
+            "t": 13800,
+            "value": 27.5
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "temperature_unstable_firing_stable",
+      "description": "HWS alternates +/-1.8 K around setpoint while firing rate is fixed. The temperature diagnostic is active after warm-up, but the combined fault remains clear.",
+      "inputs": {
+        "boiler_firing_rate": 50.0,
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "count_exactly_allowed",
+      "description": "A repeating firing-rate pattern produces exactly six rolling-mean crossings per 1800-second window with material MAD. The strict count > 6 comparison remains clear while the temperature lane is active.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 65.0
+          },
+          {
+            "t": 300,
+            "value": 35.0
+          },
+          {
+            "t": 600,
+            "value": 65.0
+          },
+          {
+            "t": 900,
+            "value": 35.0
+          },
+          {
+            "t": 1200,
+            "value": 65.0
+          },
+          {
+            "t": 1500,
+            "value": 35.0
+          },
+          {
+            "t": 1800,
+            "value": 65.0
+          },
+          {
+            "t": 2100,
+            "value": 35.0
+          },
+          {
+            "t": 2400,
+            "value": 65.0
+          },
+          {
+            "t": 2700,
+            "value": 35.0
+          },
+          {
+            "t": 3000,
+            "value": 65.0
+          },
+          {
+            "t": 3300,
+            "value": 35.0
+          },
+          {
+            "t": 3600,
+            "value": 65.0
+          },
+          {
+            "t": 3900,
+            "value": 35.0
+          },
+          {
+            "t": 4200,
+            "value": 65.0
+          },
+          {
+            "t": 4500,
+            "value": 35.0
+          },
+          {
+            "t": 4800,
+            "value": 65.0
+          },
+          {
+            "t": 5100,
+            "value": 35.0
+          },
+          {
+            "t": 5400,
+            "value": 65.0
+          },
+          {
+            "t": 5700,
+            "value": 35.0
+          },
+          {
+            "t": 6000,
+            "value": 65.0
+          },
+          {
+            "t": 6300,
+            "value": 35.0
+          },
+          {
+            "t": 6600,
+            "value": 65.0
+          },
+          {
+            "t": 6900,
+            "value": 35.0
+          },
+          {
+            "t": 7200,
+            "value": 65.0
+          },
+          {
+            "t": 7500,
+            "value": 35.0
+          },
+          {
+            "t": 7800,
+            "value": 65.0
+          },
+          {
+            "t": 8100,
+            "value": 35.0
+          },
+          {
+            "t": 8400,
+            "value": 65.0
+          },
+          {
+            "t": 8700,
+            "value": 35.0
+          },
+          {
+            "t": 9000,
+            "value": 65.0
+          },
+          {
+            "t": 9300,
+            "value": 35.0
+          },
+          {
+            "t": 9600,
+            "value": 65.0
+          },
+          {
+            "t": 9900,
+            "value": 35.0
+          },
+          {
+            "t": 10200,
+            "value": 65.0
+          },
+          {
+            "t": 10500,
+            "value": 35.0
+          },
+          {
+            "t": 10800,
+            "value": 65.0
+          },
+          {
+            "t": 11100,
+            "value": 35.0
+          },
+          {
+            "t": 11400,
+            "value": 65.0
+          },
+          {
+            "t": 11700,
+            "value": 35.0
+          },
+          {
+            "t": 12000,
+            "value": 65.0
+          },
+          {
+            "t": 12300,
+            "value": 35.0
+          },
+          {
+            "t": 12600,
+            "value": 65.0
+          },
+          {
+            "t": 12900,
+            "value": 35.0
+          },
+          {
+            "t": 13200,
+            "value": 65.0
+          },
+          {
+            "t": 13500,
+            "value": 35.0
+          },
+          {
+            "t": 13800,
+            "value": 65.0
+          },
+          {
+            "t": 14100,
+            "value": 35.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "one_crossing_over_limit",
+      "description": "A repeating seven-crossing firing-rate pattern is one event above the allowed six, with material MAD and unstable temperature; both diagnostics and the delayed fault mature after warm-up.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 65.0
+          },
+          {
+            "t": 240,
+            "value": 35.0
+          },
+          {
+            "t": 480,
+            "value": 65.0
+          },
+          {
+            "t": 720,
+            "value": 35.0
+          },
+          {
+            "t": 960,
+            "value": 65.0
+          },
+          {
+            "t": 1200,
+            "value": 35.0
+          },
+          {
+            "t": 1440,
+            "value": 65.0
+          },
+          {
+            "t": 1800,
+            "value": 35.0
+          },
+          {
+            "t": 2040,
+            "value": 65.0
+          },
+          {
+            "t": 2280,
+            "value": 35.0
+          },
+          {
+            "t": 2520,
+            "value": 65.0
+          },
+          {
+            "t": 2760,
+            "value": 35.0
+          },
+          {
+            "t": 3000,
+            "value": 65.0
+          },
+          {
+            "t": 3240,
+            "value": 35.0
+          },
+          {
+            "t": 3600,
+            "value": 65.0
+          },
+          {
+            "t": 3840,
+            "value": 35.0
+          },
+          {
+            "t": 4080,
+            "value": 65.0
+          },
+          {
+            "t": 4320,
+            "value": 35.0
+          },
+          {
+            "t": 4560,
+            "value": 65.0
+          },
+          {
+            "t": 4800,
+            "value": 35.0
+          },
+          {
+            "t": 5040,
+            "value": 65.0
+          },
+          {
+            "t": 5400,
+            "value": 35.0
+          },
+          {
+            "t": 5640,
+            "value": 65.0
+          },
+          {
+            "t": 5880,
+            "value": 35.0
+          },
+          {
+            "t": 6120,
+            "value": 65.0
+          },
+          {
+            "t": 6360,
+            "value": 35.0
+          },
+          {
+            "t": 6600,
+            "value": 65.0
+          },
+          {
+            "t": 6840,
+            "value": 35.0
+          },
+          {
+            "t": 7200,
+            "value": 65.0
+          },
+          {
+            "t": 7440,
+            "value": 35.0
+          },
+          {
+            "t": 7680,
+            "value": 65.0
+          },
+          {
+            "t": 7920,
+            "value": 35.0
+          },
+          {
+            "t": 8160,
+            "value": 65.0
+          },
+          {
+            "t": 8400,
+            "value": 35.0
+          },
+          {
+            "t": 8640,
+            "value": 65.0
+          },
+          {
+            "t": 9000,
+            "value": 35.0
+          },
+          {
+            "t": 9240,
+            "value": 65.0
+          },
+          {
+            "t": 9480,
+            "value": 35.0
+          },
+          {
+            "t": 9720,
+            "value": 65.0
+          },
+          {
+            "t": 9960,
+            "value": 35.0
+          },
+          {
+            "t": 10200,
+            "value": 65.0
+          },
+          {
+            "t": 10440,
+            "value": 35.0
+          },
+          {
+            "t": 10800,
+            "value": 65.0
+          },
+          {
+            "t": 11040,
+            "value": 35.0
+          },
+          {
+            "t": 11280,
+            "value": 65.0
+          },
+          {
+            "t": 11520,
+            "value": 35.0
+          },
+          {
+            "t": 11760,
+            "value": 65.0
+          },
+          {
+            "t": 12000,
+            "value": 35.0
+          },
+          {
+            "t": 12240,
+            "value": 65.0
+          },
+          {
+            "t": 12600,
+            "value": 35.0
+          },
+          {
+            "t": 12840,
+            "value": 65.0
+          },
+          {
+            "t": 13080,
+            "value": 35.0
+          },
+          {
+            "t": 13320,
+            "value": 65.0
+          },
+          {
+            "t": 13560,
+            "value": 35.0
+          },
+          {
+            "t": 13800,
+            "value": 65.0
+          },
+          {
+            "t": 14040,
+            "value": 35.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 4800,
+          "to_s": 13800,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 13800,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 13800,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "temperature_mae_exactly_threshold",
+      "description": "With established firing-rate hunting, a constant absolute HWS error of exactly 1.5 K leaves the strict rolling-MAE comparison false and blocks the fault.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 65.0
+          },
+          {
+            "t": 240,
+            "value": 35.0
+          },
+          {
+            "t": 480,
+            "value": 65.0
+          },
+          {
+            "t": 720,
+            "value": 35.0
+          },
+          {
+            "t": 960,
+            "value": 65.0
+          },
+          {
+            "t": 1200,
+            "value": 35.0
+          },
+          {
+            "t": 1440,
+            "value": 65.0
+          },
+          {
+            "t": 1680,
+            "value": 35.0
+          },
+          {
+            "t": 1920,
+            "value": 65.0
+          },
+          {
+            "t": 2160,
+            "value": 35.0
+          },
+          {
+            "t": 2400,
+            "value": 65.0
+          },
+          {
+            "t": 2640,
+            "value": 35.0
+          },
+          {
+            "t": 2880,
+            "value": 65.0
+          },
+          {
+            "t": 3120,
+            "value": 35.0
+          },
+          {
+            "t": 3360,
+            "value": 65.0
+          },
+          {
+            "t": 3600,
+            "value": 35.0
+          },
+          {
+            "t": 3840,
+            "value": 65.0
+          },
+          {
+            "t": 4080,
+            "value": 35.0
+          },
+          {
+            "t": 4320,
+            "value": 65.0
+          },
+          {
+            "t": 4560,
+            "value": 35.0
+          },
+          {
+            "t": 4800,
+            "value": 65.0
+          },
+          {
+            "t": 5040,
+            "value": 35.0
+          },
+          {
+            "t": 5280,
+            "value": 65.0
+          },
+          {
+            "t": 5520,
+            "value": 35.0
+          },
+          {
+            "t": 5760,
+            "value": 65.0
+          },
+          {
+            "t": 6000,
+            "value": 35.0
+          },
+          {
+            "t": 6240,
+            "value": 65.0
+          },
+          {
+            "t": 6480,
+            "value": 35.0
+          },
+          {
+            "t": 6720,
+            "value": 65.0
+          },
+          {
+            "t": 6960,
+            "value": 35.0
+          },
+          {
+            "t": 7200,
+            "value": 65.0
+          },
+          {
+            "t": 7440,
+            "value": 35.0
+          },
+          {
+            "t": 7680,
+            "value": 65.0
+          },
+          {
+            "t": 7920,
+            "value": 35.0
+          },
+          {
+            "t": 8160,
+            "value": 65.0
+          },
+          {
+            "t": 8400,
+            "value": 35.0
+          },
+          {
+            "t": 8640,
+            "value": 65.0
+          },
+          {
+            "t": 8880,
+            "value": 35.0
+          },
+          {
+            "t": 9120,
+            "value": 65.0
+          },
+          {
+            "t": 9360,
+            "value": 35.0
+          },
+          {
+            "t": 9600,
+            "value": 65.0
+          },
+          {
+            "t": 9840,
+            "value": 35.0
+          },
+          {
+            "t": 10080,
+            "value": 65.0
+          },
+          {
+            "t": 10320,
+            "value": 35.0
+          },
+          {
+            "t": 10560,
+            "value": 65.0
+          },
+          {
+            "t": 10800,
+            "value": 35.0
+          },
+          {
+            "t": 11040,
+            "value": 65.0
+          },
+          {
+            "t": 11280,
+            "value": 35.0
+          },
+          {
+            "t": 11520,
+            "value": 65.0
+          },
+          {
+            "t": 11760,
+            "value": 35.0
+          },
+          {
+            "t": 12000,
+            "value": 65.0
+          },
+          {
+            "t": 12240,
+            "value": 35.0
+          },
+          {
+            "t": 12480,
+            "value": 65.0
+          },
+          {
+            "t": 12720,
+            "value": 35.0
+          },
+          {
+            "t": 12960,
+            "value": 65.0
+          },
+          {
+            "t": 13200,
+            "value": 35.0
+          },
+          {
+            "t": 13440,
+            "value": 65.0
+          },
+          {
+            "t": 13680,
+            "value": 35.0
+          },
+          {
+            "t": 13920,
+            "value": 65.0
+          },
+          {
+            "t": 14160,
+            "value": 35.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.5
+          },
+          {
+            "t": 240,
+            "value": 58.5
+          },
+          {
+            "t": 480,
+            "value": 61.5
+          },
+          {
+            "t": 720,
+            "value": 58.5
+          },
+          {
+            "t": 960,
+            "value": 61.5
+          },
+          {
+            "t": 1200,
+            "value": 58.5
+          },
+          {
+            "t": 1440,
+            "value": 61.5
+          },
+          {
+            "t": 1680,
+            "value": 58.5
+          },
+          {
+            "t": 1920,
+            "value": 61.5
+          },
+          {
+            "t": 2160,
+            "value": 58.5
+          },
+          {
+            "t": 2400,
+            "value": 61.5
+          },
+          {
+            "t": 2640,
+            "value": 58.5
+          },
+          {
+            "t": 2880,
+            "value": 61.5
+          },
+          {
+            "t": 3120,
+            "value": 58.5
+          },
+          {
+            "t": 3360,
+            "value": 61.5
+          },
+          {
+            "t": 3600,
+            "value": 58.5
+          },
+          {
+            "t": 3840,
+            "value": 61.5
+          },
+          {
+            "t": 4080,
+            "value": 58.5
+          },
+          {
+            "t": 4320,
+            "value": 61.5
+          },
+          {
+            "t": 4560,
+            "value": 58.5
+          },
+          {
+            "t": 4800,
+            "value": 61.5
+          },
+          {
+            "t": 5040,
+            "value": 58.5
+          },
+          {
+            "t": 5280,
+            "value": 61.5
+          },
+          {
+            "t": 5520,
+            "value": 58.5
+          },
+          {
+            "t": 5760,
+            "value": 61.5
+          },
+          {
+            "t": 6000,
+            "value": 58.5
+          },
+          {
+            "t": 6240,
+            "value": 61.5
+          },
+          {
+            "t": 6480,
+            "value": 58.5
+          },
+          {
+            "t": 6720,
+            "value": 61.5
+          },
+          {
+            "t": 6960,
+            "value": 58.5
+          },
+          {
+            "t": 7200,
+            "value": 61.5
+          },
+          {
+            "t": 7440,
+            "value": 58.5
+          },
+          {
+            "t": 7680,
+            "value": 61.5
+          },
+          {
+            "t": 7920,
+            "value": 58.5
+          },
+          {
+            "t": 8160,
+            "value": 61.5
+          },
+          {
+            "t": 8400,
+            "value": 58.5
+          },
+          {
+            "t": 8640,
+            "value": 61.5
+          },
+          {
+            "t": 8880,
+            "value": 58.5
+          },
+          {
+            "t": 9120,
+            "value": 61.5
+          },
+          {
+            "t": 9360,
+            "value": 58.5
+          },
+          {
+            "t": 9600,
+            "value": 61.5
+          },
+          {
+            "t": 9840,
+            "value": 58.5
+          },
+          {
+            "t": 10080,
+            "value": 61.5
+          },
+          {
+            "t": 10320,
+            "value": 58.5
+          },
+          {
+            "t": 10560,
+            "value": 61.5
+          },
+          {
+            "t": 10800,
+            "value": 58.5
+          },
+          {
+            "t": 11040,
+            "value": 61.5
+          },
+          {
+            "t": 11280,
+            "value": 58.5
+          },
+          {
+            "t": 11520,
+            "value": 61.5
+          },
+          {
+            "t": 11760,
+            "value": 58.5
+          },
+          {
+            "t": 12000,
+            "value": 61.5
+          },
+          {
+            "t": 12240,
+            "value": 58.5
+          },
+          {
+            "t": 12480,
+            "value": 61.5
+          },
+          {
+            "t": 12720,
+            "value": 58.5
+          },
+          {
+            "t": 12960,
+            "value": 61.5
+          },
+          {
+            "t": 13200,
+            "value": 58.5
+          },
+          {
+            "t": 13440,
+            "value": 61.5
+          },
+          {
+            "t": 13680,
+            "value": 58.5
+          },
+          {
+            "t": 13920,
+            "value": 61.5
+          },
+          {
+            "t": 14160,
+            "value": 58.5
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "temperature_mae_just_over_threshold",
+      "description": "A 1.515 K mean absolute HWS error brackets the rolling-MAE boundary from the active side while firing rate is materially hunting.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 65.0
+          },
+          {
+            "t": 240,
+            "value": 35.0
+          },
+          {
+            "t": 480,
+            "value": 65.0
+          },
+          {
+            "t": 720,
+            "value": 35.0
+          },
+          {
+            "t": 960,
+            "value": 65.0
+          },
+          {
+            "t": 1200,
+            "value": 35.0
+          },
+          {
+            "t": 1440,
+            "value": 65.0
+          },
+          {
+            "t": 1680,
+            "value": 35.0
+          },
+          {
+            "t": 1920,
+            "value": 65.0
+          },
+          {
+            "t": 2160,
+            "value": 35.0
+          },
+          {
+            "t": 2400,
+            "value": 65.0
+          },
+          {
+            "t": 2640,
+            "value": 35.0
+          },
+          {
+            "t": 2880,
+            "value": 65.0
+          },
+          {
+            "t": 3120,
+            "value": 35.0
+          },
+          {
+            "t": 3360,
+            "value": 65.0
+          },
+          {
+            "t": 3600,
+            "value": 35.0
+          },
+          {
+            "t": 3840,
+            "value": 65.0
+          },
+          {
+            "t": 4080,
+            "value": 35.0
+          },
+          {
+            "t": 4320,
+            "value": 65.0
+          },
+          {
+            "t": 4560,
+            "value": 35.0
+          },
+          {
+            "t": 4800,
+            "value": 65.0
+          },
+          {
+            "t": 5040,
+            "value": 35.0
+          },
+          {
+            "t": 5280,
+            "value": 65.0
+          },
+          {
+            "t": 5520,
+            "value": 35.0
+          },
+          {
+            "t": 5760,
+            "value": 65.0
+          },
+          {
+            "t": 6000,
+            "value": 35.0
+          },
+          {
+            "t": 6240,
+            "value": 65.0
+          },
+          {
+            "t": 6480,
+            "value": 35.0
+          },
+          {
+            "t": 6720,
+            "value": 65.0
+          },
+          {
+            "t": 6960,
+            "value": 35.0
+          },
+          {
+            "t": 7200,
+            "value": 65.0
+          },
+          {
+            "t": 7440,
+            "value": 35.0
+          },
+          {
+            "t": 7680,
+            "value": 65.0
+          },
+          {
+            "t": 7920,
+            "value": 35.0
+          },
+          {
+            "t": 8160,
+            "value": 65.0
+          },
+          {
+            "t": 8400,
+            "value": 35.0
+          },
+          {
+            "t": 8640,
+            "value": 65.0
+          },
+          {
+            "t": 8880,
+            "value": 35.0
+          },
+          {
+            "t": 9120,
+            "value": 65.0
+          },
+          {
+            "t": 9360,
+            "value": 35.0
+          },
+          {
+            "t": 9600,
+            "value": 65.0
+          },
+          {
+            "t": 9840,
+            "value": 35.0
+          },
+          {
+            "t": 10080,
+            "value": 65.0
+          },
+          {
+            "t": 10320,
+            "value": 35.0
+          },
+          {
+            "t": 10560,
+            "value": 65.0
+          },
+          {
+            "t": 10800,
+            "value": 35.0
+          },
+          {
+            "t": 11040,
+            "value": 65.0
+          },
+          {
+            "t": 11280,
+            "value": 35.0
+          },
+          {
+            "t": 11520,
+            "value": 65.0
+          },
+          {
+            "t": 11760,
+            "value": 35.0
+          },
+          {
+            "t": 12000,
+            "value": 65.0
+          },
+          {
+            "t": 12240,
+            "value": 35.0
+          },
+          {
+            "t": 12480,
+            "value": 65.0
+          },
+          {
+            "t": 12720,
+            "value": 35.0
+          },
+          {
+            "t": 12960,
+            "value": 65.0
+          },
+          {
+            "t": 13200,
+            "value": 35.0
+          },
+          {
+            "t": 13440,
+            "value": 65.0
+          },
+          {
+            "t": 13680,
+            "value": 35.0
+          },
+          {
+            "t": 13920,
+            "value": 65.0
+          },
+          {
+            "t": 14160,
+            "value": 35.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.515
+          },
+          {
+            "t": 240,
+            "value": 58.485
+          },
+          {
+            "t": 480,
+            "value": 61.515
+          },
+          {
+            "t": 720,
+            "value": 58.485
+          },
+          {
+            "t": 960,
+            "value": 61.515
+          },
+          {
+            "t": 1200,
+            "value": 58.485
+          },
+          {
+            "t": 1440,
+            "value": 61.515
+          },
+          {
+            "t": 1680,
+            "value": 58.485
+          },
+          {
+            "t": 1920,
+            "value": 61.515
+          },
+          {
+            "t": 2160,
+            "value": 58.485
+          },
+          {
+            "t": 2400,
+            "value": 61.515
+          },
+          {
+            "t": 2640,
+            "value": 58.485
+          },
+          {
+            "t": 2880,
+            "value": 61.515
+          },
+          {
+            "t": 3120,
+            "value": 58.485
+          },
+          {
+            "t": 3360,
+            "value": 61.515
+          },
+          {
+            "t": 3600,
+            "value": 58.485
+          },
+          {
+            "t": 3840,
+            "value": 61.515
+          },
+          {
+            "t": 4080,
+            "value": 58.485
+          },
+          {
+            "t": 4320,
+            "value": 61.515
+          },
+          {
+            "t": 4560,
+            "value": 58.485
+          },
+          {
+            "t": 4800,
+            "value": 61.515
+          },
+          {
+            "t": 5040,
+            "value": 58.485
+          },
+          {
+            "t": 5280,
+            "value": 61.515
+          },
+          {
+            "t": 5520,
+            "value": 58.485
+          },
+          {
+            "t": 5760,
+            "value": 61.515
+          },
+          {
+            "t": 6000,
+            "value": 58.485
+          },
+          {
+            "t": 6240,
+            "value": 61.515
+          },
+          {
+            "t": 6480,
+            "value": 58.485
+          },
+          {
+            "t": 6720,
+            "value": 61.515
+          },
+          {
+            "t": 6960,
+            "value": 58.485
+          },
+          {
+            "t": 7200,
+            "value": 61.515
+          },
+          {
+            "t": 7440,
+            "value": 58.485
+          },
+          {
+            "t": 7680,
+            "value": 61.515
+          },
+          {
+            "t": 7920,
+            "value": 58.485
+          },
+          {
+            "t": 8160,
+            "value": 61.515
+          },
+          {
+            "t": 8400,
+            "value": 58.485
+          },
+          {
+            "t": 8640,
+            "value": 61.515
+          },
+          {
+            "t": 8880,
+            "value": 58.485
+          },
+          {
+            "t": 9120,
+            "value": 61.515
+          },
+          {
+            "t": 9360,
+            "value": 58.485
+          },
+          {
+            "t": 9600,
+            "value": 61.515
+          },
+          {
+            "t": 9840,
+            "value": 58.485
+          },
+          {
+            "t": 10080,
+            "value": 61.515
+          },
+          {
+            "t": 10320,
+            "value": 58.485
+          },
+          {
+            "t": 10560,
+            "value": 61.515
+          },
+          {
+            "t": 10800,
+            "value": 58.485
+          },
+          {
+            "t": 11040,
+            "value": 61.515
+          },
+          {
+            "t": 11280,
+            "value": 58.485
+          },
+          {
+            "t": 11520,
+            "value": 61.515
+          },
+          {
+            "t": 11760,
+            "value": 58.485
+          },
+          {
+            "t": 12000,
+            "value": 61.515
+          },
+          {
+            "t": 12240,
+            "value": 58.485
+          },
+          {
+            "t": 12480,
+            "value": 61.515
+          },
+          {
+            "t": 12720,
+            "value": 58.485
+          },
+          {
+            "t": 12960,
+            "value": 61.515
+          },
+          {
+            "t": 13200,
+            "value": 58.485
+          },
+          {
+            "t": 13440,
+            "value": 61.515
+          },
+          {
+            "t": 13680,
+            "value": 58.485
+          },
+          {
+            "t": 13920,
+            "value": 61.515
+          },
+          {
+            "t": 14160,
+            "value": 58.485
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 4800,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "persistent_both_error_directions",
+      "description": "Material firing-rate hunting paired with HWS alternating above and below setpoint proves the temperature statistic is symmetric and the combined fault persists.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 65.0
+          },
+          {
+            "t": 240,
+            "value": 35.0
+          },
+          {
+            "t": 480,
+            "value": 65.0
+          },
+          {
+            "t": 720,
+            "value": 35.0
+          },
+          {
+            "t": 960,
+            "value": 65.0
+          },
+          {
+            "t": 1200,
+            "value": 35.0
+          },
+          {
+            "t": 1440,
+            "value": 65.0
+          },
+          {
+            "t": 1680,
+            "value": 35.0
+          },
+          {
+            "t": 1920,
+            "value": 65.0
+          },
+          {
+            "t": 2160,
+            "value": 35.0
+          },
+          {
+            "t": 2400,
+            "value": 65.0
+          },
+          {
+            "t": 2640,
+            "value": 35.0
+          },
+          {
+            "t": 2880,
+            "value": 65.0
+          },
+          {
+            "t": 3120,
+            "value": 35.0
+          },
+          {
+            "t": 3360,
+            "value": 65.0
+          },
+          {
+            "t": 3600,
+            "value": 35.0
+          },
+          {
+            "t": 3840,
+            "value": 65.0
+          },
+          {
+            "t": 4080,
+            "value": 35.0
+          },
+          {
+            "t": 4320,
+            "value": 65.0
+          },
+          {
+            "t": 4560,
+            "value": 35.0
+          },
+          {
+            "t": 4800,
+            "value": 65.0
+          },
+          {
+            "t": 5040,
+            "value": 35.0
+          },
+          {
+            "t": 5280,
+            "value": 65.0
+          },
+          {
+            "t": 5520,
+            "value": 35.0
+          },
+          {
+            "t": 5760,
+            "value": 65.0
+          },
+          {
+            "t": 6000,
+            "value": 35.0
+          },
+          {
+            "t": 6240,
+            "value": 65.0
+          },
+          {
+            "t": 6480,
+            "value": 35.0
+          },
+          {
+            "t": 6720,
+            "value": 65.0
+          },
+          {
+            "t": 6960,
+            "value": 35.0
+          },
+          {
+            "t": 7200,
+            "value": 65.0
+          },
+          {
+            "t": 7440,
+            "value": 35.0
+          },
+          {
+            "t": 7680,
+            "value": 65.0
+          },
+          {
+            "t": 7920,
+            "value": 35.0
+          },
+          {
+            "t": 8160,
+            "value": 65.0
+          },
+          {
+            "t": 8400,
+            "value": 35.0
+          },
+          {
+            "t": 8640,
+            "value": 65.0
+          },
+          {
+            "t": 8880,
+            "value": 35.0
+          },
+          {
+            "t": 9120,
+            "value": 65.0
+          },
+          {
+            "t": 9360,
+            "value": 35.0
+          },
+          {
+            "t": 9600,
+            "value": 65.0
+          },
+          {
+            "t": 9840,
+            "value": 35.0
+          },
+          {
+            "t": 10080,
+            "value": 65.0
+          },
+          {
+            "t": 10320,
+            "value": 35.0
+          },
+          {
+            "t": 10560,
+            "value": 65.0
+          },
+          {
+            "t": 10800,
+            "value": 35.0
+          },
+          {
+            "t": 11040,
+            "value": 65.0
+          },
+          {
+            "t": 11280,
+            "value": 35.0
+          },
+          {
+            "t": 11520,
+            "value": 65.0
+          },
+          {
+            "t": 11760,
+            "value": 35.0
+          },
+          {
+            "t": 12000,
+            "value": 65.0
+          },
+          {
+            "t": 12240,
+            "value": 35.0
+          },
+          {
+            "t": 12480,
+            "value": 65.0
+          },
+          {
+            "t": 12720,
+            "value": 35.0
+          },
+          {
+            "t": 12960,
+            "value": 65.0
+          },
+          {
+            "t": 13200,
+            "value": 35.0
+          },
+          {
+            "t": 13440,
+            "value": 65.0
+          },
+          {
+            "t": 13680,
+            "value": 35.0
+          },
+          {
+            "t": 13920,
+            "value": 65.0
+          },
+          {
+            "t": 14160,
+            "value": 35.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 4800,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "one_sided_oscillatory_temperature_offset",
+      "description": "HWS oscillates 3 K and 4.5 K above setpoint while firing rate hunts. Mean crossings plus MAE intentionally classify this one-sided offset as unstable; this is broader than NIST's two-sided allowance-band CUSUM.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 65.0
+          },
+          {
+            "t": 240,
+            "value": 35.0
+          },
+          {
+            "t": 480,
+            "value": 65.0
+          },
+          {
+            "t": 720,
+            "value": 35.0
+          },
+          {
+            "t": 960,
+            "value": 65.0
+          },
+          {
+            "t": 1200,
+            "value": 35.0
+          },
+          {
+            "t": 1440,
+            "value": 65.0
+          },
+          {
+            "t": 1680,
+            "value": 35.0
+          },
+          {
+            "t": 1920,
+            "value": 65.0
+          },
+          {
+            "t": 2160,
+            "value": 35.0
+          },
+          {
+            "t": 2400,
+            "value": 65.0
+          },
+          {
+            "t": 2640,
+            "value": 35.0
+          },
+          {
+            "t": 2880,
+            "value": 65.0
+          },
+          {
+            "t": 3120,
+            "value": 35.0
+          },
+          {
+            "t": 3360,
+            "value": 65.0
+          },
+          {
+            "t": 3600,
+            "value": 35.0
+          },
+          {
+            "t": 3840,
+            "value": 65.0
+          },
+          {
+            "t": 4080,
+            "value": 35.0
+          },
+          {
+            "t": 4320,
+            "value": 65.0
+          },
+          {
+            "t": 4560,
+            "value": 35.0
+          },
+          {
+            "t": 4800,
+            "value": 65.0
+          },
+          {
+            "t": 5040,
+            "value": 35.0
+          },
+          {
+            "t": 5280,
+            "value": 65.0
+          },
+          {
+            "t": 5520,
+            "value": 35.0
+          },
+          {
+            "t": 5760,
+            "value": 65.0
+          },
+          {
+            "t": 6000,
+            "value": 35.0
+          },
+          {
+            "t": 6240,
+            "value": 65.0
+          },
+          {
+            "t": 6480,
+            "value": 35.0
+          },
+          {
+            "t": 6720,
+            "value": 65.0
+          },
+          {
+            "t": 6960,
+            "value": 35.0
+          },
+          {
+            "t": 7200,
+            "value": 65.0
+          },
+          {
+            "t": 7440,
+            "value": 35.0
+          },
+          {
+            "t": 7680,
+            "value": 65.0
+          },
+          {
+            "t": 7920,
+            "value": 35.0
+          },
+          {
+            "t": 8160,
+            "value": 65.0
+          },
+          {
+            "t": 8400,
+            "value": 35.0
+          },
+          {
+            "t": 8640,
+            "value": 65.0
+          },
+          {
+            "t": 8880,
+            "value": 35.0
+          },
+          {
+            "t": 9120,
+            "value": 65.0
+          },
+          {
+            "t": 9360,
+            "value": 35.0
+          },
+          {
+            "t": 9600,
+            "value": 65.0
+          },
+          {
+            "t": 9840,
+            "value": 35.0
+          },
+          {
+            "t": 10080,
+            "value": 65.0
+          },
+          {
+            "t": 10320,
+            "value": 35.0
+          },
+          {
+            "t": 10560,
+            "value": 65.0
+          },
+          {
+            "t": 10800,
+            "value": 35.0
+          },
+          {
+            "t": 11040,
+            "value": 65.0
+          },
+          {
+            "t": 11280,
+            "value": 35.0
+          },
+          {
+            "t": 11520,
+            "value": 65.0
+          },
+          {
+            "t": 11760,
+            "value": 35.0
+          },
+          {
+            "t": 12000,
+            "value": 65.0
+          },
+          {
+            "t": 12240,
+            "value": 35.0
+          },
+          {
+            "t": 12480,
+            "value": 65.0
+          },
+          {
+            "t": 12720,
+            "value": 35.0
+          },
+          {
+            "t": 12960,
+            "value": 65.0
+          },
+          {
+            "t": 13200,
+            "value": 35.0
+          },
+          {
+            "t": 13440,
+            "value": 65.0
+          },
+          {
+            "t": 13680,
+            "value": 35.0
+          },
+          {
+            "t": 13920,
+            "value": 65.0
+          },
+          {
+            "t": 14160,
+            "value": 35.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 64.5
+          },
+          {
+            "t": 240,
+            "value": 63.0
+          },
+          {
+            "t": 480,
+            "value": 64.5
+          },
+          {
+            "t": 720,
+            "value": 63.0
+          },
+          {
+            "t": 960,
+            "value": 64.5
+          },
+          {
+            "t": 1200,
+            "value": 63.0
+          },
+          {
+            "t": 1440,
+            "value": 64.5
+          },
+          {
+            "t": 1680,
+            "value": 63.0
+          },
+          {
+            "t": 1920,
+            "value": 64.5
+          },
+          {
+            "t": 2160,
+            "value": 63.0
+          },
+          {
+            "t": 2400,
+            "value": 64.5
+          },
+          {
+            "t": 2640,
+            "value": 63.0
+          },
+          {
+            "t": 2880,
+            "value": 64.5
+          },
+          {
+            "t": 3120,
+            "value": 63.0
+          },
+          {
+            "t": 3360,
+            "value": 64.5
+          },
+          {
+            "t": 3600,
+            "value": 63.0
+          },
+          {
+            "t": 3840,
+            "value": 64.5
+          },
+          {
+            "t": 4080,
+            "value": 63.0
+          },
+          {
+            "t": 4320,
+            "value": 64.5
+          },
+          {
+            "t": 4560,
+            "value": 63.0
+          },
+          {
+            "t": 4800,
+            "value": 64.5
+          },
+          {
+            "t": 5040,
+            "value": 63.0
+          },
+          {
+            "t": 5280,
+            "value": 64.5
+          },
+          {
+            "t": 5520,
+            "value": 63.0
+          },
+          {
+            "t": 5760,
+            "value": 64.5
+          },
+          {
+            "t": 6000,
+            "value": 63.0
+          },
+          {
+            "t": 6240,
+            "value": 64.5
+          },
+          {
+            "t": 6480,
+            "value": 63.0
+          },
+          {
+            "t": 6720,
+            "value": 64.5
+          },
+          {
+            "t": 6960,
+            "value": 63.0
+          },
+          {
+            "t": 7200,
+            "value": 64.5
+          },
+          {
+            "t": 7440,
+            "value": 63.0
+          },
+          {
+            "t": 7680,
+            "value": 64.5
+          },
+          {
+            "t": 7920,
+            "value": 63.0
+          },
+          {
+            "t": 8160,
+            "value": 64.5
+          },
+          {
+            "t": 8400,
+            "value": 63.0
+          },
+          {
+            "t": 8640,
+            "value": 64.5
+          },
+          {
+            "t": 8880,
+            "value": 63.0
+          },
+          {
+            "t": 9120,
+            "value": 64.5
+          },
+          {
+            "t": 9360,
+            "value": 63.0
+          },
+          {
+            "t": 9600,
+            "value": 64.5
+          },
+          {
+            "t": 9840,
+            "value": 63.0
+          },
+          {
+            "t": 10080,
+            "value": 64.5
+          },
+          {
+            "t": 10320,
+            "value": 63.0
+          },
+          {
+            "t": 10560,
+            "value": 64.5
+          },
+          {
+            "t": 10800,
+            "value": 63.0
+          },
+          {
+            "t": 11040,
+            "value": 64.5
+          },
+          {
+            "t": 11280,
+            "value": 63.0
+          },
+          {
+            "t": 11520,
+            "value": 64.5
+          },
+          {
+            "t": 11760,
+            "value": 63.0
+          },
+          {
+            "t": 12000,
+            "value": 64.5
+          },
+          {
+            "t": 12240,
+            "value": 63.0
+          },
+          {
+            "t": 12480,
+            "value": 64.5
+          },
+          {
+            "t": 12720,
+            "value": 63.0
+          },
+          {
+            "t": 12960,
+            "value": 64.5
+          },
+          {
+            "t": 13200,
+            "value": 63.0
+          },
+          {
+            "t": 13440,
+            "value": 64.5
+          },
+          {
+            "t": 13680,
+            "value": 63.0
+          },
+          {
+            "t": 13920,
+            "value": 64.5
+          },
+          {
+            "t": 14160,
+            "value": 63.0
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 4800,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "window_aging_clears",
+      "description": "The loop hunts and then firing rate settles while HWS remains 1.65 K off setpoint. Temperature remains unstable until its events age; firing crossings and MAD must also age before the combined fault clears.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 65.0
+          },
+          {
+            "t": 240,
+            "value": 35.0
+          },
+          {
+            "t": 480,
+            "value": 65.0
+          },
+          {
+            "t": 720,
+            "value": 35.0
+          },
+          {
+            "t": 960,
+            "value": 65.0
+          },
+          {
+            "t": 1200,
+            "value": 35.0
+          },
+          {
+            "t": 1440,
+            "value": 65.0
+          },
+          {
+            "t": 1680,
+            "value": 35.0
+          },
+          {
+            "t": 1920,
+            "value": 65.0
+          },
+          {
+            "t": 2160,
+            "value": 35.0
+          },
+          {
+            "t": 2400,
+            "value": 65.0
+          },
+          {
+            "t": 2640,
+            "value": 35.0
+          },
+          {
+            "t": 2880,
+            "value": 65.0
+          },
+          {
+            "t": 3120,
+            "value": 35.0
+          },
+          {
+            "t": 3360,
+            "value": 65.0
+          },
+          {
+            "t": 3600,
+            "value": 35.0
+          },
+          {
+            "t": 3840,
+            "value": 65.0
+          },
+          {
+            "t": 4080,
+            "value": 35.0
+          },
+          {
+            "t": 4320,
+            "value": 65.0
+          },
+          {
+            "t": 4560,
+            "value": 35.0
+          },
+          {
+            "t": 4800,
+            "value": 65.0
+          },
+          {
+            "t": 5040,
+            "value": 35.0
+          },
+          {
+            "t": 5280,
+            "value": 65.0
+          },
+          {
+            "t": 5520,
+            "value": 35.0
+          },
+          {
+            "t": 5760,
+            "value": 65.0
+          },
+          {
+            "t": 6000,
+            "value": 35.0
+          },
+          {
+            "t": 6240,
+            "value": 65.0
+          },
+          {
+            "t": 6480,
+            "value": 35.0
+          },
+          {
+            "t": 6720,
+            "value": 65.0
+          },
+          {
+            "t": 6960,
+            "value": 35.0
+          },
+          {
+            "t": 7200,
+            "value": 50.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 4800,
+          "to_s": 6960,
+          "equals": true
+        },
+        {
+          "output": "yFault",
+          "from_s": 10800,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 6960,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 10800,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "warmup_burst_raw_behavior",
+      "description": "Eight tick-rate firing changes during partial-window fill can extrapolate above the crossing limit while HWS is unstable. Both raw diagnostics overlap from 960 s; yFault is clear at 1200 s, asserts exactly at the 1260 s persistence boundary, and remains true after it. The host reports NO_EVAL through the first 1800 seconds.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 80.0
+          },
+          {
+            "t": 120,
+            "value": 20.0
+          },
+          {
+            "t": 240,
+            "value": 80.0
+          },
+          {
+            "t": 360,
+            "value": 20.0
+          },
+          {
+            "t": 480,
+            "value": 80.0
+          },
+          {
+            "t": 600,
+            "value": 20.0
+          },
+          {
+            "t": 720,
+            "value": 80.0
+          },
+          {
+            "t": 840,
+            "value": 20.0
+          },
+          {
+            "t": 960,
+            "value": 50.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 1200,
+          "equals": false
+        },
+        {
+          "output": "yFault",
+          "from_s": 1260,
+          "to_s": 1320,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 960,
+          "to_s": 960,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 960,
+          "to_s": 960,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 600,
+          "to_s": 1680,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 1200,
+          "to_s": 1680,
+          "equals": true
+        },
+        {
+          "output": "yFault",
+          "from_s": 6000,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 6000,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 1200,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "setpoint_step_excluded_raw_behavior",
+      "description": "A setpoint step at t=1800 followed by sustained materially reversing firing_rate raises the raw diagnostics and fault. Deployment must instead report NO_EVAL until reset and disturbance response are settled.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 50.0
+          },
+          {
+            "t": 3600,
+            "value": 65.0
+          },
+          {
+            "t": 3840,
+            "value": 35.0
+          },
+          {
+            "t": 4080,
+            "value": 65.0
+          },
+          {
+            "t": 4320,
+            "value": 35.0
+          },
+          {
+            "t": 4560,
+            "value": 65.0
+          },
+          {
+            "t": 4800,
+            "value": 35.0
+          },
+          {
+            "t": 5040,
+            "value": 65.0
+          },
+          {
+            "t": 5280,
+            "value": 35.0
+          },
+          {
+            "t": 5520,
+            "value": 65.0
+          },
+          {
+            "t": 5760,
+            "value": 35.0
+          },
+          {
+            "t": 6000,
+            "value": 65.0
+          },
+          {
+            "t": 6240,
+            "value": 35.0
+          },
+          {
+            "t": 6480,
+            "value": 65.0
+          },
+          {
+            "t": 6720,
+            "value": 35.0
+          },
+          {
+            "t": 6960,
+            "value": 65.0
+          },
+          {
+            "t": 7200,
+            "value": 35.0
+          },
+          {
+            "t": 7440,
+            "value": 65.0
+          },
+          {
+            "t": 7680,
+            "value": 35.0
+          },
+          {
+            "t": 7920,
+            "value": 65.0
+          },
+          {
+            "t": 8160,
+            "value": 35.0
+          },
+          {
+            "t": 8400,
+            "value": 65.0
+          },
+          {
+            "t": 8640,
+            "value": 35.0
+          },
+          {
+            "t": 8880,
+            "value": 65.0
+          },
+          {
+            "t": 9120,
+            "value": 35.0
+          },
+          {
+            "t": 9360,
+            "value": 65.0
+          },
+          {
+            "t": 9600,
+            "value": 35.0
+          },
+          {
+            "t": 9840,
+            "value": 65.0
+          },
+          {
+            "t": 10080,
+            "value": 35.0
+          },
+          {
+            "t": 10320,
+            "value": 65.0
+          },
+          {
+            "t": 10560,
+            "value": 35.0
+          },
+          {
+            "t": 10800,
+            "value": 65.0
+          },
+          {
+            "t": 11040,
+            "value": 35.0
+          },
+          {
+            "t": 11280,
+            "value": 65.0
+          },
+          {
+            "t": 11520,
+            "value": 35.0
+          },
+          {
+            "t": 11760,
+            "value": 65.0
+          },
+          {
+            "t": 12000,
+            "value": 35.0
+          },
+          {
+            "t": 12240,
+            "value": 65.0
+          },
+          {
+            "t": 12480,
+            "value": 35.0
+          },
+          {
+            "t": 12720,
+            "value": 65.0
+          },
+          {
+            "t": 12960,
+            "value": 35.0
+          },
+          {
+            "t": 13200,
+            "value": 65.0
+          },
+          {
+            "t": 13440,
+            "value": 35.0
+          },
+          {
+            "t": 13680,
+            "value": 65.0
+          },
+          {
+            "t": 13920,
+            "value": 35.0
+          },
+          {
+            "t": 14160,
+            "value": 65.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 60.0
+          },
+          {
+            "t": 3600,
+            "value": 63.6
+          },
+          {
+            "t": 3840,
+            "value": 60.0
+          },
+          {
+            "t": 4080,
+            "value": 63.6
+          },
+          {
+            "t": 4320,
+            "value": 60.0
+          },
+          {
+            "t": 4560,
+            "value": 63.6
+          },
+          {
+            "t": 4800,
+            "value": 60.0
+          },
+          {
+            "t": 5040,
+            "value": 63.6
+          },
+          {
+            "t": 5280,
+            "value": 60.0
+          },
+          {
+            "t": 5520,
+            "value": 63.6
+          },
+          {
+            "t": 5760,
+            "value": 60.0
+          },
+          {
+            "t": 6000,
+            "value": 63.6
+          },
+          {
+            "t": 6240,
+            "value": 60.0
+          },
+          {
+            "t": 6480,
+            "value": 63.6
+          },
+          {
+            "t": 6720,
+            "value": 60.0
+          },
+          {
+            "t": 6960,
+            "value": 63.6
+          },
+          {
+            "t": 7200,
+            "value": 60.0
+          },
+          {
+            "t": 7440,
+            "value": 63.6
+          },
+          {
+            "t": 7680,
+            "value": 60.0
+          },
+          {
+            "t": 7920,
+            "value": 63.6
+          },
+          {
+            "t": 8160,
+            "value": 60.0
+          },
+          {
+            "t": 8400,
+            "value": 63.6
+          },
+          {
+            "t": 8640,
+            "value": 60.0
+          },
+          {
+            "t": 8880,
+            "value": 63.6
+          },
+          {
+            "t": 9120,
+            "value": 60.0
+          },
+          {
+            "t": 9360,
+            "value": 63.6
+          },
+          {
+            "t": 9600,
+            "value": 60.0
+          },
+          {
+            "t": 9840,
+            "value": 63.6
+          },
+          {
+            "t": 10080,
+            "value": 60.0
+          },
+          {
+            "t": 10320,
+            "value": 63.6
+          },
+          {
+            "t": 10560,
+            "value": 60.0
+          },
+          {
+            "t": 10800,
+            "value": 63.6
+          },
+          {
+            "t": 11040,
+            "value": 60.0
+          },
+          {
+            "t": 11280,
+            "value": 63.6
+          },
+          {
+            "t": 11520,
+            "value": 60.0
+          },
+          {
+            "t": 11760,
+            "value": 63.6
+          },
+          {
+            "t": 12000,
+            "value": 60.0
+          },
+          {
+            "t": 12240,
+            "value": 63.6
+          },
+          {
+            "t": 12480,
+            "value": 60.0
+          },
+          {
+            "t": 12720,
+            "value": 63.6
+          },
+          {
+            "t": 12960,
+            "value": 60.0
+          },
+          {
+            "t": 13200,
+            "value": 63.6
+          },
+          {
+            "t": 13440,
+            "value": 60.0
+          },
+          {
+            "t": 13680,
+            "value": 63.6
+          },
+          {
+            "t": 13920,
+            "value": 60.0
+          },
+          {
+            "t": 14160,
+            "value": 63.6
+          }
+        ],
+        "hws_temp_sp": [
+          {
+            "t": 0,
+            "value": 60.0
+          },
+          {
+            "t": 3600,
+            "value": 61.8
+          }
+        ]
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 8400,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 7200,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 7200,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "subtick_hunting_aliases_clear",
+      "description": "A host sampling once per minute cannot see an even number of reversals that occur and return between samples; the staged trace is therefore constant and every output stays clear. This pins the Nyquist limitation, not healthy plant behavior.",
+      "inputs": {
+        "boiler_firing_rate": 50.0,
+        "hws_temp": 60.0,
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "firing_mad_exact_threshold_clear",
+      "description": "A +/-7.5-percentage-point square wave has exactly 7.5 points settled rolling MAD. The strict materiality comparator stays false while the temperature lane remains active.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 57.5
+          },
+          {
+            "t": 60,
+            "value": 42.5
+          },
+          {
+            "t": 120,
+            "value": 57.5
+          },
+          {
+            "t": 180,
+            "value": 42.5
+          },
+          {
+            "t": 240,
+            "value": 57.5
+          },
+          {
+            "t": 300,
+            "value": 42.5
+          },
+          {
+            "t": 360,
+            "value": 57.5
+          },
+          {
+            "t": 420,
+            "value": 42.5
+          },
+          {
+            "t": 480,
+            "value": 57.5
+          },
+          {
+            "t": 540,
+            "value": 42.5
+          },
+          {
+            "t": 600,
+            "value": 57.5
+          },
+          {
+            "t": 660,
+            "value": 42.5
+          },
+          {
+            "t": 720,
+            "value": 57.5
+          },
+          {
+            "t": 780,
+            "value": 42.5
+          },
+          {
+            "t": 840,
+            "value": 57.5
+          },
+          {
+            "t": 900,
+            "value": 42.5
+          },
+          {
+            "t": 960,
+            "value": 57.5
+          },
+          {
+            "t": 1020,
+            "value": 42.5
+          },
+          {
+            "t": 1080,
+            "value": 57.5
+          },
+          {
+            "t": 1140,
+            "value": 42.5
+          },
+          {
+            "t": 1200,
+            "value": 57.5
+          },
+          {
+            "t": 1260,
+            "value": 42.5
+          },
+          {
+            "t": 1320,
+            "value": 57.5
+          },
+          {
+            "t": 1380,
+            "value": 42.5
+          },
+          {
+            "t": 1440,
+            "value": 57.5
+          },
+          {
+            "t": 1500,
+            "value": 42.5
+          },
+          {
+            "t": 1560,
+            "value": 57.5
+          },
+          {
+            "t": 1620,
+            "value": 42.5
+          },
+          {
+            "t": 1680,
+            "value": 57.5
+          },
+          {
+            "t": 1740,
+            "value": 42.5
+          },
+          {
+            "t": 1800,
+            "value": 57.5
+          },
+          {
+            "t": 1860,
+            "value": 42.5
+          },
+          {
+            "t": 1920,
+            "value": 57.5
+          },
+          {
+            "t": 1980,
+            "value": 42.5
+          },
+          {
+            "t": 2040,
+            "value": 57.5
+          },
+          {
+            "t": 2100,
+            "value": 42.5
+          },
+          {
+            "t": 2160,
+            "value": 57.5
+          },
+          {
+            "t": 2220,
+            "value": 42.5
+          },
+          {
+            "t": 2280,
+            "value": 57.5
+          },
+          {
+            "t": 2340,
+            "value": 42.5
+          },
+          {
+            "t": 2400,
+            "value": 57.5
+          },
+          {
+            "t": 2460,
+            "value": 42.5
+          },
+          {
+            "t": 2520,
+            "value": 57.5
+          },
+          {
+            "t": 2580,
+            "value": 42.5
+          },
+          {
+            "t": 2640,
+            "value": 57.5
+          },
+          {
+            "t": 2700,
+            "value": 42.5
+          },
+          {
+            "t": 2760,
+            "value": 57.5
+          },
+          {
+            "t": 2820,
+            "value": 42.5
+          },
+          {
+            "t": 2880,
+            "value": 57.5
+          },
+          {
+            "t": 2940,
+            "value": 42.5
+          },
+          {
+            "t": 3000,
+            "value": 57.5
+          },
+          {
+            "t": 3060,
+            "value": 42.5
+          },
+          {
+            "t": 3120,
+            "value": 57.5
+          },
+          {
+            "t": 3180,
+            "value": 42.5
+          },
+          {
+            "t": 3240,
+            "value": 57.5
+          },
+          {
+            "t": 3300,
+            "value": 42.5
+          },
+          {
+            "t": 3360,
+            "value": 57.5
+          },
+          {
+            "t": 3420,
+            "value": 42.5
+          },
+          {
+            "t": 3480,
+            "value": 57.5
+          },
+          {
+            "t": 3540,
+            "value": 42.5
+          },
+          {
+            "t": 3600,
+            "value": 57.5
+          },
+          {
+            "t": 3660,
+            "value": 42.5
+          },
+          {
+            "t": 3720,
+            "value": 57.5
+          },
+          {
+            "t": 3780,
+            "value": 42.5
+          },
+          {
+            "t": 3840,
+            "value": 57.5
+          },
+          {
+            "t": 3900,
+            "value": 42.5
+          },
+          {
+            "t": 3960,
+            "value": 57.5
+          },
+          {
+            "t": 4020,
+            "value": 42.5
+          },
+          {
+            "t": 4080,
+            "value": 57.5
+          },
+          {
+            "t": 4140,
+            "value": 42.5
+          },
+          {
+            "t": 4200,
+            "value": 57.5
+          },
+          {
+            "t": 4260,
+            "value": 42.5
+          },
+          {
+            "t": 4320,
+            "value": 57.5
+          },
+          {
+            "t": 4380,
+            "value": 42.5
+          },
+          {
+            "t": 4440,
+            "value": 57.5
+          },
+          {
+            "t": 4500,
+            "value": 42.5
+          },
+          {
+            "t": 4560,
+            "value": 57.5
+          },
+          {
+            "t": 4620,
+            "value": 42.5
+          },
+          {
+            "t": 4680,
+            "value": 57.5
+          },
+          {
+            "t": 4740,
+            "value": 42.5
+          },
+          {
+            "t": 4800,
+            "value": 57.5
+          },
+          {
+            "t": 4860,
+            "value": 42.5
+          },
+          {
+            "t": 4920,
+            "value": 57.5
+          },
+          {
+            "t": 4980,
+            "value": 42.5
+          },
+          {
+            "t": 5040,
+            "value": 57.5
+          },
+          {
+            "t": 5100,
+            "value": 42.5
+          },
+          {
+            "t": 5160,
+            "value": 57.5
+          },
+          {
+            "t": 5220,
+            "value": 42.5
+          },
+          {
+            "t": 5280,
+            "value": 57.5
+          },
+          {
+            "t": 5340,
+            "value": 42.5
+          },
+          {
+            "t": 5400,
+            "value": 57.5
+          },
+          {
+            "t": 5460,
+            "value": 42.5
+          },
+          {
+            "t": 5520,
+            "value": 57.5
+          },
+          {
+            "t": 5580,
+            "value": 42.5
+          },
+          {
+            "t": 5640,
+            "value": 57.5
+          },
+          {
+            "t": 5700,
+            "value": 42.5
+          },
+          {
+            "t": 5760,
+            "value": 57.5
+          },
+          {
+            "t": 5820,
+            "value": 42.5
+          },
+          {
+            "t": 5880,
+            "value": 57.5
+          },
+          {
+            "t": 5940,
+            "value": 42.5
+          },
+          {
+            "t": 6000,
+            "value": 57.5
+          },
+          {
+            "t": 6060,
+            "value": 42.5
+          },
+          {
+            "t": 6120,
+            "value": 57.5
+          },
+          {
+            "t": 6180,
+            "value": 42.5
+          },
+          {
+            "t": 6240,
+            "value": 57.5
+          },
+          {
+            "t": 6300,
+            "value": 42.5
+          },
+          {
+            "t": 6360,
+            "value": 57.5
+          },
+          {
+            "t": 6420,
+            "value": 42.5
+          },
+          {
+            "t": 6480,
+            "value": 57.5
+          },
+          {
+            "t": 6540,
+            "value": 42.5
+          },
+          {
+            "t": 6600,
+            "value": 57.5
+          },
+          {
+            "t": 6660,
+            "value": 42.5
+          },
+          {
+            "t": 6720,
+            "value": 57.5
+          },
+          {
+            "t": 6780,
+            "value": 42.5
+          },
+          {
+            "t": 6840,
+            "value": 57.5
+          },
+          {
+            "t": 6900,
+            "value": 42.5
+          },
+          {
+            "t": 6960,
+            "value": 57.5
+          },
+          {
+            "t": 7020,
+            "value": 42.5
+          },
+          {
+            "t": 7080,
+            "value": 57.5
+          },
+          {
+            "t": 7140,
+            "value": 42.5
+          },
+          {
+            "t": 7200,
+            "value": 57.5
+          },
+          {
+            "t": 7260,
+            "value": 42.5
+          },
+          {
+            "t": 7320,
+            "value": 57.5
+          },
+          {
+            "t": 7380,
+            "value": 42.5
+          },
+          {
+            "t": 7440,
+            "value": 57.5
+          },
+          {
+            "t": 7500,
+            "value": 42.5
+          },
+          {
+            "t": 7560,
+            "value": 57.5
+          },
+          {
+            "t": 7620,
+            "value": 42.5
+          },
+          {
+            "t": 7680,
+            "value": 57.5
+          },
+          {
+            "t": 7740,
+            "value": 42.5
+          },
+          {
+            "t": 7800,
+            "value": 57.5
+          },
+          {
+            "t": 7860,
+            "value": 42.5
+          },
+          {
+            "t": 7920,
+            "value": 57.5
+          },
+          {
+            "t": 7980,
+            "value": 42.5
+          },
+          {
+            "t": 8040,
+            "value": 57.5
+          },
+          {
+            "t": 8100,
+            "value": 42.5
+          },
+          {
+            "t": 8160,
+            "value": 57.5
+          },
+          {
+            "t": 8220,
+            "value": 42.5
+          },
+          {
+            "t": 8280,
+            "value": 57.5
+          },
+          {
+            "t": 8340,
+            "value": 42.5
+          },
+          {
+            "t": 8400,
+            "value": 57.5
+          },
+          {
+            "t": 8460,
+            "value": 42.5
+          },
+          {
+            "t": 8520,
+            "value": 57.5
+          },
+          {
+            "t": 8580,
+            "value": 42.5
+          },
+          {
+            "t": 8640,
+            "value": 57.5
+          },
+          {
+            "t": 8700,
+            "value": 42.5
+          },
+          {
+            "t": 8760,
+            "value": 57.5
+          },
+          {
+            "t": 8820,
+            "value": 42.5
+          },
+          {
+            "t": 8880,
+            "value": 57.5
+          },
+          {
+            "t": 8940,
+            "value": 42.5
+          },
+          {
+            "t": 9000,
+            "value": 57.5
+          },
+          {
+            "t": 9060,
+            "value": 42.5
+          },
+          {
+            "t": 9120,
+            "value": 57.5
+          },
+          {
+            "t": 9180,
+            "value": 42.5
+          },
+          {
+            "t": 9240,
+            "value": 57.5
+          },
+          {
+            "t": 9300,
+            "value": 42.5
+          },
+          {
+            "t": 9360,
+            "value": 57.5
+          },
+          {
+            "t": 9420,
+            "value": 42.5
+          },
+          {
+            "t": 9480,
+            "value": 57.5
+          },
+          {
+            "t": 9540,
+            "value": 42.5
+          },
+          {
+            "t": 9600,
+            "value": 57.5
+          },
+          {
+            "t": 9660,
+            "value": 42.5
+          },
+          {
+            "t": 9720,
+            "value": 57.5
+          },
+          {
+            "t": 9780,
+            "value": 42.5
+          },
+          {
+            "t": 9840,
+            "value": 57.5
+          },
+          {
+            "t": 9900,
+            "value": 42.5
+          },
+          {
+            "t": 9960,
+            "value": 57.5
+          },
+          {
+            "t": 10020,
+            "value": 42.5
+          },
+          {
+            "t": 10080,
+            "value": 57.5
+          },
+          {
+            "t": 10140,
+            "value": 42.5
+          },
+          {
+            "t": 10200,
+            "value": 57.5
+          },
+          {
+            "t": 10260,
+            "value": 42.5
+          },
+          {
+            "t": 10320,
+            "value": 57.5
+          },
+          {
+            "t": 10380,
+            "value": 42.5
+          },
+          {
+            "t": 10440,
+            "value": 57.5
+          },
+          {
+            "t": 10500,
+            "value": 42.5
+          },
+          {
+            "t": 10560,
+            "value": 57.5
+          },
+          {
+            "t": 10620,
+            "value": 42.5
+          },
+          {
+            "t": 10680,
+            "value": 57.5
+          },
+          {
+            "t": 10740,
+            "value": 42.5
+          },
+          {
+            "t": 10800,
+            "value": 57.5
+          },
+          {
+            "t": 10860,
+            "value": 42.5
+          },
+          {
+            "t": 10920,
+            "value": 57.5
+          },
+          {
+            "t": 10980,
+            "value": 42.5
+          },
+          {
+            "t": 11040,
+            "value": 57.5
+          },
+          {
+            "t": 11100,
+            "value": 42.5
+          },
+          {
+            "t": 11160,
+            "value": 57.5
+          },
+          {
+            "t": 11220,
+            "value": 42.5
+          },
+          {
+            "t": 11280,
+            "value": 57.5
+          },
+          {
+            "t": 11340,
+            "value": 42.5
+          },
+          {
+            "t": 11400,
+            "value": 57.5
+          },
+          {
+            "t": 11460,
+            "value": 42.5
+          },
+          {
+            "t": 11520,
+            "value": 57.5
+          },
+          {
+            "t": 11580,
+            "value": 42.5
+          },
+          {
+            "t": 11640,
+            "value": 57.5
+          },
+          {
+            "t": 11700,
+            "value": 42.5
+          },
+          {
+            "t": 11760,
+            "value": 57.5
+          },
+          {
+            "t": 11820,
+            "value": 42.5
+          },
+          {
+            "t": 11880,
+            "value": 57.5
+          },
+          {
+            "t": 11940,
+            "value": 42.5
+          },
+          {
+            "t": 12000,
+            "value": 57.5
+          },
+          {
+            "t": 12060,
+            "value": 42.5
+          },
+          {
+            "t": 12120,
+            "value": 57.5
+          },
+          {
+            "t": 12180,
+            "value": 42.5
+          },
+          {
+            "t": 12240,
+            "value": 57.5
+          },
+          {
+            "t": 12300,
+            "value": 42.5
+          },
+          {
+            "t": 12360,
+            "value": 57.5
+          },
+          {
+            "t": 12420,
+            "value": 42.5
+          },
+          {
+            "t": 12480,
+            "value": 57.5
+          },
+          {
+            "t": 12540,
+            "value": 42.5
+          },
+          {
+            "t": 12600,
+            "value": 57.5
+          },
+          {
+            "t": 12660,
+            "value": 42.5
+          },
+          {
+            "t": 12720,
+            "value": 57.5
+          },
+          {
+            "t": 12780,
+            "value": 42.5
+          },
+          {
+            "t": 12840,
+            "value": 57.5
+          },
+          {
+            "t": 12900,
+            "value": 42.5
+          },
+          {
+            "t": 12960,
+            "value": 57.5
+          },
+          {
+            "t": 13020,
+            "value": 42.5
+          },
+          {
+            "t": 13080,
+            "value": 57.5
+          },
+          {
+            "t": 13140,
+            "value": 42.5
+          },
+          {
+            "t": 13200,
+            "value": 57.5
+          },
+          {
+            "t": 13260,
+            "value": 42.5
+          },
+          {
+            "t": 13320,
+            "value": 57.5
+          },
+          {
+            "t": 13380,
+            "value": 42.5
+          },
+          {
+            "t": 13440,
+            "value": 57.5
+          },
+          {
+            "t": 13500,
+            "value": 42.5
+          },
+          {
+            "t": 13560,
+            "value": 57.5
+          },
+          {
+            "t": 13620,
+            "value": 42.5
+          },
+          {
+            "t": 13680,
+            "value": 57.5
+          },
+          {
+            "t": 13740,
+            "value": 42.5
+          },
+          {
+            "t": 13800,
+            "value": 57.5
+          },
+          {
+            "t": 13860,
+            "value": 42.5
+          },
+          {
+            "t": 13920,
+            "value": 57.5
+          },
+          {
+            "t": 13980,
+            "value": 42.5
+          },
+          {
+            "t": 14040,
+            "value": 57.5
+          },
+          {
+            "t": 14100,
+            "value": 42.5
+          },
+          {
+            "t": 14160,
+            "value": 57.5
+          },
+          {
+            "t": 14220,
+            "value": 42.5
+          },
+          {
+            "t": 14280,
+            "value": 57.5
+          },
+          {
+            "t": 14340,
+            "value": 42.5
+          },
+          {
+            "t": 14400,
+            "value": 57.5
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 61.8
+          },
+          {
+            "t": 240,
+            "value": 58.2
+          },
+          {
+            "t": 480,
+            "value": 61.8
+          },
+          {
+            "t": 720,
+            "value": 58.2
+          },
+          {
+            "t": 960,
+            "value": 61.8
+          },
+          {
+            "t": 1200,
+            "value": 58.2
+          },
+          {
+            "t": 1440,
+            "value": 61.8
+          },
+          {
+            "t": 1680,
+            "value": 58.2
+          },
+          {
+            "t": 1920,
+            "value": 61.8
+          },
+          {
+            "t": 2160,
+            "value": 58.2
+          },
+          {
+            "t": 2400,
+            "value": 61.8
+          },
+          {
+            "t": 2640,
+            "value": 58.2
+          },
+          {
+            "t": 2880,
+            "value": 61.8
+          },
+          {
+            "t": 3120,
+            "value": 58.2
+          },
+          {
+            "t": 3360,
+            "value": 61.8
+          },
+          {
+            "t": 3600,
+            "value": 58.2
+          },
+          {
+            "t": 3840,
+            "value": 61.8
+          },
+          {
+            "t": 4080,
+            "value": 58.2
+          },
+          {
+            "t": 4320,
+            "value": 61.8
+          },
+          {
+            "t": 4560,
+            "value": 58.2
+          },
+          {
+            "t": 4800,
+            "value": 61.8
+          },
+          {
+            "t": 5040,
+            "value": 58.2
+          },
+          {
+            "t": 5280,
+            "value": 61.8
+          },
+          {
+            "t": 5520,
+            "value": 58.2
+          },
+          {
+            "t": 5760,
+            "value": 61.8
+          },
+          {
+            "t": 6000,
+            "value": 58.2
+          },
+          {
+            "t": 6240,
+            "value": 61.8
+          },
+          {
+            "t": 6480,
+            "value": 58.2
+          },
+          {
+            "t": 6720,
+            "value": 61.8
+          },
+          {
+            "t": 6960,
+            "value": 58.2
+          },
+          {
+            "t": 7200,
+            "value": 61.8
+          },
+          {
+            "t": 7440,
+            "value": 58.2
+          },
+          {
+            "t": 7680,
+            "value": 61.8
+          },
+          {
+            "t": 7920,
+            "value": 58.2
+          },
+          {
+            "t": 8160,
+            "value": 61.8
+          },
+          {
+            "t": 8400,
+            "value": 58.2
+          },
+          {
+            "t": 8640,
+            "value": 61.8
+          },
+          {
+            "t": 8880,
+            "value": 58.2
+          },
+          {
+            "t": 9120,
+            "value": 61.8
+          },
+          {
+            "t": 9360,
+            "value": 58.2
+          },
+          {
+            "t": 9600,
+            "value": 61.8
+          },
+          {
+            "t": 9840,
+            "value": 58.2
+          },
+          {
+            "t": 10080,
+            "value": 61.8
+          },
+          {
+            "t": 10320,
+            "value": 58.2
+          },
+          {
+            "t": 10560,
+            "value": 61.8
+          },
+          {
+            "t": 10800,
+            "value": 58.2
+          },
+          {
+            "t": 11040,
+            "value": 61.8
+          },
+          {
+            "t": 11280,
+            "value": 58.2
+          },
+          {
+            "t": 11520,
+            "value": 61.8
+          },
+          {
+            "t": 11760,
+            "value": 58.2
+          },
+          {
+            "t": 12000,
+            "value": 61.8
+          },
+          {
+            "t": 12240,
+            "value": 58.2
+          },
+          {
+            "t": 12480,
+            "value": 61.8
+          },
+          {
+            "t": 12720,
+            "value": 58.2
+          },
+          {
+            "t": 12960,
+            "value": 61.8
+          },
+          {
+            "t": 13200,
+            "value": 58.2
+          },
+          {
+            "t": 13440,
+            "value": 61.8
+          },
+          {
+            "t": 13680,
+            "value": 58.2
+          },
+          {
+            "t": 13920,
+            "value": 61.8
+          },
+          {
+            "t": 14160,
+            "value": 58.2
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 7200,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 7200,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yFault",
+          "from_s": 7200,
+          "to_s": 14400,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "temperature_count_exactly_allowed",
+      "description": "Firing rate hunts materially, but HWS produces exactly six rolling-error-mean crossings per 1800-second window. The strict temperature count > 6 comparison and combined fault stay clear.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 65.0
+          },
+          {
+            "t": 240,
+            "value": 35.0
+          },
+          {
+            "t": 480,
+            "value": 65.0
+          },
+          {
+            "t": 720,
+            "value": 35.0
+          },
+          {
+            "t": 960,
+            "value": 65.0
+          },
+          {
+            "t": 1200,
+            "value": 35.0
+          },
+          {
+            "t": 1440,
+            "value": 65.0
+          },
+          {
+            "t": 1680,
+            "value": 35.0
+          },
+          {
+            "t": 1920,
+            "value": 65.0
+          },
+          {
+            "t": 2160,
+            "value": 35.0
+          },
+          {
+            "t": 2400,
+            "value": 65.0
+          },
+          {
+            "t": 2640,
+            "value": 35.0
+          },
+          {
+            "t": 2880,
+            "value": 65.0
+          },
+          {
+            "t": 3120,
+            "value": 35.0
+          },
+          {
+            "t": 3360,
+            "value": 65.0
+          },
+          {
+            "t": 3600,
+            "value": 35.0
+          },
+          {
+            "t": 3840,
+            "value": 65.0
+          },
+          {
+            "t": 4080,
+            "value": 35.0
+          },
+          {
+            "t": 4320,
+            "value": 65.0
+          },
+          {
+            "t": 4560,
+            "value": 35.0
+          },
+          {
+            "t": 4800,
+            "value": 65.0
+          },
+          {
+            "t": 5040,
+            "value": 35.0
+          },
+          {
+            "t": 5280,
+            "value": 65.0
+          },
+          {
+            "t": 5520,
+            "value": 35.0
+          },
+          {
+            "t": 5760,
+            "value": 65.0
+          },
+          {
+            "t": 6000,
+            "value": 35.0
+          },
+          {
+            "t": 6240,
+            "value": 65.0
+          },
+          {
+            "t": 6480,
+            "value": 35.0
+          },
+          {
+            "t": 6720,
+            "value": 65.0
+          },
+          {
+            "t": 6960,
+            "value": 35.0
+          },
+          {
+            "t": 7200,
+            "value": 65.0
+          },
+          {
+            "t": 7440,
+            "value": 35.0
+          },
+          {
+            "t": 7680,
+            "value": 65.0
+          },
+          {
+            "t": 7920,
+            "value": 35.0
+          },
+          {
+            "t": 8160,
+            "value": 65.0
+          },
+          {
+            "t": 8400,
+            "value": 35.0
+          },
+          {
+            "t": 8640,
+            "value": 65.0
+          },
+          {
+            "t": 8880,
+            "value": 35.0
+          },
+          {
+            "t": 9120,
+            "value": 65.0
+          },
+          {
+            "t": 9360,
+            "value": 35.0
+          },
+          {
+            "t": 9600,
+            "value": 65.0
+          },
+          {
+            "t": 9840,
+            "value": 35.0
+          },
+          {
+            "t": 10080,
+            "value": 65.0
+          },
+          {
+            "t": 10320,
+            "value": 35.0
+          },
+          {
+            "t": 10560,
+            "value": 65.0
+          },
+          {
+            "t": 10800,
+            "value": 35.0
+          },
+          {
+            "t": 11040,
+            "value": 65.0
+          },
+          {
+            "t": 11280,
+            "value": 35.0
+          },
+          {
+            "t": 11520,
+            "value": 65.0
+          },
+          {
+            "t": 11760,
+            "value": 35.0
+          },
+          {
+            "t": 12000,
+            "value": 65.0
+          },
+          {
+            "t": 12240,
+            "value": 35.0
+          },
+          {
+            "t": 12480,
+            "value": 65.0
+          },
+          {
+            "t": 12720,
+            "value": 35.0
+          },
+          {
+            "t": 12960,
+            "value": 65.0
+          },
+          {
+            "t": 13200,
+            "value": 35.0
+          },
+          {
+            "t": 13440,
+            "value": 65.0
+          },
+          {
+            "t": 13680,
+            "value": 35.0
+          },
+          {
+            "t": 13920,
+            "value": 65.0
+          },
+          {
+            "t": 14160,
+            "value": 35.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 62.0
+          },
+          {
+            "t": 300,
+            "value": 58.0
+          },
+          {
+            "t": 600,
+            "value": 62.0
+          },
+          {
+            "t": 900,
+            "value": 58.0
+          },
+          {
+            "t": 1200,
+            "value": 62.0
+          },
+          {
+            "t": 1500,
+            "value": 58.0
+          },
+          {
+            "t": 1800,
+            "value": 62.0
+          },
+          {
+            "t": 2100,
+            "value": 58.0
+          },
+          {
+            "t": 2400,
+            "value": 62.0
+          },
+          {
+            "t": 2700,
+            "value": 58.0
+          },
+          {
+            "t": 3000,
+            "value": 62.0
+          },
+          {
+            "t": 3300,
+            "value": 58.0
+          },
+          {
+            "t": 3600,
+            "value": 62.0
+          },
+          {
+            "t": 3900,
+            "value": 58.0
+          },
+          {
+            "t": 4200,
+            "value": 62.0
+          },
+          {
+            "t": 4500,
+            "value": 58.0
+          },
+          {
+            "t": 4800,
+            "value": 62.0
+          },
+          {
+            "t": 5100,
+            "value": 58.0
+          },
+          {
+            "t": 5400,
+            "value": 62.0
+          },
+          {
+            "t": 5700,
+            "value": 58.0
+          },
+          {
+            "t": 6000,
+            "value": 62.0
+          },
+          {
+            "t": 6300,
+            "value": 58.0
+          },
+          {
+            "t": 6600,
+            "value": 62.0
+          },
+          {
+            "t": 6900,
+            "value": 58.0
+          },
+          {
+            "t": 7200,
+            "value": 62.0
+          },
+          {
+            "t": 7500,
+            "value": 58.0
+          },
+          {
+            "t": 7800,
+            "value": 62.0
+          },
+          {
+            "t": 8100,
+            "value": 58.0
+          },
+          {
+            "t": 8400,
+            "value": 62.0
+          },
+          {
+            "t": 8700,
+            "value": 58.0
+          },
+          {
+            "t": 9000,
+            "value": 62.0
+          },
+          {
+            "t": 9300,
+            "value": 58.0
+          },
+          {
+            "t": 9600,
+            "value": 62.0
+          },
+          {
+            "t": 9900,
+            "value": 58.0
+          },
+          {
+            "t": 10200,
+            "value": 62.0
+          },
+          {
+            "t": 10500,
+            "value": 58.0
+          },
+          {
+            "t": 10800,
+            "value": 62.0
+          },
+          {
+            "t": 11100,
+            "value": 58.0
+          },
+          {
+            "t": 11400,
+            "value": 62.0
+          },
+          {
+            "t": 11700,
+            "value": 58.0
+          },
+          {
+            "t": 12000,
+            "value": 62.0
+          },
+          {
+            "t": 12300,
+            "value": 58.0
+          },
+          {
+            "t": 12600,
+            "value": 62.0
+          },
+          {
+            "t": 12900,
+            "value": 58.0
+          },
+          {
+            "t": 13200,
+            "value": 62.0
+          },
+          {
+            "t": 13500,
+            "value": 58.0
+          },
+          {
+            "t": 13800,
+            "value": 62.0
+          },
+          {
+            "t": 14100,
+            "value": 58.0
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 3600,
+          "to_s": 14400,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "diagnostic_overlap_shorter_than_persistence",
+      "description": "During host-excluded warm-up, both raw diagnostics are simultaneously true from 1680 through 1740 s, less than the 300-second final persistence. Firing hunting clears at 1800 s, so the candidate resets before maturity and yFault never asserts.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 80.0
+          },
+          {
+            "t": 120,
+            "value": 20.0
+          },
+          {
+            "t": 240,
+            "value": 80.0
+          },
+          {
+            "t": 360,
+            "value": 20.0
+          },
+          {
+            "t": 480,
+            "value": 80.0
+          },
+          {
+            "t": 600,
+            "value": 20.0
+          },
+          {
+            "t": 720,
+            "value": 50.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 60.0
+          },
+          {
+            "t": 1320,
+            "value": 50.0
+          },
+          {
+            "t": 1380,
+            "value": 70.0
+          },
+          {
+            "t": 1440,
+            "value": 50.0
+          },
+          {
+            "t": 1500,
+            "value": 70.0
+          },
+          {
+            "t": 1560,
+            "value": 50.0
+          },
+          {
+            "t": 1620,
+            "value": 70.0
+          },
+          {
+            "t": 1680,
+            "value": 50.0
+          },
+          {
+            "t": 1740,
+            "value": 70.0
+          },
+          {
+            "t": 1800,
+            "value": 50.0
+          },
+          {
+            "t": 1860,
+            "value": 70.0
+          },
+          {
+            "t": 1920,
+            "value": 50.0
+          },
+          {
+            "t": 1980,
+            "value": 70.0
+          },
+          {
+            "t": 2040,
+            "value": 50.0
+          },
+          {
+            "t": 2100,
+            "value": 70.0
+          },
+          {
+            "t": 2160,
+            "value": 50.0
+          },
+          {
+            "t": 2220,
+            "value": 70.0
+          },
+          {
+            "t": 2280,
+            "value": 50.0
+          },
+          {
+            "t": 2340,
+            "value": 70.0
+          },
+          {
+            "t": 2400,
+            "value": 50.0
+          },
+          {
+            "t": 2460,
+            "value": 70.0
+          },
+          {
+            "t": 2520,
+            "value": 50.0
+          },
+          {
+            "t": 2580,
+            "value": 70.0
+          },
+          {
+            "t": 2640,
+            "value": 50.0
+          },
+          {
+            "t": 2700,
+            "value": 70.0
+          },
+          {
+            "t": 2760,
+            "value": 50.0
+          },
+          {
+            "t": 2820,
+            "value": 70.0
+          },
+          {
+            "t": 2880,
+            "value": 50.0
+          },
+          {
+            "t": 2940,
+            "value": 70.0
+          },
+          {
+            "t": 3000,
+            "value": 50.0
+          },
+          {
+            "t": 3060,
+            "value": 70.0
+          },
+          {
+            "t": 3120,
+            "value": 50.0
+          },
+          {
+            "t": 3180,
+            "value": 70.0
+          },
+          {
+            "t": 3240,
+            "value": 50.0
+          },
+          {
+            "t": 3300,
+            "value": 70.0
+          },
+          {
+            "t": 3360,
+            "value": 50.0
+          },
+          {
+            "t": 3420,
+            "value": 70.0
+          },
+          {
+            "t": 3480,
+            "value": 50.0
+          },
+          {
+            "t": 3540,
+            "value": 70.0
+          },
+          {
+            "t": 3600,
+            "value": 50.0
+          },
+          {
+            "t": 3660,
+            "value": 70.0
+          },
+          {
+            "t": 3720,
+            "value": 50.0
+          },
+          {
+            "t": 3780,
+            "value": 70.0
+          },
+          {
+            "t": 3840,
+            "value": 50.0
+          },
+          {
+            "t": 3900,
+            "value": 70.0
+          },
+          {
+            "t": 3960,
+            "value": 50.0
+          },
+          {
+            "t": 4020,
+            "value": 70.0
+          },
+          {
+            "t": 4080,
+            "value": 50.0
+          },
+          {
+            "t": 4140,
+            "value": 70.0
+          },
+          {
+            "t": 4200,
+            "value": 50.0
+          },
+          {
+            "t": 4260,
+            "value": 70.0
+          },
+          {
+            "t": 4320,
+            "value": 50.0
+          },
+          {
+            "t": 4380,
+            "value": 70.0
+          },
+          {
+            "t": 4440,
+            "value": 50.0
+          },
+          {
+            "t": 4500,
+            "value": 70.0
+          },
+          {
+            "t": 4560,
+            "value": 50.0
+          },
+          {
+            "t": 4620,
+            "value": 70.0
+          },
+          {
+            "t": 4680,
+            "value": 50.0
+          },
+          {
+            "t": 4740,
+            "value": 70.0
+          },
+          {
+            "t": 4800,
+            "value": 50.0
+          },
+          {
+            "t": 4860,
+            "value": 70.0
+          },
+          {
+            "t": 4920,
+            "value": 50.0
+          },
+          {
+            "t": 4980,
+            "value": 70.0
+          },
+          {
+            "t": 5040,
+            "value": 50.0
+          },
+          {
+            "t": 5100,
+            "value": 70.0
+          },
+          {
+            "t": 5160,
+            "value": 50.0
+          },
+          {
+            "t": 5220,
+            "value": 70.0
+          },
+          {
+            "t": 5280,
+            "value": 50.0
+          },
+          {
+            "t": 5340,
+            "value": 70.0
+          },
+          {
+            "t": 5400,
+            "value": 50.0
+          },
+          {
+            "t": 5460,
+            "value": 70.0
+          },
+          {
+            "t": 5520,
+            "value": 50.0
+          },
+          {
+            "t": 5580,
+            "value": 70.0
+          },
+          {
+            "t": 5640,
+            "value": 50.0
+          },
+          {
+            "t": 5700,
+            "value": 70.0
+          },
+          {
+            "t": 5760,
+            "value": 50.0
+          },
+          {
+            "t": 5820,
+            "value": 70.0
+          },
+          {
+            "t": 5880,
+            "value": 50.0
+          },
+          {
+            "t": 5940,
+            "value": 70.0
+          },
+          {
+            "t": 6000,
+            "value": 50.0
+          },
+          {
+            "t": 6060,
+            "value": 70.0
+          },
+          {
+            "t": 6120,
+            "value": 50.0
+          },
+          {
+            "t": 6180,
+            "value": 70.0
+          },
+          {
+            "t": 6240,
+            "value": 50.0
+          },
+          {
+            "t": 6300,
+            "value": 70.0
+          },
+          {
+            "t": 6360,
+            "value": 50.0
+          },
+          {
+            "t": 6420,
+            "value": 70.0
+          },
+          {
+            "t": 6480,
+            "value": 50.0
+          },
+          {
+            "t": 6540,
+            "value": 70.0
+          },
+          {
+            "t": 6600,
+            "value": 50.0
+          },
+          {
+            "t": 6660,
+            "value": 70.0
+          },
+          {
+            "t": 6720,
+            "value": 50.0
+          },
+          {
+            "t": 6780,
+            "value": 70.0
+          },
+          {
+            "t": 6840,
+            "value": 50.0
+          },
+          {
+            "t": 6900,
+            "value": 70.0
+          },
+          {
+            "t": 6960,
+            "value": 50.0
+          },
+          {
+            "t": 7020,
+            "value": 70.0
+          },
+          {
+            "t": 7080,
+            "value": 50.0
+          },
+          {
+            "t": 7140,
+            "value": 70.0
+          },
+          {
+            "t": 7200,
+            "value": 50.0
+          },
+          {
+            "t": 7260,
+            "value": 70.0
+          },
+          {
+            "t": 7320,
+            "value": 50.0
+          },
+          {
+            "t": 7380,
+            "value": 70.0
+          },
+          {
+            "t": 7440,
+            "value": 50.0
+          },
+          {
+            "t": 7500,
+            "value": 70.0
+          },
+          {
+            "t": 7560,
+            "value": 50.0
+          },
+          {
+            "t": 7620,
+            "value": 70.0
+          },
+          {
+            "t": 7680,
+            "value": 50.0
+          },
+          {
+            "t": 7740,
+            "value": 70.0
+          },
+          {
+            "t": 7800,
+            "value": 50.0
+          },
+          {
+            "t": 7860,
+            "value": 70.0
+          },
+          {
+            "t": 7920,
+            "value": 50.0
+          },
+          {
+            "t": 7980,
+            "value": 70.0
+          },
+          {
+            "t": 8040,
+            "value": 50.0
+          },
+          {
+            "t": 8100,
+            "value": 70.0
+          },
+          {
+            "t": 8160,
+            "value": 50.0
+          },
+          {
+            "t": 8220,
+            "value": 70.0
+          },
+          {
+            "t": 8280,
+            "value": 50.0
+          },
+          {
+            "t": 8340,
+            "value": 70.0
+          },
+          {
+            "t": 8400,
+            "value": 50.0
+          },
+          {
+            "t": 8460,
+            "value": 70.0
+          },
+          {
+            "t": 8520,
+            "value": 50.0
+          },
+          {
+            "t": 8580,
+            "value": 70.0
+          },
+          {
+            "t": 8640,
+            "value": 50.0
+          },
+          {
+            "t": 8700,
+            "value": 70.0
+          },
+          {
+            "t": 8760,
+            "value": 50.0
+          },
+          {
+            "t": 8820,
+            "value": 70.0
+          },
+          {
+            "t": 8880,
+            "value": 50.0
+          },
+          {
+            "t": 8940,
+            "value": 70.0
+          },
+          {
+            "t": 9000,
+            "value": 50.0
+          },
+          {
+            "t": 9060,
+            "value": 70.0
+          },
+          {
+            "t": 9120,
+            "value": 50.0
+          },
+          {
+            "t": 9180,
+            "value": 70.0
+          },
+          {
+            "t": 9240,
+            "value": 50.0
+          },
+          {
+            "t": 9300,
+            "value": 70.0
+          },
+          {
+            "t": 9360,
+            "value": 50.0
+          },
+          {
+            "t": 9420,
+            "value": 70.0
+          },
+          {
+            "t": 9480,
+            "value": 50.0
+          },
+          {
+            "t": 9540,
+            "value": 70.0
+          },
+          {
+            "t": 9600,
+            "value": 50.0
+          },
+          {
+            "t": 9660,
+            "value": 70.0
+          },
+          {
+            "t": 9720,
+            "value": 50.0
+          },
+          {
+            "t": 9780,
+            "value": 70.0
+          },
+          {
+            "t": 9840,
+            "value": 50.0
+          },
+          {
+            "t": 9900,
+            "value": 70.0
+          },
+          {
+            "t": 9960,
+            "value": 50.0
+          },
+          {
+            "t": 10020,
+            "value": 70.0
+          },
+          {
+            "t": 10080,
+            "value": 50.0
+          },
+          {
+            "t": 10140,
+            "value": 70.0
+          },
+          {
+            "t": 10200,
+            "value": 50.0
+          },
+          {
+            "t": 10260,
+            "value": 70.0
+          },
+          {
+            "t": 10320,
+            "value": 50.0
+          },
+          {
+            "t": 10380,
+            "value": 70.0
+          },
+          {
+            "t": 10440,
+            "value": 50.0
+          },
+          {
+            "t": 10500,
+            "value": 70.0
+          },
+          {
+            "t": 10560,
+            "value": 50.0
+          },
+          {
+            "t": 10620,
+            "value": 70.0
+          },
+          {
+            "t": 10680,
+            "value": 50.0
+          },
+          {
+            "t": 10740,
+            "value": 70.0
+          },
+          {
+            "t": 10800,
+            "value": 50.0
+          },
+          {
+            "t": 10860,
+            "value": 70.0
+          },
+          {
+            "t": 10920,
+            "value": 50.0
+          },
+          {
+            "t": 10980,
+            "value": 70.0
+          },
+          {
+            "t": 11040,
+            "value": 50.0
+          },
+          {
+            "t": 11100,
+            "value": 70.0
+          },
+          {
+            "t": 11160,
+            "value": 50.0
+          },
+          {
+            "t": 11220,
+            "value": 70.0
+          },
+          {
+            "t": 11280,
+            "value": 50.0
+          },
+          {
+            "t": 11340,
+            "value": 70.0
+          },
+          {
+            "t": 11400,
+            "value": 50.0
+          },
+          {
+            "t": 11460,
+            "value": 70.0
+          },
+          {
+            "t": 11520,
+            "value": 50.0
+          },
+          {
+            "t": 11580,
+            "value": 70.0
+          },
+          {
+            "t": 11640,
+            "value": 50.0
+          },
+          {
+            "t": 11700,
+            "value": 70.0
+          },
+          {
+            "t": 11760,
+            "value": 50.0
+          },
+          {
+            "t": 11820,
+            "value": 70.0
+          },
+          {
+            "t": 11880,
+            "value": 50.0
+          },
+          {
+            "t": 11940,
+            "value": 70.0
+          },
+          {
+            "t": 12000,
+            "value": 50.0
+          },
+          {
+            "t": 12060,
+            "value": 70.0
+          },
+          {
+            "t": 12120,
+            "value": 50.0
+          },
+          {
+            "t": 12180,
+            "value": 70.0
+          },
+          {
+            "t": 12240,
+            "value": 50.0
+          },
+          {
+            "t": 12300,
+            "value": 70.0
+          },
+          {
+            "t": 12360,
+            "value": 50.0
+          },
+          {
+            "t": 12420,
+            "value": 70.0
+          },
+          {
+            "t": 12480,
+            "value": 50.0
+          },
+          {
+            "t": 12540,
+            "value": 70.0
+          },
+          {
+            "t": 12600,
+            "value": 50.0
+          },
+          {
+            "t": 12660,
+            "value": 70.0
+          },
+          {
+            "t": 12720,
+            "value": 50.0
+          },
+          {
+            "t": 12780,
+            "value": 70.0
+          },
+          {
+            "t": 12840,
+            "value": 50.0
+          },
+          {
+            "t": 12900,
+            "value": 70.0
+          },
+          {
+            "t": 12960,
+            "value": 50.0
+          },
+          {
+            "t": 13020,
+            "value": 70.0
+          },
+          {
+            "t": 13080,
+            "value": 50.0
+          },
+          {
+            "t": 13140,
+            "value": 70.0
+          },
+          {
+            "t": 13200,
+            "value": 50.0
+          },
+          {
+            "t": 13260,
+            "value": 70.0
+          },
+          {
+            "t": 13320,
+            "value": 50.0
+          },
+          {
+            "t": 13380,
+            "value": 70.0
+          },
+          {
+            "t": 13440,
+            "value": 50.0
+          },
+          {
+            "t": 13500,
+            "value": 70.0
+          },
+          {
+            "t": 13560,
+            "value": 50.0
+          },
+          {
+            "t": 13620,
+            "value": 70.0
+          },
+          {
+            "t": 13680,
+            "value": 50.0
+          },
+          {
+            "t": 13740,
+            "value": 70.0
+          },
+          {
+            "t": 13800,
+            "value": 50.0
+          },
+          {
+            "t": 13860,
+            "value": 70.0
+          },
+          {
+            "t": 13920,
+            "value": 50.0
+          },
+          {
+            "t": 13980,
+            "value": 70.0
+          },
+          {
+            "t": 14040,
+            "value": 50.0
+          },
+          {
+            "t": 14100,
+            "value": 70.0
+          },
+          {
+            "t": 14160,
+            "value": 50.0
+          },
+          {
+            "t": 14220,
+            "value": 70.0
+          },
+          {
+            "t": 14280,
+            "value": 50.0
+          },
+          {
+            "t": 14340,
+            "value": 70.0
+          },
+          {
+            "t": 14400,
+            "value": 50.0
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 1200,
+          "to_s": 1260,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 1680,
+          "to_s": 1740,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 1800,
+          "to_s": 1800,
+          "equals": false
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 1860,
+          "to_s": 14400,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 1680,
+          "to_s": 1740,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 1860,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "stage_change_discontinuity_is_host_excluded",
+      "description": "Repeated lead/lag stage changes can make an aggregate firing-rate channel and header temperature alternate by construction. After the settled input transition, temperature instability joins firing hunting at 5280 s; yFault is clear at 5520 s, asserts exactly at 5580 s after the 300 s delay, and remains true after it. The raw graph alarms, so stable stage identity is a mandatory host gate.",
+      "inputs": {
+        "boiler_firing_rate": [
+          {
+            "t": 0,
+            "value": 50.0
+          },
+          {
+            "t": 3600,
+            "value": 20.0
+          },
+          {
+            "t": 3840,
+            "value": 80.0
+          },
+          {
+            "t": 4080,
+            "value": 20.0
+          },
+          {
+            "t": 4320,
+            "value": 80.0
+          },
+          {
+            "t": 4560,
+            "value": 20.0
+          },
+          {
+            "t": 4800,
+            "value": 80.0
+          },
+          {
+            "t": 5040,
+            "value": 20.0
+          },
+          {
+            "t": 5280,
+            "value": 80.0
+          },
+          {
+            "t": 5520,
+            "value": 20.0
+          },
+          {
+            "t": 5760,
+            "value": 80.0
+          },
+          {
+            "t": 6000,
+            "value": 20.0
+          },
+          {
+            "t": 6240,
+            "value": 80.0
+          },
+          {
+            "t": 6480,
+            "value": 20.0
+          },
+          {
+            "t": 6720,
+            "value": 80.0
+          },
+          {
+            "t": 6960,
+            "value": 20.0
+          },
+          {
+            "t": 7200,
+            "value": 80.0
+          },
+          {
+            "t": 7440,
+            "value": 20.0
+          },
+          {
+            "t": 7680,
+            "value": 80.0
+          },
+          {
+            "t": 7920,
+            "value": 20.0
+          },
+          {
+            "t": 8160,
+            "value": 80.0
+          },
+          {
+            "t": 8400,
+            "value": 20.0
+          },
+          {
+            "t": 8640,
+            "value": 80.0
+          },
+          {
+            "t": 8880,
+            "value": 20.0
+          },
+          {
+            "t": 9120,
+            "value": 80.0
+          },
+          {
+            "t": 9360,
+            "value": 20.0
+          },
+          {
+            "t": 9600,
+            "value": 80.0
+          },
+          {
+            "t": 9840,
+            "value": 20.0
+          },
+          {
+            "t": 10080,
+            "value": 80.0
+          },
+          {
+            "t": 10320,
+            "value": 20.0
+          },
+          {
+            "t": 10560,
+            "value": 80.0
+          },
+          {
+            "t": 10800,
+            "value": 20.0
+          },
+          {
+            "t": 11040,
+            "value": 80.0
+          },
+          {
+            "t": 11280,
+            "value": 20.0
+          },
+          {
+            "t": 11520,
+            "value": 80.0
+          },
+          {
+            "t": 11760,
+            "value": 20.0
+          },
+          {
+            "t": 12000,
+            "value": 80.0
+          },
+          {
+            "t": 12240,
+            "value": 20.0
+          },
+          {
+            "t": 12480,
+            "value": 80.0
+          },
+          {
+            "t": 12720,
+            "value": 20.0
+          },
+          {
+            "t": 12960,
+            "value": 80.0
+          },
+          {
+            "t": 13200,
+            "value": 20.0
+          },
+          {
+            "t": 13440,
+            "value": 80.0
+          },
+          {
+            "t": 13680,
+            "value": 20.0
+          },
+          {
+            "t": 13920,
+            "value": 80.0
+          },
+          {
+            "t": 14160,
+            "value": 20.0
+          },
+          {
+            "t": 14400,
+            "value": 80.0
+          }
+        ],
+        "hws_temp": [
+          {
+            "t": 0,
+            "value": 60.0
+          },
+          {
+            "t": 3600,
+            "value": 58.0
+          },
+          {
+            "t": 3840,
+            "value": 62.0
+          },
+          {
+            "t": 4080,
+            "value": 58.0
+          },
+          {
+            "t": 4320,
+            "value": 62.0
+          },
+          {
+            "t": 4560,
+            "value": 58.0
+          },
+          {
+            "t": 4800,
+            "value": 62.0
+          },
+          {
+            "t": 5040,
+            "value": 58.0
+          },
+          {
+            "t": 5280,
+            "value": 62.0
+          },
+          {
+            "t": 5520,
+            "value": 58.0
+          },
+          {
+            "t": 5760,
+            "value": 62.0
+          },
+          {
+            "t": 6000,
+            "value": 58.0
+          },
+          {
+            "t": 6240,
+            "value": 62.0
+          },
+          {
+            "t": 6480,
+            "value": 58.0
+          },
+          {
+            "t": 6720,
+            "value": 62.0
+          },
+          {
+            "t": 6960,
+            "value": 58.0
+          },
+          {
+            "t": 7200,
+            "value": 62.0
+          },
+          {
+            "t": 7440,
+            "value": 58.0
+          },
+          {
+            "t": 7680,
+            "value": 62.0
+          },
+          {
+            "t": 7920,
+            "value": 58.0
+          },
+          {
+            "t": 8160,
+            "value": 62.0
+          },
+          {
+            "t": 8400,
+            "value": 58.0
+          },
+          {
+            "t": 8640,
+            "value": 62.0
+          },
+          {
+            "t": 8880,
+            "value": 58.0
+          },
+          {
+            "t": 9120,
+            "value": 62.0
+          },
+          {
+            "t": 9360,
+            "value": 58.0
+          },
+          {
+            "t": 9600,
+            "value": 62.0
+          },
+          {
+            "t": 9840,
+            "value": 58.0
+          },
+          {
+            "t": 10080,
+            "value": 62.0
+          },
+          {
+            "t": 10320,
+            "value": 58.0
+          },
+          {
+            "t": 10560,
+            "value": 62.0
+          },
+          {
+            "t": 10800,
+            "value": 58.0
+          },
+          {
+            "t": 11040,
+            "value": 62.0
+          },
+          {
+            "t": 11280,
+            "value": 58.0
+          },
+          {
+            "t": 11520,
+            "value": 62.0
+          },
+          {
+            "t": 11760,
+            "value": 58.0
+          },
+          {
+            "t": 12000,
+            "value": 62.0
+          },
+          {
+            "t": 12240,
+            "value": 58.0
+          },
+          {
+            "t": 12480,
+            "value": 62.0
+          },
+          {
+            "t": 12720,
+            "value": 58.0
+          },
+          {
+            "t": 12960,
+            "value": 62.0
+          },
+          {
+            "t": 13200,
+            "value": 58.0
+          },
+          {
+            "t": 13440,
+            "value": 62.0
+          },
+          {
+            "t": 13680,
+            "value": 58.0
+          },
+          {
+            "t": 13920,
+            "value": 62.0
+          },
+          {
+            "t": 14160,
+            "value": 58.0
+          },
+          {
+            "t": 14400,
+            "value": 62.0
+          }
+        ],
+        "hws_temp_sp": 60.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 5520,
+          "equals": false
+        },
+        {
+          "output": "yFault",
+          "from_s": 5580,
+          "to_s": 5640,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 5280,
+          "to_s": 5280,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 5220,
+          "to_s": 5220,
+          "equals": false
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 5280,
+          "to_s": 5280,
+          "equals": true
+        },
+        {
+          "output": "yFiringRateHunting",
+          "from_s": 7200,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yTemperatureUnstable",
+          "from_s": 7200,
+          "to_s": 14400,
+          "equals": true
+        },
+        {
+          "output": "yFault",
+          "from_s": 7800,
+          "to_s": 14400,
+          "equals": true
+        }
+      ]
+    }
+  ]
+}

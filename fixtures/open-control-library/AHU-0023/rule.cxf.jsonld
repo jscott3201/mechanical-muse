@@ -1,0 +1,625 @@
+{
+  "@context": {
+    "S231": "http://data.ashrae.org/S231P#",
+    "base": "urn:cxf-library:ahu-fc-057#"
+  },
+  "@graph": [
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057",
+      "@type": "S231:Block",
+      "S231:label": "ahu_fc_057",
+      "S231:containsBlock": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spRef"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spAbs"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlat"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatRef"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatAbs"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlat"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatVaried"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist"
+        }
+      ],
+      "S231:hasInput": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.sat_sp"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oat"
+        }
+      ],
+      "S231:hasOutput": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.yFault"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.yOatVaried"
+        }
+      ]
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spRef",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Discrete.Sampler",
+      "S231:label": "spRef",
+      "S231:hasParameter": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spRef.samplePeriod"
+      },
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spRef.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spRef.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spRef.samplePeriod",
+      "S231:value": {
+        "@value": "604800.0",
+        "@type": "http://www.w3.org/2001/XMLSchema#double"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spRef.u",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spRef.y",
+      "@type": "S231:RealOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev.u2"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Reals.Subtract",
+      "S231:label": "spDev",
+      "S231:hasInput": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev.u1"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev.u2"
+        }
+      ],
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev.u1",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev.u2",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev.y",
+      "@type": "S231:RealOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spAbs.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spAbs",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Reals.Abs",
+      "S231:label": "spAbs",
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spAbs.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spAbs.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spAbs.u",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spAbs.y",
+      "@type": "S231:RealOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlat.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlat",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Reals.LessThreshold",
+      "S231:label": "spFlat",
+      "S231:hasParameter": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlat.t"
+      },
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlat.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlat.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlat.t",
+      "S231:value": {
+        "@value": "1.0",
+        "@type": "http://www.w3.org/2001/XMLSchema#double"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlat.u",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlat.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Logical.TrueDelay",
+      "S231:label": "spFlatHeld",
+      "S231:hasParameter": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld.delayTime"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld.delayOnInit"
+        }
+      ],
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld.delayTime",
+      "S231:value": {
+        "@value": "604800.0",
+        "@type": "http://www.w3.org/2001/XMLSchema#double"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld.delayOnInit",
+      "S231:value": {
+        "@value": "true",
+        "@type": "http://www.w3.org/2001/XMLSchema#boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld.u",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatRef",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Discrete.Sampler",
+      "S231:label": "oatRef",
+      "S231:hasParameter": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatRef.samplePeriod"
+      },
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatRef.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatRef.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatRef.samplePeriod",
+      "S231:value": {
+        "@value": "604800.0",
+        "@type": "http://www.w3.org/2001/XMLSchema#double"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatRef.u",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatRef.y",
+      "@type": "S231:RealOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev.u2"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Reals.Subtract",
+      "S231:label": "oatDev",
+      "S231:hasInput": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev.u1"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev.u2"
+        }
+      ],
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev.u1",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev.u2",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev.y",
+      "@type": "S231:RealOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatAbs.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatAbs",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Reals.Abs",
+      "S231:label": "oatAbs",
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatAbs.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatAbs.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatAbs.u",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatAbs.y",
+      "@type": "S231:RealOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlat.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlat",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Reals.LessThreshold",
+      "S231:label": "oatFlat",
+      "S231:hasParameter": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlat.t"
+      },
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlat.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlat.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlat.t",
+      "S231:value": {
+        "@value": "4.0",
+        "@type": "http://www.w3.org/2001/XMLSchema#double"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlat.u",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlat.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Logical.TrueDelay",
+      "S231:label": "oatFlatHeld",
+      "S231:hasParameter": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld.delayTime"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld.delayOnInit"
+        }
+      ],
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld.delayTime",
+      "S231:value": {
+        "@value": "604800.0",
+        "@type": "http://www.w3.org/2001/XMLSchema#double"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld.delayOnInit",
+      "S231:value": {
+        "@value": "true",
+        "@type": "http://www.w3.org/2001/XMLSchema#boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld.u",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spFlatHeld.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval.u1"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatFlatHeld.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatVaried.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatVaried",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Logical.Not",
+      "S231:label": "oatVaried",
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatVaried.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatVaried.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatVaried.u",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatVaried.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval.u2"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.yOatVaried"
+        }
+      ]
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Logical.And",
+      "S231:label": "flatAndEval",
+      "S231:hasInput": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval.u1"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval.u2"
+        }
+      ],
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval.u1",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval.u2",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.flatAndEval.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist.u"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist",
+      "@type": "urn:cxf-library:ahu-fc-057#Buildings.Controls.OBC.CDL.Logical.TrueDelay",
+      "S231:label": "persist",
+      "S231:hasParameter": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist.delayTime"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist.delayOnInit"
+        }
+      ],
+      "S231:hasInput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist.u"
+      },
+      "S231:hasOutput": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist.y"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist.delayTime",
+      "S231:value": {
+        "@value": "86400.0",
+        "@type": "http://www.w3.org/2001/XMLSchema#double"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist.delayOnInit",
+      "S231:value": {
+        "@value": "true",
+        "@type": "http://www.w3.org/2001/XMLSchema#boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist.u",
+      "@type": "S231:BooleanInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.persist.y",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      },
+      "S231:isConnectedTo": {
+        "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.yFault"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.sat_sp",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spRef.u"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.spDev.u1"
+        }
+      ]
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oat",
+      "@type": "S231:RealInput",
+      "S231:isOfDataType": {
+        "@id": "S231:Real"
+      },
+      "S231:isConnectedTo": [
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatRef.u"
+        },
+        {
+          "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.oatDev.u1"
+        }
+      ]
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.yFault",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    },
+    {
+      "@id": "urn:cxf-library:ahu-fc-057#ahu_fc_057.yOatVaried",
+      "@type": "S231:BooleanOutput",
+      "S231:isOfDataType": {
+        "@id": "S231:Boolean"
+      }
+    }
+  ]
+}

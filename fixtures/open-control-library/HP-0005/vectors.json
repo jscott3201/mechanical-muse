@@ -1,0 +1,110 @@
+{
+  "schema": "cxf-library/vectors/v1",
+  "clock": { "step_s": 300, "horizon_s": 9000 },
+  "scenarios": [
+    {
+      "name": "nominal_subcooling_healthy",
+      "description": "A correctly charged unit: 45 °C condensing saturation against a 39 °C liquid line is 6 K of subcooling, near the ~5 K the source measured on its no-fault rig and half the shipped band.",
+      "inputs": { "cond_sat_temp": 45.0, "liquid_temp": 39.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 9000, "equals": false }
+      ]
+    },
+    {
+      "name": "hot_day_same_subcooling_healthy",
+      "description": "Both temperatures 10 K higher — a hot afternoon, or a condenser starved of air — and the same 6 K of subcooling. The rule reads the difference, not the level, so nothing here is a charge verdict. Pairs with overcharged_liquid_backs_up: wire the operands backwards and both flip.",
+      "inputs": { "cond_sat_temp": 55.0, "liquid_temp": 49.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 9000, "equals": false }
+      ]
+    },
+    {
+      "name": "overcharged_liquid_backs_up",
+      "description": "Excess refrigerant floods the lower condenser circuits: the liquid line leaves at 35 °C against a 50 °C condensing saturation, 15 K of subcooling. Both operands hold from t=0, so delayOnInit puts the alarm one alarm_delay in.",
+      "inputs": { "cond_sat_temp": 50.0, "liquid_temp": 35.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 1500, "equals": false },
+        { "output": "yFault", "from_s": 2100, "to_s": 9000, "equals": true }
+      ]
+    },
+    {
+      "name": "subcooling_exactly_at_the_band",
+      "description": "Threshold edge: 47.0 − 35.0 is exactly subcooling_high_band (12.0 K), and both operands are binary-exact, so this is a true boundary pin. The comparison is strict, so a unit sitting precisely on the band reads healthy.",
+      "inputs": { "cond_sat_temp": 47.0, "liquid_temp": 35.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 9000, "equals": false }
+      ]
+    },
+    {
+      "name": "subcooling_just_above_the_band",
+      "description": "Threshold edge from the other side: 47.2 − 35.0 is 12.2 K, two tenths past the band, and the alarm matures after alarm_delay.",
+      "inputs": { "cond_sat_temp": 47.2, "liquid_temp": 35.0 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 1500, "equals": false },
+        { "output": "yFault", "from_s": 2100, "to_s": 9000, "equals": true }
+      ]
+    },
+    {
+      "name": "two_phase_liquid_line_reads_healthy",
+      "description": "The state the source's 0.5 K TXV control-limit test names: 0.2 K of subcooling, a liquid line that is effectively two-phase. This card exposes no evaluability flag for it because the verdict is sound — a unit with no liquid seal is many things, none of them overcharged.",
+      "inputs": { "cond_sat_temp": 45.0, "liquid_temp": 44.8 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 9000, "equals": false }
+      ]
+    },
+    {
+      "name": "negative_subcooling_reads_healthy",
+      "description": "Sensor pathology: the liquid line reads 1.5 K hotter than the condensing saturation, which is physically impossible on a healthy circuit and usually means a P-T lookup running the wrong refrigerant or a swapped pair of sensors. The subtraction goes negative and the rule stays silent rather than saturating in either direction.",
+      "inputs": { "cond_sat_temp": 45.0, "liquid_temp": 46.5 },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 9000, "equals": false }
+      ]
+    },
+    {
+      "name": "transient_high_subcooling_never_alarms",
+      "description": "Subcooling jumps to 15 K for 1200 s — a load step, or a head-pressure control stroke that briefly holds liquid in the condenser — and recovers 600 s short of alarm_delay. The timer resets on the recovery and nothing is reported.",
+      "inputs": {
+        "cond_sat_temp": 45.0,
+        "liquid_temp": [
+          { "t": 0, "value": 39.0 },
+          { "t": 600, "value": 30.0 },
+          { "t": 1800, "value": 39.0 }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 9000, "equals": false }
+      ]
+    },
+    {
+      "name": "delay_runs_from_the_crossing_not_from_load",
+      "description": "The unit starts healthy at 6 K and crosses the band at t = 1200 s, holding 13 K thereafter. The alarm lands at 1200 + alarm_delay, not at alarm_delay — the persistence window is measured from the crossing.",
+      "inputs": {
+        "cond_sat_temp": 45.0,
+        "liquid_temp": [
+          { "t": 0, "value": 39.0 },
+          { "t": 1200, "value": 32.0 }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 2700, "equals": false },
+        { "output": "yFault", "from_s": 3300, "to_s": 9000, "equals": true }
+      ]
+    },
+    {
+      "name": "alarm_clears_after_charge_recovered",
+      "description": "Recovery: 15 K of subcooling alarms at 1800 s, the technician recovers the excess charge at t = 5400 s (playbook step 2), and the liquid line returns to 6 K of subcooling. yFault drops on that tick — TrueDelay only delays the rising edge.",
+      "inputs": {
+        "cond_sat_temp": 50.0,
+        "liquid_temp": [
+          { "t": 0, "value": 35.0 },
+          { "t": 5400, "value": 44.0 }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 1500, "equals": false },
+        { "output": "yFault", "from_s": 2100, "to_s": 5100, "equals": true },
+        { "output": "yFault", "from_s": 5700, "to_s": 9000, "equals": false }
+      ]
+    }
+  ]
+}
