@@ -50,8 +50,9 @@ without the Stop hook or skills; run the checks yourself before merging their wo
 ## Claude Code
 
 - `.claude/` is local for now (gitignored). Its `settings.json` wires the Stop hook, denies edits
-  to `.claude/` and `.muse/`, denies `git push`, `cargo publish` and `cargo update`, asks before
-  `git commit`, and enables the shadcn MCP server. Personal overrides go in
+  to `.claude/` and `.muse/`, denies force pushes, `cargo publish` and `cargo update`, and enables
+  the shadcn MCP server. Plain pushes and commits run without a prompt; agents still commit or push
+  only when the human asks in that session. Personal overrides go in
   `.claude/settings.local.json`.
 - Model: use Claude models for development, or run Claude Code on Meta's models through the Model
   API's Messages endpoint (from Meta's coding-agents guide):

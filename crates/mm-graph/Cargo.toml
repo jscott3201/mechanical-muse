@@ -1,0 +1,13 @@
+[package]
+name = "mm-graph"
+description = "Block-graph types, catalog-backed validator and deterministic CXF emitter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

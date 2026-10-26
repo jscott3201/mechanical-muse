@@ -1,0 +1,16 @@
+[package]
+name = "mm-bacnet"
+description = "BACnet mirror of engine points on rusty-bacnet"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+bacnet-objects.workspace = true
+bacnet-server.workspace = true
+bacnet-types.workspace = true
+
+[lints]
+workspace = true

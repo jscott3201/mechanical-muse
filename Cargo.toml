@@ -1,0 +1,35 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97.0"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+# Pre-existing, pinned, read-only (AGENTS.md hard rule 2). Never `cargo update` these.
+oce-api = { git = "https://github.com/jscott3201/open-control-engine", rev = "4063202b9a9e50c723bb858d786108571d3d401d" }
+bacnet-objects = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
+bacnet-server = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
+bacnet-types = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
+
+# Workspace crates
+mm-graph = { path = "crates/mm-graph" }
+mm-bridge = { path = "crates/mm-bridge" }
+mm-agent = { path = "crates/mm-agent" }
+mm-runtime = { path = "crates/mm-runtime" }
+mm-bacnet = { path = "crates/mm-bacnet" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+indexing_slicing = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+dbg_macro = "deny"

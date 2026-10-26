@@ -1,0 +1,13 @@
+[package]
+name = "mm-agent"
+description = "Meta Model API client, prompts and repair loop behind a ModelClient trait"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true
