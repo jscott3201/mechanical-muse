@@ -59,11 +59,16 @@ pub fn parse_response(body: &Value) -> Result<ModelReply, ModelError> {
             });
         }
         Some("failed") => {
-            let message = body
-                .pointer("/error/message")
-                .and_then(Value::as_str)
-                .unwrap_or("response failed");
-            return Err(malformed(message));
+            let field = |key: &str| {
+                body.pointer(&format!("/error/{key}"))
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_owned()
+            };
+            return Err(ModelError::Failed {
+                code: field("code"),
+                message: field("message"),
+            });
         }
         Some(other) => return Err(malformed(&format!("status {other}"))),
         None => return Err(malformed("no status")),
@@ -72,36 +77,37 @@ pub fn parse_response(body: &Value) -> Result<ModelReply, ModelError> {
         .get("output")
         .and_then(Value::as_array)
         .ok_or_else(|| malformed("no output array"))?;
+    // The answer is the last message item that is not commentary; earlier messages (phase
+    // "commentary") are preambles, and joining them would break the JSON.
+    let answer = items.iter().rev().find(|item| {
+        item.get("type").and_then(Value::as_str) == Some("message")
+            && item.get("phase").and_then(Value::as_str) != Some("commentary")
+    });
     let mut text = String::new();
-    for item in items {
-        if item.get("type").and_then(Value::as_str) != Some("message") {
-            continue;
-        }
-        for part in item
-            .get("content")
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-        {
-            match part.get("type").and_then(Value::as_str) {
-                Some("output_text") => {
-                    text.push_str(part.get("text").and_then(Value::as_str).unwrap_or_default());
-                }
-                Some("refusal") => {
-                    let message = part
-                        .get("refusal")
-                        .and_then(Value::as_str)
-                        .unwrap_or("refused");
-                    return Err(ModelError::Refusal {
-                        message: message.to_owned(),
-                    });
-                }
-                _ => {}
+    for part in answer
+        .and_then(|item| item.get("content"))
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        match part.get("type").and_then(Value::as_str) {
+            Some("output_text") => {
+                text.push_str(part.get("text").and_then(Value::as_str).unwrap_or_default());
             }
+            Some("refusal") => {
+                let message = part
+                    .get("refusal")
+                    .and_then(Value::as_str)
+                    .unwrap_or("refused");
+                return Err(ModelError::Refusal {
+                    message: message.to_owned(),
+                });
+            }
+            _ => {}
         }
     }
     if text.is_empty() {
-        return Err(malformed("no output_text in any message item"));
+        return Err(malformed("no output_text in the final message item"));
     }
     let count = |path: &str| body.pointer(path).and_then(Value::as_u64).unwrap_or(0);
     Ok(ModelReply {
@@ -116,14 +122,35 @@ pub fn parse_response(body: &Value) -> Result<ModelReply, ModelError> {
     })
 }
 
+/// Longest wait we accept from a `Retry-After` header before giving up instead.
+const MAX_RETRY_AFTER: Duration = Duration::from_secs(120);
+
 /// How long to wait before retrying, or `None` if the status is not retryable. Retries 429, 500
-/// and 503 with doubling backoff from 1 s, never shorter than the server's `Retry-After`.
+/// and 503 with doubling backoff from 1 s (`attempt` counts from 0), never shorter than the
+/// server's `Retry-After`, which is capped at two minutes. No jitter: one process, few calls.
 pub fn retry_delay(status: u16, retry_after: Option<Duration>, attempt: u32) -> Option<Duration> {
     if !matches!(status, 429 | 500 | 503) {
         return None;
     }
-    let backoff = Duration::from_secs(1u64 << attempt.min(6));
-    Some(retry_after.map_or(backoff, |server| server.max(backoff)))
+    Some(backoff(attempt).max(retry_after.unwrap_or_default().min(MAX_RETRY_AFTER)))
+}
+
+fn backoff(attempt: u32) -> Duration {
+    Duration::from_secs(1u64 << attempt.min(6))
+}
+
+/// `status: "failed"` codes that the docs say to retry.
+fn transient_failure(code: &str) -> bool {
+    matches!(
+        code,
+        "server_shutting_down" | "server_error" | "service_overloaded" | "backend_unavailable"
+    )
+}
+
+/// A failed send: the error, plus whether and when it may be retried.
+struct SendFailure {
+    error: ModelError,
+    retry: Option<Duration>,
 }
 
 /// The key, kept out of `Debug` output and logs.
@@ -173,7 +200,15 @@ impl SparkClient {
         self
     }
 
-    async fn send_once(&self, body: &Value) -> Result<Value, (ModelError, Option<Duration>)> {
+    async fn send_once(&self, body: &Value, attempt: u32) -> Result<Value, SendFailure> {
+        // Only a failed connection is retried: after a timeout or a broken body the request may
+        // already be running and billed, so resending could double the cost.
+        let transport = |e: reqwest::Error, connect_only: bool| SendFailure {
+            retry: (connect_only && e.is_connect()).then(|| backoff(attempt)),
+            error: ModelError::Transport {
+                message: self.scrub(&e.without_url().to_string()),
+            },
+        };
         let response = self
             .http
             .post(format!("{}/responses", self.base_url))
@@ -181,10 +216,7 @@ impl SparkClient {
             .json(body)
             .send()
             .await
-            .map_err(|e| {
-                let message = e.without_url().to_string();
-                (ModelError::Transport { message }, None)
-            })?;
+            .map_err(|e| transport(e, true))?;
         let status = response.status().as_u16();
         let retry_after = response
             .headers()
@@ -192,14 +224,13 @@ impl SparkClient {
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.trim().parse::<u64>().ok())
             .map(Duration::from_secs);
-        let text = response.text().await.map_err(|e| {
-            let message = e.without_url().to_string();
-            (ModelError::Transport { message }, None)
-        })?;
+        let text = response.text().await.map_err(|e| transport(e, false))?;
         if (200..300).contains(&status) {
-            return serde_json::from_str(&text).map_err(|e| {
-                let message = format!("body is not JSON: {e}");
-                (ModelError::Malformed { message }, None)
+            return serde_json::from_str(&text).map_err(|e| SendFailure {
+                error: ModelError::Malformed {
+                    message: format!("body is not JSON: {e}"),
+                },
+                retry: None,
             });
         }
         // Error bodies are usually {"error":{"message":...}}, sometimes empty or plain text.
@@ -207,7 +238,18 @@ impl SparkClient {
             .ok()
             .and_then(|v| v.pointer("/error/message")?.as_str().map(str::to_owned))
             .unwrap_or_else(|| text.chars().take(300).collect());
-        Err((ModelError::Http { status, message }, retry_after))
+        Err(SendFailure {
+            error: ModelError::Http {
+                status,
+                message: self.scrub(&message),
+            },
+            retry: retry_delay(status, retry_after, attempt),
+        })
+    }
+
+    /// Error text can echo request details; make sure the key is never among them.
+    fn scrub(&self, text: &str) -> String {
+        text.replace(self.api_key.0.as_str(), "<redacted>")
     }
 }
 
@@ -216,25 +258,28 @@ impl ModelClient for SparkClient {
         let body = request_body(request);
         let mut attempt = 0;
         loop {
-            attempt += 1;
-            let (error, retry_after) = match self.send_once(&body).await {
-                Ok(json) => return parse_response(&json),
+            let failure = match self.send_once(&body, attempt).await {
+                Ok(json) => match parse_response(&json) {
+                    Err(ModelError::Failed { code, message }) if transient_failure(&code) => {
+                        SendFailure {
+                            error: ModelError::Failed { code, message },
+                            retry: Some(backoff(attempt)),
+                        }
+                    }
+                    parsed => return parsed,
+                },
                 Err(failure) => failure,
             };
-            let delay = match &error {
-                ModelError::Http { status, .. } => retry_delay(*status, retry_after, attempt - 1),
-                ModelError::Transport { .. } => Some(Duration::from_secs(1u64 << attempt.min(6))),
-                _ => None,
-            };
-            match delay {
+            attempt += 1;
+            match failure.retry {
                 Some(delay) if attempt < self.max_attempts => tokio::time::sleep(delay).await,
                 Some(_) => {
                     return Err(ModelError::RetriesExhausted {
                         attempts: attempt,
-                        last: error.to_string(),
+                        last: failure.error.to_string(),
                     });
                 }
-                None => return Err(error),
+                None => return Err(failure.error),
             }
         }
     }

@@ -1,7 +1,9 @@
 //! The authoring loop: draft, check, repair, until the vectors pass or the budget runs out.
 //! Each attempt is recorded, so a run can be shown step by step and scored honestly.
 
-use mm_bridge::{LoadFailure, ReplayLimits, ScenarioOutcome, ScenarioReport, VectorFile, replay};
+use mm_bridge::{
+    LoadFailure, ReplayLimits, ScenarioOutcome, ScenarioReport, VectorFile, check_vectors, replay,
+};
 use mm_graph::{BLOCK_GRAPH_SCHEMA, BlockGraph, EmitOptions, Finding, Palette, emit_cxf, validate};
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -13,10 +15,10 @@ use crate::prompt::{Exemplar, TaskSpec, system_instructions, task_message};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Feedback {
-    /// Validator and load problems in full; replay failures only as "scenarios failed". Use
-    /// this when the same vectors score the result.
+    /// Validator and load problems in full; a replay failure only as "behavior does not match"
+    /// (one bit, no names, counts or values). Use this when the same vectors score the result.
     ValidatorOnly,
-    /// Also the failing scenario's name, description, time, expected and actual values. A score
+    /// Also each failing scenario's name, description, time, expected and actual values. A score
     /// after this kind of repair must be labelled "repaired against the scoring vectors".
     WithVectors,
 }
@@ -34,8 +36,12 @@ pub struct AuthorConfig {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "result", rename_all = "kebab-case")]
 pub enum AttemptOutcome {
-    /// The model call failed; the loop stops.
+    /// The model call failed. A truncated reply is retried as a new attempt; anything else
+    /// stops the loop.
     ModelError { error: ModelError },
+    /// Our side failed (e.g. the vector file was rejected). Never shown to the model; the loop
+    /// stops and the run must not count as the model's failure.
+    HarnessError { detail: String },
     /// The reply was not a block graph.
     NotAGraph { detail: String },
     /// Input or output names or types differ from the task.
@@ -83,6 +89,9 @@ pub struct AuthoringTrace {
     pub verified: Option<VerifiedDraft>,
     /// True if any repair message showed scenario details from the scoring vectors.
     pub repair_saw_vectors: bool,
+    /// Set when the run could not start (bad vector file, bad configuration); no model call
+    /// was made.
+    pub setup_error: Option<String>,
     pub usage: Usage,
 }
 
@@ -102,8 +111,17 @@ pub async fn author<C: ModelClient>(
         attempts: Vec::new(),
         verified: None,
         repair_saw_vectors: false,
+        setup_error: None,
         usage: Usage::default(),
     };
+    if let Err(e) = check_vectors(vectors, &ReplayLimits::default()) {
+        trace.setup_error = Some(format!("vector file rejected: {e}"));
+        return trace;
+    }
+    if config.effort == Some(Effort::Max) && config.model.ends_with("-contributor") {
+        trace.setup_error = Some("the contributor models do not support effort max".into());
+        return trace;
+    }
     let schema = serde_json::from_str(BLOCK_GRAPH_SCHEMA).unwrap_or(Value::Null);
     let mut request = ModelRequest {
         model: config.model.clone(),
@@ -121,18 +139,25 @@ pub async fn author<C: ModelClient>(
         let reply = match client.complete(&request).await {
             Ok(reply) => reply,
             Err(error) => {
+                // A truncated reply costs an attempt and is re-asked with the same input; its
+                // partial items are not replayed (reasoning with no following message is a 400).
+                let truncated = matches!(error, ModelError::Incomplete { .. });
                 trace.attempts.push(Attempt {
                     index,
                     reply: None,
                     outcome: AttemptOutcome::ModelError { error },
                     usage: Usage::default(),
                 });
+                if truncated {
+                    continue;
+                }
                 break;
             }
         };
         trace.usage.add(reply.usage);
         let (outcome, verified) = check_draft(&reply.text, task, palette, vectors);
-        let feedback = feedback_message(&outcome, config.feedback);
+        let feedback = feedback_message(&outcome, config.feedback, vectors);
+        let harness_failed = matches!(outcome, AttemptOutcome::HarnessError { .. });
         if config.feedback == Feedback::WithVectors
             && matches!(outcome, AttemptOutcome::ReplayFailed { .. })
         {
@@ -146,6 +171,9 @@ pub async fn author<C: ModelClient>(
         });
         if verified.is_some() {
             trace.verified = verified;
+            break;
+        }
+        if harness_failed {
             break;
         }
         // Replay the model's own output items (with encrypted reasoning), then the feedback.
@@ -215,13 +243,15 @@ fn check_draft(
     palette: &Palette,
     vectors: &VectorFile,
 ) -> (AttemptOutcome, Option<VerifiedDraft>) {
-    let graph: BlockGraph = match serde_json::from_str(text) {
+    let mut graph: BlockGraph = match serde_json::from_str(text) {
         Ok(graph) => graph,
         Err(e) => {
             let detail = e.to_string();
             return (AttemptOutcome::NotAGraph { detail }, None);
         }
     };
+    // The sequence name is ours to choose, not the model's: it names the CXF namespace.
+    graph.name.clone_from(&task.name);
     let problems = interface_problems(&graph, task);
     if !problems.is_empty() {
         return (AttemptOutcome::InterfaceMismatch { problems }, None);
@@ -243,9 +273,9 @@ fn check_draft(
             return (AttemptOutcome::LoadFailed { failure }, None);
         }
         Err(mm_bridge::ReplayError::Invalid { code, detail }) => {
-            // A broken vector file is our bug, not the model's; report it as such.
+            // Checked before the loop, so this is a harness bug; never shown to the model.
             let detail = format!("vector file rejected ({code}): {detail}");
-            return (AttemptOutcome::NotAGraph { detail }, None);
+            return (AttemptOutcome::HarnessError { detail }, None);
         }
     };
     if report.passed() {
@@ -277,10 +307,12 @@ fn check_draft(
 
 /// The repair turn's text. Codes come first so the model can act on them; messages are engine
 /// prose and only a hint.
-fn feedback_message(outcome: &AttemptOutcome, feedback: Feedback) -> String {
+fn feedback_message(outcome: &AttemptOutcome, feedback: Feedback, vectors: &VectorFile) -> String {
     let mut out = String::from("Your block graph was not accepted.\n");
     match outcome {
-        AttemptOutcome::Passed { .. } => return String::new(),
+        AttemptOutcome::Passed { .. } | AttemptOutcome::HarnessError { .. } => {
+            return String::new();
+        }
         AttemptOutcome::ModelError { error } => out.push_str(&format!("Model error: {error}\n")),
         AttemptOutcome::NotAGraph { detail } => {
             out.push_str(&format!("It is not a valid block graph: {detail}\n"));
@@ -317,18 +349,24 @@ fn feedback_message(outcome: &AttemptOutcome, feedback: Feedback) -> String {
             total,
             failures,
         } => match feedback {
-            Feedback::ValidatorOnly => out.push_str(&format!(
-                "It loads, but its behavior does not match the task in {} of {total} test \
-                 scenarios. Re-read the task and check signs, thresholds, timing and port order.\n",
-                total - passed
-            )),
+            Feedback::ValidatorOnly => out.push_str(
+                "It loads, but its behavior does not match the task. Re-read the task and check \
+                 signs, thresholds, timing and port order.\n",
+            ),
             Feedback::WithVectors => {
                 out.push_str(&format!(
                     "It loads, but {} of {total} test scenarios failed:\n",
                     total - passed
                 ));
                 for s in failures {
-                    out.push_str(&format!("- {}: {}\n", s.name, describe(&s.outcome)));
+                    let about = vectors
+                        .scenarios
+                        .iter()
+                        .find(|v| v.name == s.name)
+                        .map(|v| v.description.as_str())
+                        .filter(|d| !d.is_empty())
+                        .map_or(String::new(), |d| format!(" ({d})"));
+                    out.push_str(&format!("- {}{about}: {}\n", s.name, describe(&s.outcome)));
                 }
             }
         },

@@ -97,11 +97,15 @@ fn incomplete_refused_failed_and_empty_responses_are_errors() {
         parse_response(&refused).unwrap_err(),
         ModelError::Refusal { .. }
     ));
-    let failed = json!({"status": "failed", "error": {"message": "server_shutting_down"}});
-    assert!(matches!(
+    let failed = json!({"status": "failed",
+        "error": {"code": "server_shutting_down", "message": "restarting"}});
+    assert_eq!(
         parse_response(&failed).unwrap_err(),
-        ModelError::Malformed { .. }
-    ));
+        ModelError::Failed {
+            code: "server_shutting_down".into(),
+            message: "restarting".into()
+        }
+    );
     let only_reasoning = json!({"status": "completed",
         "output": [{"type": "reasoning", "summary": []}]});
     assert!(matches!(
@@ -117,6 +121,8 @@ fn retries_follow_the_documented_policy() {
     assert_eq!(retry_delay(503, Some(s(1)), 3), Some(s(8)));
     assert_eq!(retry_delay(500, None, 0), Some(s(1)));
     assert_eq!(retry_delay(500, None, 2), Some(s(4)));
+    // A huge Retry-After is capped at two minutes.
+    assert_eq!(retry_delay(429, Some(s(3600)), 0), Some(s(120)));
     for status in [400, 401, 402, 403, 404, 413, 504] {
         assert_eq!(retry_delay(status, None, 0), None, "{status}");
     }
@@ -131,4 +137,14 @@ fn the_key_never_shows_in_debug_output() {
     let client = SparkClient::new("LLM_secret_value".into()).unwrap();
     let shown = format!("{client:?}");
     assert!(!shown.contains("LLM_secret_value"), "{shown}");
+}
+
+#[test]
+fn commentary_messages_are_skipped() {
+    let body = json!({"status": "completed", "output": [
+        {"type": "message", "phase": "commentary",
+         "content": [{"type": "output_text", "text": "Let me think about the wiring."}]},
+        {"type": "message", "content": [{"type": "output_text", "text": "{\"a\":1}"}]}
+    ]});
+    assert_eq!(parse_response(&body).unwrap().text, "{\"a\":1}");
 }

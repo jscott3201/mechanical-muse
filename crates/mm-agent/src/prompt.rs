@@ -58,8 +58,8 @@ that follows the block_graph schema, and nothing else.
 Rules:
 1. Interface: use exactly the task's input and output names and types. Copy each input's unit \
 and meaning into `unit` and `description`, and each output's meaning into `description`.
-2. Blocks: `class` is one of the classes listed below. Block ids are camelCase, unique, and \
-contain no dots. Input and output names must not look like ports (u, y, u1, y2).
+2. Blocks: `class` is one of the classes listed below. Block ids are camelCase, contain no \
+dots, and differ from each other and from every input and output name. Input and output names must not look like ports (u, y, u1, y2).
 3. Connections are strings `\"<src> -> <dst>\"`. A source is a task input name or \
 `<blockId>.<outputPort>`; a destination is a task output name or `<blockId>.<inputPort>`.
 4. Every block input port and every task output has exactly one incoming connection. A block \

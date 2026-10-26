@@ -90,6 +90,9 @@ pub enum ModelError {
     Refusal { message: String },
     #[error("response incomplete: {reason}")]
     Incomplete { reason: String },
+    /// The response came back with `status: "failed"`.
+    #[error("response failed ({code}): {message}")]
+    Failed { code: String, message: String },
     #[error("unexpected response shape: {message}")]
     Malformed { message: String },
     #[error("gave up after {attempts} attempts: {last}")]

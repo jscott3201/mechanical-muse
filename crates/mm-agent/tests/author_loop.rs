@@ -161,23 +161,32 @@ async fn validator_only_feedback_hides_the_scenarios() {
     assert!(trace.verified.is_some());
     assert!(!trace.repair_saw_vectors);
     let feedback = last_input_text(&model.requests()[1]);
-    assert!(!feedback.contains("cooling_coil"), "{feedback}");
-    assert!(feedback.contains("test scenarios"), "{feedback}");
+    // No scenario name, description, time, value or count reaches the model.
+    for scenario in &vectors().scenarios {
+        assert!(!feedback.contains(&scenario.name), "{feedback}");
+        assert!(!feedback.contains(&scenario.description), "{feedback}");
+    }
+    for leak in ["t =", "should be", " of ", "yFault"] {
+        assert!(!feedback.contains(leak), "{leak:?} in {feedback}");
+    }
+    assert!(feedback.contains("does not match the task"), "{feedback}");
 }
 
 #[tokio::test]
 async fn the_verified_cxf_is_the_one_that_passed() {
-    let model = ScriptedModel::new(vec![reply(&right())]);
+    let model = ScriptedModel::new(vec![reply(&swapped()), reply(&right())]);
     let trace = author(
         &model,
         &Palette::pinned().unwrap(),
         &task(),
         &vectors(),
         &[],
-        &config(1, Feedback::ValidatorOnly),
+        &config(2, Feedback::ValidatorOnly),
     )
     .await;
-    let verified = trace.verified.expect("first draft passes");
+    let verified = trace.verified.expect("second draft passes");
+    let want: mm_graph::BlockGraph = serde_json::from_str(&right()).unwrap();
+    assert_eq!(verified.graph, want);
     let report = replay(&verified.cxf, &vectors(), &ReplayLimits::default()).unwrap();
     assert!(report.passed());
     assert_eq!(report.content_id, verified.content_id);
@@ -326,4 +335,101 @@ async fn live_spark_authors_ahu_0005() {
         trace.usage
     );
     assert!(!trace.attempts.is_empty());
+}
+
+#[tokio::test]
+async fn showing_vectors_on_the_last_attempt_does_not_count() {
+    // One attempt: the failure details are never sent, so the run stays first-try clean.
+    let model = ScriptedModel::new(vec![reply(&swapped())]);
+    let trace = author(
+        &model,
+        &Palette::pinned().unwrap(),
+        &task(),
+        &vectors(),
+        &[],
+        &config(1, Feedback::WithVectors),
+    )
+    .await;
+    assert!(trace.verified.is_none());
+    assert!(!trace.repair_saw_vectors);
+}
+
+#[tokio::test]
+async fn a_bad_vector_file_stops_before_any_model_call() {
+    let model = ScriptedModel::new(vec![]);
+    let mut bad = vectors();
+    bad.scenarios[0].expect.clear();
+    let trace = author(
+        &model,
+        &Palette::pinned().unwrap(),
+        &task(),
+        &bad,
+        &[],
+        &config(3, Feedback::ValidatorOnly),
+    )
+    .await;
+    assert!(trace.setup_error.unwrap().contains("no-expectations"));
+    assert!(trace.attempts.is_empty());
+    assert!(model.requests().is_empty());
+}
+
+#[tokio::test]
+async fn max_effort_on_a_contributor_model_is_refused() {
+    let model = ScriptedModel::new(vec![]);
+    let mut cfg = config(1, Feedback::ValidatorOnly);
+    cfg.model = "muse-spark-1.3-contributor".into();
+    cfg.effort = Some(mm_agent::Effort::Max);
+    let trace = author(
+        &model,
+        &Palette::pinned().unwrap(),
+        &task(),
+        &vectors(),
+        &[],
+        &cfg,
+    )
+    .await;
+    assert!(trace.setup_error.is_some());
+    assert!(model.requests().is_empty());
+}
+
+#[tokio::test]
+async fn a_truncated_reply_is_retried_with_the_same_input() {
+    let model = ScriptedModel::new(vec![
+        Err(ModelError::Incomplete {
+            reason: "max_output_tokens".into(),
+        }),
+        reply(&right()),
+    ]);
+    let trace = author(
+        &model,
+        &Palette::pinned().unwrap(),
+        &task(),
+        &vectors(),
+        &[],
+        &config(2, Feedback::ValidatorOnly),
+    )
+    .await;
+    assert!(trace.verified.is_some());
+    let requests = model.requests();
+    assert_eq!(requests[0].input, requests[1].input);
+}
+
+#[tokio::test]
+async fn the_sequence_name_comes_from_the_task() {
+    let renamed = right().replace(
+        "\"name\": \"ahu_0005\"",
+        "\"name\": \"whatever_the_model_said\"",
+    );
+    assert_ne!(renamed, right(), "mutation did not apply");
+    let model = ScriptedModel::new(vec![reply(&renamed)]);
+    let trace = author(
+        &model,
+        &Palette::pinned().unwrap(),
+        &task(),
+        &vectors(),
+        &[],
+        &config(1, Feedback::ValidatorOnly),
+    )
+    .await;
+    assert_eq!(trace.verified.unwrap().graph.name, "ahu_0005");
 }
