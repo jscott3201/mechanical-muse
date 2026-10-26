@@ -19,7 +19,7 @@ Mechanical Muse turns a written building-control sequence into a verified, runna
 6. A React web app shows the authoring trace, verification results, live trends, KPIs, and
    explanations.
 
-Status: early scaffold. Update this line when milestones land.
+Status: Rust workspace skeleton builds against the pinned engine; porting `mm-graph` next. Update this line when milestones land.
 
 ## Hard rules (these override convenience)
 
@@ -129,13 +129,14 @@ Engine facts every change must respect (details: `docs/engine-api.md`):
 ## Commands
 
 ```bash
+make check                                              # fmt-check + clippy + test (see Makefile)
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace                                  # offline, fast, no network
 cargo test --workspace -- --ignored                     # needs BOPTEST up and/or MODEL_API_KEY
 cargo run -p mm-server                                  # API on the configured address
 docker compose up -d                                    # BOPTEST (see compose.yaml)
-cd web && TODO(decision: package manager) install && ... dev | typecheck | test | build
+cd web && npm ci && npm run dev | typecheck | test | build  # Node 26 (web/.nvmrc)
 ```
 
 Run fmt, clippy, and tests before declaring any task done, and report real results. A zero exit
@@ -152,7 +153,7 @@ from an agent CLI does not mean the work is correct.
 - Point identity is the CXF `@id`. Use it as the key everywhere (frames, trends, BACnet mapping,
   UI). Do not invent parallel names; derive display names from it in one place.
 - Every type crossing the HTTP boundary is a DTO in `mm-bridge` or `mm-server` with serde derives
-  and a matching generated TypeScript type (TODO(decision): ts-rs | specta | schemars). Do not
+  and a matching generated TypeScript type (ts-rs, exported by a test run). Do not
   hand-write TS mirrors of Rust types.
 - Web: TypeScript `strict`, no `any`, data fetching in hooks, no business logic in components.
   shadcn/ui components are added with its CLI under `web/src/components/ui`; do not restyle them
@@ -214,7 +215,7 @@ live loop is supervisory; Muse Glimmer is served on Modal behind the same `Model
 - Muse Code sandbox: `.git`, `.muse/` and `$HOME` are read-only and network goes through the proxy.
   Dependencies are pre-fetched (`cargo fetch`, web install); if one is missing, say so instead of
   retrying downloads. Claude Code: local `.claude/settings.json` denies edits to `.claude/` and
-  `.muse/`, `git push`, `cargo publish`, and `cargo update`, and asks before `git commit`.
+  `.muse/`, force pushes, `cargo publish`, and `cargo update`.
 - Ledger: the human switches between Muse Code and Claude Code, so both share `ledger/` (local only).
   Read `ledger/HANDOFF.md` and `ledger/OPEN.md` at the start of a session. Before ending a turn
   that changed files or settled a question, append a dated entry to `ledger/HANDOFF.md` (harness and

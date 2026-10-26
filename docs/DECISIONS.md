@@ -4,9 +4,6 @@ Decisions for Mechanical Muse. Muse Code's `/grill-with-docs` writes here. Newes
 
 ## Pending (do not guess: ask, or pick the default and note it here)
 
-- TODO(decision): task runner (`just` | `cargo xtask` | `make`).
-- TODO(decision): web package manager (pnpm | npm) and Node version.
-- TODO(decision): Rust-to-TS type generation tool.
 - TODO(decision): BOPTEST host (local Rosetta vs x86 VM), compose layout, step size, and demo
   episode length. Decided after the O1 speed benchmark.
 - TODO(decision): clippy strictness (pedantic subset) and the allowed-warning list for loads.
@@ -14,6 +11,13 @@ Decisions for Mechanical Muse. Muse Code's `/grill-with-docs` writes here. Newes
 - TODO(decision): Glimmer serving stack on Modal (vLLM | SGLang) and its OpenAI-compatible URL.
 
 ## Decided
+
+- Task runner: `make` (preinstalled everywhere, including Muse's sandbox). `make check` runs the
+  same fmt, clippy and test commands as the Stop hook. (2026-10-26)
+- Web package manager: npm with Node 26, pinned in `web/.nvmrc`; the Stop hook already calls npm.
+  (2026-10-26)
+- Rust-to-TS types: ts-rs. DTOs derive `TS` and a test run exports the `.ts` files; no hand-written
+  mirrors. (2026-10-26)
 
 - Coding harnesses: Muse Code and Claude Code, used interchangeably to build. The organizers
   confirmed in the event's rules channel (2026-10-26) that any build tools are allowed, Claude Code
