@@ -22,7 +22,9 @@ Everything in this repository was written during the event, starting October 26,
 | BACnet device mirror | `crates/` | Planned |
 | Web app | `web/` | Planned |
 | Design notes and API references | `docs/` | Started |
-| Muse Code setup: agent context, project skills, verification hook | `AGENTS.md`, `.agents/skills/`, `.muse/`, `scripts/` | Started |
+| Coding-agent setup: agent context, project skills, verification hook | `AGENTS.md`, `.agents/skills/`, `.muse/`, `.mcp.json`, `scripts/` | Started |
+
+The application's model calls all go to Meta's models (Muse Spark through the Meta Model API; Muse Glimmer for the open-weights comparison). The repository was built with Meta's Muse Code and with Claude Code as coding tools.
 
 ## Pre-existing dependencies (not built during the hackathon)
 

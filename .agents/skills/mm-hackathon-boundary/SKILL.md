@@ -9,7 +9,7 @@ Event 2026-10-26 to 2026-11-04; this repo started 2026-10-26. Official Rules, pa
 
 **Pre-existing** (pinned, unmodified, dated before the event, our own earlier repos included)
 - open-control-engine v0.2.0 `4063202b`; open-control-library `124427b` (data only); rusty-bacnet v0.14.0 `1caf4db7`; BOPTEST by IBPSA, an external service (README pin is TBD: fill it from the commit `compose.yaml` builds); `yet-more-skills` `97d2a36` (source of the non-`mm-*` skill forks, notices kept); ordinary crates and npm packages.
-- New work: `crates/`, `web/`, `specs/`, `docs/`, `fixtures/`, `.agents/skills/mm-*`.
+- New work: `crates/`, `web/`, `specs/`, `docs/`, `fixtures/`, `.agents/skills/mm-*`, `.muse/`, `.mcp.json`, `scripts/`. Never commit `.claude/` or `ledger/` (local only).
 
 **Same-change rules**
 - Add or adjust the README "Pre-existing dependencies" row (name, author, license, pinned commit, use) in the same change as any new dependency, dataset, shadcn component, extra UI library, copied skill or ported Modelica file. Modelica Buildings Library (BSD-3) lives only under `third_party/` with its notice.
