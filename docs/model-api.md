@@ -468,6 +468,17 @@ Token check before sending: `POST /v1/responses/input_tokens` with the same `mod
 13. Image `detail` control: none documented.
 14. Contributor data-use scope and retention for pay-as-you-go: governed by the Meta Model API terms, which were not read.
 
+### Observed in live calls
+
+- 2026-10-26, `muse-spark-1.3`, effort `medium`, Responses with `store:false`,
+  `include:["reasoning.encrypted_content"]` and a strict `text.format` carrying
+  `docs/block-graph.schema.json`. The request was accepted, so item 4 is partly answered: the
+  `anyOf [number, boolean, string]` under `params[].value` passes strict validation. The body
+  matched the documented shape (`status: "completed"`, a `reasoning` item then a `message` item
+  with `output_text`, and `usage` with `output_tokens_details.reasoning_tokens`). AHU-0005 (train
+  split, tier B task) passed all 10 library scenarios on the first draft: 2,912 input, 1,115
+  output (833 reasoning) tokens, about 6 s. One run, not a benchmark result.
+
 ### Source index
 - https://dev.meta.ai/docs/overview, /models, /quickstart, /authentication, /sdks, /pricing-rate-limits, /error-handling
 - https://dev.meta.ai/docs/structured-output, /tool-calling, /tool-search, /search-grounding, /file-handling, /image-understanding, /reasoning, /token-counting, /prompt-caching, /video-understanding
