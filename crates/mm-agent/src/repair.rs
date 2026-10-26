@@ -343,6 +343,13 @@ fn feedback_message(outcome: &AttemptOutcome, feedback: Feedback, vectors: &Vect
                 let subject = d.subject.as_deref().unwrap_or("-");
                 out.push_str(&format!("- {} at {subject}: {}\n", d.code, d.message));
             }
+            // Some refusals (an algebraic loop, for one) carry no diagnostic records; the engine's
+            // error text is then the only explanation, so pass it on.
+            if failure.diagnostics.is_empty()
+                && let Some(error) = &failure.error
+            {
+                out.push_str(&format!("- {}\n", error.detail));
+            }
         }
         AttemptOutcome::ReplayFailed {
             passed,

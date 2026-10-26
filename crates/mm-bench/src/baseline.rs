@@ -4,12 +4,11 @@
 //! The engine drops boundary inputs nothing reads, so each input feeds a sink block whose output
 //! goes nowhere; that keeps the inputs settable without affecting the outputs.
 
-use mm_bridge::{ReplayLimits, ScenarioOutcome, replay};
+use mm_bridge::{ReplayLimits, ScenarioOutcome, VectorFile, replay};
 use mm_graph::{Block, BlockGraph, EmitOptions, Palette, Param, ParamValue, SignalType, emit_cxf};
 use serde::Serialize;
 
 use crate::BenchError;
-use crate::library::Rule;
 
 /// Rules and scenarios a constant graph passes.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
@@ -73,17 +72,21 @@ pub fn baseline_graph(interface: &BlockGraph, value: bool) -> BlockGraph {
     graph
 }
 
-/// Constant-false and constant-true baselines over `rules`. A rule whose baseline cannot be
-/// emitted or replayed is an error, never a silently smaller denominator.
-pub fn baselines(rules: &[Rule], palette: &Palette) -> Result<(Baseline, Baseline), BenchError> {
+/// Constant-false and constant-true baselines over `(id, interface, vectors)` items. An item
+/// whose baseline cannot be emitted or replayed is an error, never a silently smaller
+/// denominator.
+pub fn baselines(
+    items: &[(String, BlockGraph, VectorFile)],
+    palette: &Palette,
+) -> Result<(Baseline, Baseline), BenchError> {
     let run = |value: bool| -> Result<Baseline, BenchError> {
         let mut total = Baseline::default();
-        for rule in rules {
-            let graph = baseline_graph(&rule.reference, value);
+        for (id, interface, vectors) in items {
+            let graph = baseline_graph(interface, value);
             let cxf = emit_cxf(&graph, palette, &EmitOptions::default())
-                .map_err(|e| BenchError::Other(format!("{} baseline: {e}", rule.id)))?;
-            let report = replay(&cxf, &rule.vectors, &ReplayLimits::default())
-                .map_err(|e| BenchError::Other(format!("{} baseline: {e}", rule.id)))?;
+                .map_err(|e| BenchError::Other(format!("{id} baseline: {e}")))?;
+            let report = replay(&cxf, vectors, &ReplayLimits::default())
+                .map_err(|e| BenchError::Other(format!("{id} baseline: {e}")))?;
             total.scenarios += report.scenarios.len();
             total.scenarios_passed += report
                 .scenarios
@@ -95,4 +98,32 @@ pub fn baselines(rules: &[Rule], palette: &Palette) -> Result<(Baseline, Baselin
         Ok(total)
     };
     Ok((run(false)?, run(true)?))
+}
+
+/// The interface of a task as an empty graph (inputs and outputs only), for baselines.
+pub fn interface_of(task: &mm_agent::TaskSpec) -> BlockGraph {
+    BlockGraph {
+        name: task.name.clone(),
+        inputs: task
+            .inputs
+            .iter()
+            .map(|p| mm_graph::Input {
+                name: p.name.clone(),
+                ty: p.ty,
+                unit: p.unit.clone(),
+                description: String::new(),
+            })
+            .collect(),
+        outputs: task
+            .outputs
+            .iter()
+            .map(|p| mm_graph::Output {
+                name: p.name.clone(),
+                ty: p.ty,
+                description: String::new(),
+            })
+            .collect(),
+        blocks: Vec::new(),
+        connections: Vec::new(),
+    }
 }

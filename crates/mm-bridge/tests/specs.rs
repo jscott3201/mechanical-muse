@@ -1,0 +1,134 @@
+//! Our own sequence specs (`specs/<name>/`): the hand-built reference graph must pass every
+//! vector on the pinned engine, and each common mistake must fail at least one scenario. Only a
+//! spec that passes this gate is shown to the model.
+
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+
+use std::path::PathBuf;
+
+use mm_bridge::{ReplayLimits, ScenarioOutcome, VectorFile, replay};
+use mm_graph::{BlockGraph, EmitOptions, Palette, ParamValue, emit_cxf, validate};
+
+fn spec_file(name: &str, file: &str) -> Vec<u8> {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../specs")
+        .join(name)
+        .join(file);
+    std::fs::read(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
+}
+
+fn load(name: &str) -> (BlockGraph, VectorFile) {
+    (
+        serde_json::from_slice(&spec_file(name, "graph.json")).unwrap(),
+        serde_json::from_slice(&spec_file(name, "vectors.json")).unwrap(),
+    )
+}
+
+/// Names of failing scenarios (empty means every scenario passed).
+fn failing(graph: &BlockGraph, vectors: &VectorFile) -> Vec<String> {
+    let palette = Palette::pinned().unwrap();
+    assert_eq!(validate(graph, &palette), vec![], "graph must validate");
+    let cxf = emit_cxf(graph, &palette, &EmitOptions::default()).unwrap();
+    let report = replay(&cxf, vectors, &ReplayLimits::default()).unwrap();
+    report
+        .scenarios
+        .iter()
+        .filter(|s| s.outcome != ScenarioOutcome::Pass)
+        .map(|s| format!("{}: {:?}", s.name, s.outcome))
+        .collect()
+}
+
+fn set_param(graph: &mut BlockGraph, block: &str, param: &str, value: ParamValue) {
+    let b = graph.blocks.iter_mut().find(|b| b.id == block).unwrap();
+    let p = b.params.iter_mut().find(|p| p.name == param).unwrap();
+    p.value = value;
+}
+
+fn rewire(graph: &mut BlockGraph, from: &str, to: &str) {
+    let edge = graph.connections.iter_mut().find(|e| *e == from).unwrap();
+    *edge = to.to_owned();
+}
+
+#[test]
+fn chw_plant_reset_reference_passes() {
+    let (graph, vectors) = load("chw_plant_reset");
+    let failures = failing(&graph, &vectors);
+    assert!(failures.is_empty(), "{failures:#?}");
+}
+
+#[test]
+fn chw_plant_reset_vectors_catch_common_mistakes() {
+    let (graph, vectors) = load("chw_plant_reset");
+    let n = ParamValue::Number;
+    type Mutation = (&'static str, Box<dyn Fn(&mut BlockGraph)>);
+    let mutations: Vec<Mutation> = vec![
+        // The start delay is the configured delay plus one sample period.
+        (
+            "delay without the extra sample period",
+            Box::new(move |g| {
+                set_param(g, "startDelay", "delayTime", n(900.0));
+            }),
+        ),
+        // Requests at the ignore count do not count ("more than", not "at least").
+        (
+            "ignore count compared with >=",
+            Box::new(move |g| {
+                set_param(g, "excess", "p", n(-1.0));
+            }),
+        ),
+        (
+            "respond step not capped",
+            Box::new(move |g| {
+                set_param(g, "respCapValue", "k", n(1.0));
+            }),
+        ),
+        (
+            "respond amount 2 % instead of 3 %",
+            Box::new(move |g| {
+                set_param(g, "respGain", "k", n(0.02));
+            }),
+        ),
+        // A disabled plant returns to the initial (design) value, not to zero.
+        (
+            "disabled output 0 instead of design",
+            Box::new(|g| {
+                rewire(g, "one.y -> enabledValue.u3", "zero.y -> enabledValue.u3");
+            }),
+        ),
+        (
+            "no staging hold",
+            Box::new(move |g| {
+                set_param(g, "stagingHold", "trueHoldDuration", n(1.0));
+            }),
+        ),
+        (
+            "temperature and pressure halves swapped",
+            Box::new(|g| {
+                rewire(g, "half.y -> tempMap.x1", "zero.y -> tempMap.x1");
+                rewire(g, "zero.y -> dpMap.x1", "half.y -> dpMap.x1");
+            }),
+        ),
+        (
+            "no clamp at 100 %",
+            Box::new(move |g| {
+                set_param(g, "clamped", "uMax", n(2.0));
+            }),
+        ),
+        (
+            "trim of 1 %",
+            Box::new(move |g| {
+                set_param(g, "trimValue", "k", n(-0.01));
+                set_param(g, "trimAndResp", "p", n(-0.01));
+            }),
+        ),
+    ];
+    for (what, mutate) in mutations {
+        let mut mutant = graph.clone();
+        mutate(&mut mutant);
+        assert_ne!(mutant, graph, "{what}: mutation did not apply");
+        assert!(
+            !failing(&mutant, &vectors).is_empty(),
+            "vectors do not catch: {what}"
+        );
+    }
+}

@@ -1,0 +1,363 @@
+{
+ "name": "chw_plant_reset",
+ "inputs": [
+  {
+   "name": "nReqRes",
+   "type": "int",
+   "unit": "1",
+   "description": "Chilled-water reset requests from the air handlers"
+  },
+  {
+   "name": "u1Ena",
+   "type": "bool",
+   "unit": "bool",
+   "description": "Plant enabled"
+  },
+  {
+   "name": "u1StaPro",
+   "type": "bool",
+   "unit": "bool",
+   "description": "Chiller staging in progress"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "TSupSet",
+   "type": "real",
+   "description": "Chilled-water supply temperature setpoint (K)"
+  },
+  {
+   "name": "dpSet",
+   "type": "real",
+   "description": "Chilled-water differential pressure setpoint (Pa)"
+  }
+ ],
+ "blocks": [
+  {
+   "id": "startDelay",
+   "class": "Logical.TrueDelay",
+   "params": [
+    {
+     "name": "delayTime",
+     "value": 1200.0
+    },
+    {
+     "name": "delayOnInit",
+     "value": true
+    }
+   ]
+  },
+  {
+   "id": "sampleTick",
+   "class": "Logical.Sources.SampleTrigger",
+   "params": [
+    {
+     "name": "period",
+     "value": 300.0
+    }
+   ]
+  },
+  {
+   "id": "reqReal",
+   "class": "Conversions.IntegerToReal",
+   "params": []
+  },
+  {
+   "id": "reqSampled",
+   "class": "Discrete.Sampler",
+   "params": [
+    {
+     "name": "samplePeriod",
+     "value": 300.0
+    }
+   ]
+  },
+  {
+   "id": "excess",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": -2.0
+    }
+   ]
+  },
+  {
+   "id": "anyExcess",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "id": "responding",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "respGain",
+   "class": "Reals.MultiplyByParameter",
+   "params": [
+    {
+     "name": "k",
+     "value": 0.03
+    }
+   ]
+  },
+  {
+   "id": "respCapValue",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 0.07
+    }
+   ]
+  },
+  {
+   "id": "respCapped",
+   "class": "Reals.Min",
+   "params": []
+  },
+  {
+   "id": "trimAndResp",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": -0.02
+    }
+   ]
+  },
+  {
+   "id": "trimValue",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": -0.02
+    }
+   ]
+  },
+  {
+   "id": "zero",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "id": "trimIfActive",
+   "class": "Reals.Switch",
+   "params": []
+  },
+  {
+   "id": "change",
+   "class": "Reals.Switch",
+   "params": []
+  },
+  {
+   "id": "stagingHold",
+   "class": "Logical.TrueFalseHold",
+   "params": [
+    {
+     "name": "trueHoldDuration",
+     "value": 900.0
+    },
+    {
+     "name": "falseHoldDuration",
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "id": "notHolding",
+   "class": "Logical.Not",
+   "params": []
+  },
+  {
+   "id": "clearAtTick",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "frozen",
+   "class": "Logical.Latch",
+   "params": []
+  },
+  {
+   "id": "heldChange",
+   "class": "Reals.Switch",
+   "params": []
+  },
+  {
+   "id": "previous",
+   "class": "Discrete.UnitDelay",
+   "params": [
+    {
+     "name": "samplePeriod",
+     "value": 300.0
+    },
+    {
+     "name": "y_start",
+     "value": 1.0
+    }
+   ]
+  },
+  {
+   "id": "proposed",
+   "class": "Reals.Add",
+   "params": []
+  },
+  {
+   "id": "clamped",
+   "class": "Reals.Limiter",
+   "params": [
+    {
+     "name": "uMin",
+     "value": 0.0
+    },
+    {
+     "name": "uMax",
+     "value": 1.0
+    }
+   ]
+  },
+  {
+   "id": "one",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 1.0
+    }
+   ]
+  },
+  {
+   "id": "enabledValue",
+   "class": "Reals.Switch",
+   "params": []
+  },
+  {
+   "id": "reset",
+   "class": "Reals.Switch",
+   "params": []
+  },
+  {
+   "id": "half",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 0.5
+    }
+   ]
+  },
+  {
+   "id": "tempLimit",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 282.15
+    }
+   ]
+  },
+  {
+   "id": "tempDesign",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 278.71
+    }
+   ]
+  },
+  {
+   "id": "dpLow",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 95650.0
+    }
+   ]
+  },
+  {
+   "id": "dpDesign",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 239125.0
+    }
+   ]
+  },
+  {
+   "id": "tempMap",
+   "class": "Reals.Line",
+   "params": []
+  },
+  {
+   "id": "dpMap",
+   "class": "Reals.Line",
+   "params": []
+  }
+ ],
+ "connections": [
+  "u1Ena -> startDelay.u",
+  "nReqRes -> reqReal.u",
+  "reqReal.y -> reqSampled.u",
+  "reqSampled.y -> excess.u",
+  "excess.y -> anyExcess.u",
+  "startDelay.y -> responding.u1",
+  "anyExcess.y -> responding.u2",
+  "excess.y -> respGain.u",
+  "respGain.y -> respCapped.u1",
+  "respCapValue.y -> respCapped.u2",
+  "respCapped.y -> trimAndResp.u",
+  "trimValue.y -> trimIfActive.u1",
+  "startDelay.y -> trimIfActive.u2",
+  "zero.y -> trimIfActive.u3",
+  "trimAndResp.y -> change.u1",
+  "responding.y -> change.u2",
+  "trimIfActive.y -> change.u3",
+  "u1StaPro -> stagingHold.u",
+  "stagingHold.y -> notHolding.u",
+  "notHolding.y -> clearAtTick.u1",
+  "sampleTick.y -> clearAtTick.u2",
+  "sampleTick.y -> frozen.u",
+  "clearAtTick.y -> frozen.clr",
+  "zero.y -> heldChange.u1",
+  "frozen.y -> heldChange.u2",
+  "change.y -> heldChange.u3",
+  "previous.y -> proposed.u1",
+  "heldChange.y -> proposed.u2",
+  "proposed.y -> clamped.u",
+  "clamped.y -> enabledValue.u1",
+  "u1Ena -> enabledValue.u2",
+  "one.y -> enabledValue.u3",
+  "enabledValue.y -> previous.u",
+  "enabledValue.y -> reset.u1",
+  "startDelay.y -> reset.u2",
+  "one.y -> reset.u3",
+  "half.y -> tempMap.x1",
+  "tempLimit.y -> tempMap.f1",
+  "one.y -> tempMap.x2",
+  "tempDesign.y -> tempMap.f2",
+  "reset.y -> tempMap.u",
+  "zero.y -> dpMap.x1",
+  "dpLow.y -> dpMap.f1",
+  "half.y -> dpMap.x2",
+  "dpDesign.y -> dpMap.f2",
+  "reset.y -> dpMap.u",
+  "tempMap.y -> TSupSet",
+  "dpMap.y -> dpSet"
+ ]
+}

@@ -1,0 +1,1614 @@
+{
+ "schema": "mechanical-muse/vectors/v1",
+ "clock": {
+  "step_s": 60.0,
+  "horizon_s": 22200
+ },
+ "scenarios": [
+  {
+   "name": "trim_from_enable",
+   "description": "Plant enabled from the start, no requests. Nothing changes for the start delay plus one sample period (1200 s); then the reset trims 2 % every 300 s, warming the supply water first and lowering the pressure setpoint only after the temperature reaches its limit.",
+   "inputs": {
+    "nReqRes": 0,
+    "u1Ena": true,
+    "u1StaPro": false
+   },
+   "expect": [
+    {
+     "output": "TSupSet",
+     "from_s": 0.0,
+     "to_s": 1140.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1200.0,
+     "to_s": 1440.0,
+     "equals": 278.8476,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1500.0,
+     "to_s": 1740.0,
+     "equals": 278.9852,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1800.0,
+     "to_s": 2040.0,
+     "equals": 279.1228,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2100.0,
+     "to_s": 2340.0,
+     "equals": 279.2604,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2400.0,
+     "to_s": 2640.0,
+     "equals": 279.398,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2700.0,
+     "to_s": 2940.0,
+     "equals": 279.5356,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3000.0,
+     "to_s": 3240.0,
+     "equals": 279.6732,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3300.0,
+     "to_s": 3540.0,
+     "equals": 279.8108,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3600.0,
+     "to_s": 3840.0,
+     "equals": 279.9484,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3900.0,
+     "to_s": 4140.0,
+     "equals": 280.086,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4200.0,
+     "to_s": 4440.0,
+     "equals": 280.2236,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4500.0,
+     "to_s": 4740.0,
+     "equals": 280.3612,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4800.0,
+     "to_s": 5040.0,
+     "equals": 280.4988,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5100.0,
+     "to_s": 5340.0,
+     "equals": 280.6364,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5400.0,
+     "to_s": 5640.0,
+     "equals": 280.774,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5700.0,
+     "to_s": 5940.0,
+     "equals": 280.9116,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6000.0,
+     "to_s": 6240.0,
+     "equals": 281.0492,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6300.0,
+     "to_s": 6540.0,
+     "equals": 281.1868,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6600.0,
+     "to_s": 6840.0,
+     "equals": 281.3244,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6900.0,
+     "to_s": 7140.0,
+     "equals": 281.462,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7200.0,
+     "to_s": 7440.0,
+     "equals": 281.5996,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7500.0,
+     "to_s": 7740.0,
+     "equals": 281.7372,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7800.0,
+     "to_s": 8040.0,
+     "equals": 281.8748,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 8100.0,
+     "to_s": 8340.0,
+     "equals": 282.0124,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 8400.0,
+     "to_s": 17100.0,
+     "equals": 282.15,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 8640.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 8700.0,
+     "to_s": 8940.0,
+     "equals": 233386.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 9000.0,
+     "to_s": 9240.0,
+     "equals": 227647.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 9300.0,
+     "to_s": 9540.0,
+     "equals": 221908.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 9600.0,
+     "to_s": 9840.0,
+     "equals": 216169.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 9900.0,
+     "to_s": 10140.0,
+     "equals": 210430.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 10200.0,
+     "to_s": 10440.0,
+     "equals": 204691.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 10500.0,
+     "to_s": 10740.0,
+     "equals": 198952.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 10800.0,
+     "to_s": 11040.0,
+     "equals": 193213.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 11100.0,
+     "to_s": 11340.0,
+     "equals": 187474.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 11400.0,
+     "to_s": 11640.0,
+     "equals": 181735.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 11700.0,
+     "to_s": 11940.0,
+     "equals": 175996.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 12000.0,
+     "to_s": 12240.0,
+     "equals": 170257.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 12300.0,
+     "to_s": 12540.0,
+     "equals": 164518.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 12600.0,
+     "to_s": 12840.0,
+     "equals": 158779.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 12900.0,
+     "to_s": 13140.0,
+     "equals": 153040.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 13200.0,
+     "to_s": 13440.0,
+     "equals": 147301.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 13500.0,
+     "to_s": 13740.0,
+     "equals": 141562.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 13800.0,
+     "to_s": 14040.0,
+     "equals": 135823.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 14100.0,
+     "to_s": 14340.0,
+     "equals": 130084.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 14400.0,
+     "to_s": 14640.0,
+     "equals": 124345.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 14700.0,
+     "to_s": 14940.0,
+     "equals": 118606.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 15000.0,
+     "to_s": 15240.0,
+     "equals": 112867.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 15300.0,
+     "to_s": 15540.0,
+     "equals": 107128.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 15600.0,
+     "to_s": 15840.0,
+     "equals": 101389.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 15900.0,
+     "to_s": 17100.0,
+     "equals": 95650.0,
+     "tolerance": 0.001
+    }
+   ]
+  },
+  {
+   "name": "ignore_respond_cap",
+   "description": "Requests step 0, 2, 3, 4, 5, 10. Up to 2 requests are ignored; above that each extra request adds 3 % before the 2 % trim, capped at 7 %.",
+   "inputs": {
+    "nReqRes": [
+     {
+      "t": 0.0,
+      "value": 0
+     },
+     {
+      "t": 3000.0,
+      "value": 2
+     },
+     {
+      "t": 3600.0,
+      "value": 3
+     },
+     {
+      "t": 4200.0,
+      "value": 4
+     },
+     {
+      "t": 4800.0,
+      "value": 5
+     },
+     {
+      "t": 5400.0,
+      "value": 10
+     }
+    ],
+    "u1Ena": true,
+    "u1StaPro": false
+   },
+   "expect": [
+    {
+     "output": "TSupSet",
+     "from_s": 0.0,
+     "to_s": 1140.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1200.0,
+     "to_s": 1440.0,
+     "equals": 278.8476,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1500.0,
+     "to_s": 1740.0,
+     "equals": 278.9852,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1800.0,
+     "to_s": 2040.0,
+     "equals": 279.1228,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2100.0,
+     "to_s": 2340.0,
+     "equals": 279.2604,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2400.0,
+     "to_s": 2640.0,
+     "equals": 279.398,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2700.0,
+     "to_s": 2940.0,
+     "equals": 279.5356,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3000.0,
+     "to_s": 3240.0,
+     "equals": 279.6732,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3300.0,
+     "to_s": 3540.0,
+     "equals": 279.8108,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3600.0,
+     "to_s": 3840.0,
+     "equals": 279.742,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3900.0,
+     "to_s": 4140.0,
+     "equals": 279.6732,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4200.0,
+     "to_s": 4440.0,
+     "equals": 279.398,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4500.0,
+     "to_s": 4740.0,
+     "equals": 279.1228,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4800.0,
+     "to_s": 5040.0,
+     "equals": 278.7788,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5100.0,
+     "to_s": 6600.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 6600.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    }
+   ]
+  },
+  {
+   "name": "ceiling_clamp",
+   "description": "Three requests from the start: the net change is +1 %, but the reset cannot rise above 100 %, so the setpoints stay at design.",
+   "inputs": {
+    "nReqRes": 3,
+    "u1Ena": true,
+    "u1StaPro": false
+   },
+   "expect": [
+    {
+     "output": "TSupSet",
+     "from_s": 0.0,
+     "to_s": 6000.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 6000.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    }
+   ]
+  },
+  {
+   "name": "saturate_then_release",
+   "description": "Five requests until 6000 s push the reset against its 100 % ceiling; when they stop, trimming starts from 100 % at the next sample, not from some value above it.",
+   "inputs": {
+    "nReqRes": [
+     {
+      "t": 0.0,
+      "value": 5
+     },
+     {
+      "t": 6000.0,
+      "value": 0
+     }
+    ],
+    "u1Ena": true,
+    "u1StaPro": false
+   },
+   "expect": [
+    {
+     "output": "TSupSet",
+     "from_s": 0.0,
+     "to_s": 5940.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6000.0,
+     "to_s": 6240.0,
+     "equals": 278.8476,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6300.0,
+     "to_s": 6540.0,
+     "equals": 278.9852,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6600.0,
+     "to_s": 6840.0,
+     "equals": 279.1228,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6900.0,
+     "to_s": 7140.0,
+     "equals": 279.2604,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7200.0,
+     "to_s": 7200.0,
+     "equals": 279.398,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 7200.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    }
+   ]
+  },
+  {
+   "name": "hold_short_staging",
+   "description": "Staging for 600 s from 3000 s. Updates freeze for the full 900 s hold after the staging starts, then resume.",
+   "inputs": {
+    "nReqRes": 0,
+    "u1Ena": true,
+    "u1StaPro": [
+     {
+      "t": 0.0,
+      "value": false
+     },
+     {
+      "t": 3000.0,
+      "value": true
+     },
+     {
+      "t": 3600.0,
+      "value": false
+     }
+    ]
+   },
+   "expect": [
+    {
+     "output": "TSupSet",
+     "from_s": 0.0,
+     "to_s": 1140.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1200.0,
+     "to_s": 1440.0,
+     "equals": 278.8476,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1500.0,
+     "to_s": 1740.0,
+     "equals": 278.9852,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1800.0,
+     "to_s": 2040.0,
+     "equals": 279.1228,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2100.0,
+     "to_s": 2340.0,
+     "equals": 279.2604,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2400.0,
+     "to_s": 2640.0,
+     "equals": 279.398,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2700.0,
+     "to_s": 3840.0,
+     "equals": 279.5356,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3900.0,
+     "to_s": 4140.0,
+     "equals": 279.6732,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4200.0,
+     "to_s": 4440.0,
+     "equals": 279.8108,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4500.0,
+     "to_s": 4740.0,
+     "equals": 279.9484,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4800.0,
+     "to_s": 4800.0,
+     "equals": 280.086,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 4800.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    }
+   ]
+  },
+  {
+   "name": "hold_long_staging",
+   "description": "Staging for 1800 s from 3000 s, longer than the 900 s hold: updates freeze for as long as staging lasts.",
+   "inputs": {
+    "nReqRes": 0,
+    "u1Ena": true,
+    "u1StaPro": [
+     {
+      "t": 0.0,
+      "value": false
+     },
+     {
+      "t": 3000.0,
+      "value": true
+     },
+     {
+      "t": 4800.0,
+      "value": false
+     }
+    ]
+   },
+   "expect": [
+    {
+     "output": "TSupSet",
+     "from_s": 0.0,
+     "to_s": 1140.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1200.0,
+     "to_s": 1440.0,
+     "equals": 278.8476,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1500.0,
+     "to_s": 1740.0,
+     "equals": 278.9852,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1800.0,
+     "to_s": 2040.0,
+     "equals": 279.1228,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2100.0,
+     "to_s": 2340.0,
+     "equals": 279.2604,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2400.0,
+     "to_s": 2640.0,
+     "equals": 279.398,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2700.0,
+     "to_s": 4740.0,
+     "equals": 279.5356,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4800.0,
+     "to_s": 5040.0,
+     "equals": 279.6732,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5100.0,
+     "to_s": 5340.0,
+     "equals": 279.8108,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5400.0,
+     "to_s": 5400.0,
+     "equals": 279.9484,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 5400.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    }
+   ]
+  },
+  {
+   "name": "disable_and_reenable",
+   "description": "The plant is disabled from 9000 s to 9900 s: the setpoints return to design at once, and the start delay begins again at re-enable.",
+   "inputs": {
+    "nReqRes": 0,
+    "u1Ena": [
+     {
+      "t": 0.0,
+      "value": true
+     },
+     {
+      "t": 9000.0,
+      "value": false
+     },
+     {
+      "t": 9900.0,
+      "value": true
+     }
+    ],
+    "u1StaPro": false
+   },
+   "expect": [
+    {
+     "output": "TSupSet",
+     "from_s": 0.0,
+     "to_s": 1140.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1200.0,
+     "to_s": 1440.0,
+     "equals": 278.8476,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1500.0,
+     "to_s": 1740.0,
+     "equals": 278.9852,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1800.0,
+     "to_s": 2040.0,
+     "equals": 279.1228,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2100.0,
+     "to_s": 2340.0,
+     "equals": 279.2604,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2400.0,
+     "to_s": 2640.0,
+     "equals": 279.398,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2700.0,
+     "to_s": 2940.0,
+     "equals": 279.5356,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3000.0,
+     "to_s": 3240.0,
+     "equals": 279.6732,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3300.0,
+     "to_s": 3540.0,
+     "equals": 279.8108,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3600.0,
+     "to_s": 3840.0,
+     "equals": 279.9484,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3900.0,
+     "to_s": 4140.0,
+     "equals": 280.086,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4200.0,
+     "to_s": 4440.0,
+     "equals": 280.2236,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4500.0,
+     "to_s": 4740.0,
+     "equals": 280.3612,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4800.0,
+     "to_s": 5040.0,
+     "equals": 280.4988,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5100.0,
+     "to_s": 5340.0,
+     "equals": 280.6364,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5400.0,
+     "to_s": 5640.0,
+     "equals": 280.774,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5700.0,
+     "to_s": 5940.0,
+     "equals": 280.9116,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6000.0,
+     "to_s": 6240.0,
+     "equals": 281.0492,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6300.0,
+     "to_s": 6540.0,
+     "equals": 281.1868,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6600.0,
+     "to_s": 6840.0,
+     "equals": 281.3244,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6900.0,
+     "to_s": 7140.0,
+     "equals": 281.462,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7200.0,
+     "to_s": 7440.0,
+     "equals": 281.5996,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7500.0,
+     "to_s": 7740.0,
+     "equals": 281.7372,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7800.0,
+     "to_s": 8040.0,
+     "equals": 281.8748,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 8100.0,
+     "to_s": 8340.0,
+     "equals": 282.0124,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 8400.0,
+     "to_s": 8940.0,
+     "equals": 282.15,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 9000.0,
+     "to_s": 11040.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 11100.0,
+     "to_s": 11340.0,
+     "equals": 278.8476,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 11400.0,
+     "to_s": 11640.0,
+     "equals": 278.9852,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 11700.0,
+     "to_s": 11700.0,
+     "equals": 279.1228,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 8640.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 8700.0,
+     "to_s": 8940.0,
+     "equals": 233386.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 9000.0,
+     "to_s": 11700.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    }
+   ]
+  },
+  {
+   "name": "recover_from_floor",
+   "description": "Trim to the floor, then five requests from 16200 s: the pressure setpoint is restored first, then the supply temperature is lowered back to design.",
+   "inputs": {
+    "nReqRes": [
+     {
+      "t": 0.0,
+      "value": 0
+     },
+     {
+      "t": 16200.0,
+      "value": 5
+     }
+    ],
+    "u1Ena": true,
+    "u1StaPro": false
+   },
+   "expect": [
+    {
+     "output": "TSupSet",
+     "from_s": 0.0,
+     "to_s": 1140.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1200.0,
+     "to_s": 1440.0,
+     "equals": 278.8476,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1500.0,
+     "to_s": 1740.0,
+     "equals": 278.9852,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 1800.0,
+     "to_s": 2040.0,
+     "equals": 279.1228,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2100.0,
+     "to_s": 2340.0,
+     "equals": 279.2604,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2400.0,
+     "to_s": 2640.0,
+     "equals": 279.398,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 2700.0,
+     "to_s": 2940.0,
+     "equals": 279.5356,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3000.0,
+     "to_s": 3240.0,
+     "equals": 279.6732,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3300.0,
+     "to_s": 3540.0,
+     "equals": 279.8108,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3600.0,
+     "to_s": 3840.0,
+     "equals": 279.9484,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 3900.0,
+     "to_s": 4140.0,
+     "equals": 280.086,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4200.0,
+     "to_s": 4440.0,
+     "equals": 280.2236,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4500.0,
+     "to_s": 4740.0,
+     "equals": 280.3612,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 4800.0,
+     "to_s": 5040.0,
+     "equals": 280.4988,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5100.0,
+     "to_s": 5340.0,
+     "equals": 280.6364,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5400.0,
+     "to_s": 5640.0,
+     "equals": 280.774,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 5700.0,
+     "to_s": 5940.0,
+     "equals": 280.9116,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6000.0,
+     "to_s": 6240.0,
+     "equals": 281.0492,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6300.0,
+     "to_s": 6540.0,
+     "equals": 281.1868,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6600.0,
+     "to_s": 6840.0,
+     "equals": 281.3244,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 6900.0,
+     "to_s": 7140.0,
+     "equals": 281.462,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7200.0,
+     "to_s": 7440.0,
+     "equals": 281.5996,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7500.0,
+     "to_s": 7740.0,
+     "equals": 281.7372,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 7800.0,
+     "to_s": 8040.0,
+     "equals": 281.8748,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 8100.0,
+     "to_s": 8340.0,
+     "equals": 282.0124,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 8400.0,
+     "to_s": 19140.0,
+     "equals": 282.15,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 19200.0,
+     "to_s": 19440.0,
+     "equals": 281.806,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 19500.0,
+     "to_s": 19740.0,
+     "equals": 281.462,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 19800.0,
+     "to_s": 20040.0,
+     "equals": 281.118,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 20100.0,
+     "to_s": 20340.0,
+     "equals": 280.774,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 20400.0,
+     "to_s": 20640.0,
+     "equals": 280.43,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 20700.0,
+     "to_s": 20940.0,
+     "equals": 280.086,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 21000.0,
+     "to_s": 21240.0,
+     "equals": 279.742,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 21300.0,
+     "to_s": 21540.0,
+     "equals": 279.398,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 21600.0,
+     "to_s": 21840.0,
+     "equals": 279.054,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSupSet",
+     "from_s": 21900.0,
+     "to_s": 22200.0,
+     "equals": 278.71,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 8640.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 8700.0,
+     "to_s": 8940.0,
+     "equals": 233386.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 9000.0,
+     "to_s": 9240.0,
+     "equals": 227647.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 9300.0,
+     "to_s": 9540.0,
+     "equals": 221908.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 9600.0,
+     "to_s": 9840.0,
+     "equals": 216169.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 9900.0,
+     "to_s": 10140.0,
+     "equals": 210430.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 10200.0,
+     "to_s": 10440.0,
+     "equals": 204691.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 10500.0,
+     "to_s": 10740.0,
+     "equals": 198952.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 10800.0,
+     "to_s": 11040.0,
+     "equals": 193213.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 11100.0,
+     "to_s": 11340.0,
+     "equals": 187474.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 11400.0,
+     "to_s": 11640.0,
+     "equals": 181735.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 11700.0,
+     "to_s": 11940.0,
+     "equals": 175996.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 12000.0,
+     "to_s": 12240.0,
+     "equals": 170257.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 12300.0,
+     "to_s": 12540.0,
+     "equals": 164518.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 12600.0,
+     "to_s": 12840.0,
+     "equals": 158779.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 12900.0,
+     "to_s": 13140.0,
+     "equals": 153040.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 13200.0,
+     "to_s": 13440.0,
+     "equals": 147301.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 13500.0,
+     "to_s": 13740.0,
+     "equals": 141562.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 13800.0,
+     "to_s": 14040.0,
+     "equals": 135823.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 14100.0,
+     "to_s": 14340.0,
+     "equals": 130084.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 14400.0,
+     "to_s": 14640.0,
+     "equals": 124345.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 14700.0,
+     "to_s": 14940.0,
+     "equals": 118606.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 15000.0,
+     "to_s": 15240.0,
+     "equals": 112867.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 15300.0,
+     "to_s": 15540.0,
+     "equals": 107128.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 15600.0,
+     "to_s": 15840.0,
+     "equals": 101389.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 15900.0,
+     "to_s": 16140.0,
+     "equals": 95650.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 16200.0,
+     "to_s": 16440.0,
+     "equals": 109997.5,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 16500.0,
+     "to_s": 16740.0,
+     "equals": 124345.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 16800.0,
+     "to_s": 17040.0,
+     "equals": 138692.5,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 17100.0,
+     "to_s": 17340.0,
+     "equals": 153040.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 17400.0,
+     "to_s": 17640.0,
+     "equals": 167387.5,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 17700.0,
+     "to_s": 17940.0,
+     "equals": 181735.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 18000.0,
+     "to_s": 18240.0,
+     "equals": 196082.5,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 18300.0,
+     "to_s": 18540.0,
+     "equals": 210430.0,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 18600.0,
+     "to_s": 18840.0,
+     "equals": 224777.5,
+     "tolerance": 0.001
+    },
+    {
+     "output": "dpSet",
+     "from_s": 18900.0,
+     "to_s": 22200.0,
+     "equals": 239125.0,
+     "tolerance": 0.001
+    }
+   ]
+  }
+ ]
+}

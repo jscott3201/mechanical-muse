@@ -433,3 +433,35 @@ async fn the_sequence_name_comes_from_the_task() {
     .await;
     assert_eq!(trace.verified.unwrap().graph.name, "ahu_0005");
 }
+
+#[tokio::test]
+async fn an_algebraic_loop_is_explained_to_the_model() {
+    // y = u + y with no delay: the engine refuses it at the schedule stage with no diagnostic
+    // records, so the feedback must carry the engine's own explanation.
+    let looped = right()
+        .replace(
+            r#"{"id": "gap", "class": "Reals.Subtract", "params": []}"#,
+            r#"{"id": "gap", "class": "Reals.Subtract", "params": []}, {"id": "loopAdd", "class": "Reals.Add", "params": []}"#,
+        )
+        .replace(
+            r#""gap.y -> gapBig.u""#,
+            r#""gap.y -> loopAdd.u1", "loopAdd.y -> loopAdd.u2", "loopAdd.y -> gapBig.u""#,
+        );
+    assert_ne!(looped, right(), "mutation did not apply");
+    let model = ScriptedModel::new(vec![reply(&looped), reply(&right())]);
+    let trace = author(
+        &model,
+        &Palette::pinned().unwrap(),
+        &task(),
+        &vectors(),
+        &[],
+        &config(2, Feedback::ValidatorOnly),
+    )
+    .await;
+    assert!(matches!(
+        trace.attempts[0].outcome,
+        AttemptOutcome::LoadFailed { .. }
+    ));
+    let feedback = last_input_text(&model.requests()[1]);
+    assert!(feedback.contains("algebraic loop"), "{feedback}");
+}

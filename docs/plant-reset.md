@@ -127,7 +127,7 @@ Caveats that are not "missing classes" but matter:
 
 - `Buildings.Controls.OBC.ASHRAE.PrimarySystem.*` **does not exist at `master`** (`Buildings/Controls/OBC/ASHRAE/package.order` lists only `G36`; the old
   `PrimarySystem/...` raw paths 404). The plant sequences moved to `Buildings.Controls.OBC.ASHRAE.G36.Plants`, whose `package.order` lists only `Chillers`.
-- CHW-only equivalents that do exist (both also built on TrimAndRespond with `have_hol=true`):
+- CHW-only equivalents that exist on upstream `master` (both also built on TrimAndRespond with `have_hol=true`). **Correction (2026-10-26):** they are not in the tree at the engine's pin `a131864e`, which has no `G36.Plants` package, so the "disabled ⇒ 0" contrast below cannot be checked against the pinned source:
   - `G36.Plants.Chillers.SetPoints.ChilledWaterPlantReset`: T&R producing a plant reset value; takes a request count, a staging flag, and pump-status array (enable = any CHW pump proven on).
     Note a disagreement inside MBL itself: when disabled this block forces its output to **0**, whereas PlantReset's T&R returns to its **initial value (1)**. A real spec that says "reset to the initial state when off" is
     ambiguous in exactly this way (A1).
@@ -147,7 +147,7 @@ Results (code in `support/probe_have_hol_main.rs`):
 
 - Loads warning-free: 44 blocks, 6 stateful (vs 5 for `have_hol=false`).
 - Trace with requests above the ignore count and a staging pulse: output freezes at the first tick inside the hold, resumes at the first tick after release.
-- My independent Python reference (`support/plant_reset_ref_model.py`, written from the `.mo` semantics, not from engine output) matches the engine on all 41 frames of the
+- My independent Python reference (`support/plant_reset_ref_model.py`, written from the `.mo` semantics, not from engine output) (not re-run since; see `specs/chw_plant_reset/` for the current validated reference) matches the engine on all 41 frames of the
   `have_hol=false` and `have_hol=true` traces, including the hold, with zero differences (1e-9).
 - Tie case (hold expires exactly on a sample tick, dtHol=360 with ticks every 120 s): both engine and reference apply that tick's update.
 - Takeaway: `have_hol=true` is a **hand-specialization of an existing fixture, not new engine work**. What is missing is an oracle row, not capability.
@@ -281,12 +281,12 @@ Notes:
 
 ### 4.3 Wiring glue that PlantReset does not provide (all expressible with palette blocks)
 
-- `nReqRes` CHW: `Integers.MultiSum` over the 3 AHUs' `yChiWatResReq` (range 0 to 9).
+- `nReqRes` CHW: the sum of the 3 AHUs' `yChiWatResReq` (range 0 to 9). Correction: `Integers.MultiSum` is width-driven and not in the authoring palette; use a chain of two `Integers.Add`.
 - `u1Ena`: no plant-enable signal is exposed. Options: occupancy flag `floorN_reaAHU_occ_y` OR a flow threshold with `Reals.Hysteresis` on `reaChiWatSys_mCHWTot_y` / `reaHotWatSys_mHWTot_y`; or any plant request > 0 (`Integers.GreaterThreshold`). Flagged ambiguity A1.
 - `u1StaPro`: staging is internal and invisible. v1: constant false (hold path still exercised by test vectors). v2: proxy from a step in chiller or boiler power, with `Logical.TrueFalseHold`. Flagged A5.
 - **HW request source gap**: the engine's AHU PlantRequests HW branch is built around an AHU hot-water coil, which this building does not have. HW reset requests would have to come from the 15 VAV reheat valve positions
   (`reaZon*_yReheaVal_y`). The engine's vendored cone contains `TerminalUnits/Reheat/Subsequences/Overrides` and `CoolingOnly/*/SystemRequests` but **no Reheat SystemRequests**. Recommendation: make CHW the end-to-end hero
-  (AHU PlantRequests -> sum -> PlantReset), and treat HW as a second, smaller authored sequence (count reheat valves above a threshold for a short time, via `Reals.GreaterThreshold` + `Logical.TrueDelay` + `Integers.MultiSum`).
+  (AHU PlantRequests -> sum -> PlantReset), and treat HW as a second, smaller authored sequence (count reheat valves above a threshold for a short time, via `Reals.GreaterThreshold` + `Logical.TrueDelay`, summed with chained `Integers.Add`).
   This differs from the brief's statement that both loops get requests from the existing AHU PlantRequests; worth confirming.
 - Floor weighting: each AHU counts once, though the mid-floor AHU carries about 10x the load. Equal weighting is the library convention; flag it (A3).
 - Control step: BOPTEST scenario starts fall on multiples of 300 s, so the absolute-time sample clock lines up; use a control step of 60 s or 300 s.
@@ -369,7 +369,7 @@ HW gives T = 343.15, 343.15, 343.15, 348.15, 353.15 K and dp = 47,825, 83,693.75
 Notes for the harness:
 
 - Tolerance: 1e-9 on `r`; setpoints are exact products of `r` and constants, so compare to ~1e-9 relative.
-- Avoid or separately mark vectors where enable or hold edges fall off the 300 s grid (e.g. enabling at 9,960 gives the first trim at 11,160 as an immediate -0.02, then the next at 11,400). They are valid but
+- Avoid or separately mark vectors where enable or hold edges fall off the 300 s grid (e.g. enabling at 9,960: the step that appears at 11,160 is a preview of the next update, not an extra one; 11,400 is still 0.98 and 0.96 arrives at 11,700, which matches the library's Dymola validation). They are valid but
   encode the "clock anchored to time zero" choice (A8) and should be an adjudicated vector, not a default one.
 - Expected values were not produced by the engine under test (anti-tautology); keep the model in a separate language/path from the CXF and compare, never bless engine output.
 

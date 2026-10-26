@@ -107,7 +107,11 @@ fn baselines_validate_and_never_pass_a_whole_rule() {
             assert_eq!(validate(&g, &palette), vec![], "{} {value}", r.id);
         }
     }
-    let (f, t) = baselines(&rules, &palette).unwrap();
+    let items: Vec<_> = rules
+        .iter()
+        .map(|r| (r.id.clone(), r.reference.clone(), r.vectors.clone()))
+        .collect();
+    let (f, t) = baselines(&items, &palette).unwrap();
     let scenarios: usize = rules.iter().map(|r| r.vectors.scenarios.len()).sum();
     assert_eq!((f.scenarios, t.scenarios), (scenarios, scenarios));
     // Every library rule has at least one scenario that expects the fault to fire.
