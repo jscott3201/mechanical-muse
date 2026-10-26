@@ -27,6 +27,7 @@ pub enum FindingCode {
     TypeMismatch,
     MultiplyDriven,
     Undriven,
+    UnusedInput,
 }
 
 impl FindingCode {
@@ -48,6 +49,7 @@ impl FindingCode {
             FindingCode::TypeMismatch => "type-mismatch",
             FindingCode::MultiplyDriven => "multiply-driven",
             FindingCode::Undriven => "undriven",
+            FindingCode::UnusedInput => "unused-input",
         }
     }
 }
@@ -213,6 +215,7 @@ impl Validator {
 
     fn edges(&mut self, graph: &BlockGraph) {
         let mut drivers: BTreeMap<Endpoint, usize> = BTreeMap::new();
+        let mut read: BTreeSet<Endpoint> = BTreeSet::new();
         for text in &graph.connections {
             let Some(edge) = parse_edge(text) else {
                 self.push(
@@ -253,7 +256,18 @@ impl Validator {
                     ),
                 );
             }
+            read.insert(edge.from);
             *drivers.entry(edge.to).or_default() += 1;
+        }
+        // The engine drops a boundary input nothing reads, so vectors could no longer set it.
+        for input in &graph.inputs {
+            if !read.contains(&Endpoint::Boundary(input.name.clone())) {
+                self.push(
+                    FindingCode::UnusedInput,
+                    &input.name,
+                    "every task input must feed at least one block or output",
+                );
+            }
         }
         for (dest, kind) in &self.destinations.clone() {
             match drivers.get(dest).copied().unwrap_or(0) {

@@ -14,7 +14,7 @@ Everything in this repository was written during the event, starting October 26,
 
 | Component | Path | Status |
 | --- | --- | --- |
-| Engine bridge (JSON wrapper and CLI) | `crates/` | Planned |
+| Engine bridge: load receipts, frame stepping, vector replay | `crates/mm-bridge` | Working offline: replays all 1,760 library scenarios on the pinned engine |
 | Block-graph schema and CXF emitter | `crates/mm-graph` | Working offline: validator and emitter round-trip all 137 library rules |
 | Muse Spark authoring agent | `crates/` | Planned |
 | Library benchmark harness | `crates/` | Planned |
