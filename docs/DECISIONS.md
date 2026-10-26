@@ -15,8 +15,14 @@ Decisions for Mechanical Muse. Muse Code's `/grill-with-docs` writes here. Newes
 
 ## Decided
 
-- Coding harness: Meta's Muse Code CLI only. One context file (`AGENTS.md`), project skills in
-  `.agents/skills/`, a Stop hook in `.muse/hooks.json`, MCP servers in `.mcp.json`. See `docs/muse-code.md`.
+- Coding harnesses: Muse Code and Claude Code, used interchangeably to build. The organizers
+  confirmed in the event's rules channel (2026-10-26) that any build tools are allowed, Claude Code
+  included, and that non-Meta models may be used alongside Meta's as long as Meta's models are a
+  real part of what the project runs. Our line is stricter: every model call the application makes
+  goes to Meta's models (AGENTS.md hard rule 8). One context file (`AGENTS.md`), committed skills in
+  `.agents/skills/`, one Stop hook script (`.muse/hooks/verify.sh`), MCP servers in `.mcp.json`.
+  `.claude/` (Claude Code settings and its skills copy) and `ledger/` (shared handoff log) stay
+  local and gitignored. See `docs/coding-agents.md`.
 - Hero sequence: chilled-water plant reset written from the Modelica Buildings Library PlantReset
   documentation (paraphrased). Hot-water reset is a stretch.
 - Building emulator: BOPTEST `multizone_office_complex_air`; EnergyPlus 26.2 Large Office is the fallback.

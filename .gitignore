@@ -1,5 +1,8 @@
 # Local research artifacts and working documents (not part of the submission)
 /research/
+/scratch/
+# Shared handoff log for Muse Code and Claude Code sessions (local only)
+/ledger/
 
 # Rust
 /target/
@@ -28,3 +31,6 @@ web/dist/
 .muse/*
 !.muse/hooks.json
 !.muse/hooks/
+
+# Claude Code: kept local for now (skills, settings, worktrees)
+/.claude/

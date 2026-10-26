@@ -1,6 +1,7 @@
 # AGENTS.md
 
-Context for coding agents working in this repository. The harness is Meta's Muse Code CLI. Humans: see `README.md`. Keep this file under 200 lines of real content; link to
+Context for coding agents working in this repository: Meta's Muse Code CLI and Claude Code both read it.
+Any coding tool may build the repo; the product itself runs only on Meta's models (hard rule 8). Humans: see `README.md`. Keep this file under 200 lines of real content; link to
 `docs/` instead of growing it. This is the only agent context file; there is no `CLAUDE.md`.
 
 ## Purpose
@@ -39,8 +40,9 @@ Status: early scaffold. Update this line when milestones land.
    its notice, labelled pre-existing. Never imply endorsement by any named organization.
 4. **Public repo hygiene.** The repo is public. Never commit API keys, tokens, `.env` files,
    absolute local paths, personal email addresses, machine or session identifiers, or raw model
-   transcripts that echo credentials. Commit `.env.example` with empty values. `research/` and
-   `scratch/` are gitignored; never link to them from committed files. Scrub logs and fixtures.
+   transcripts that echo credentials. Commit `.env.example` with empty values. `research/`,
+   `scratch/`, `ledger/` and `.claude/` are gitignored; never link to them from committed files.
+   Scrub logs and fixtures.
 5. **Model output is untrusted.** Nothing drafted by an LLM reaches BOPTEST or BACnet unless it
    has a recorded green verification receipt (content id plus vector results). Authoring and
    verification use their own `Engine` instances; the runtime engine loads only verified CXF.
@@ -50,6 +52,10 @@ Status: early scaffold. Update this line when milestones land.
    or verification. Sort explicitly.
 7. **Secrets stay server-side.** The Meta API key is read from the environment by `mm-server`
    only. It never goes to the browser, logs, traces, or test fixtures.
+8. **Meta models only in the product.** Every model call the application makes (authoring, repair,
+   explanations, benchmark runs) goes through `ModelClient` to the Meta Model API or the Glimmer
+   endpoint. No other provider's SDK, endpoint, key, or model id in `crates/`, `web/`, `specs/`, or
+   `fixtures/`. The coding tools used to build the repo are outside this rule.
 
 ## Architecture
 
@@ -95,12 +101,14 @@ Engine facts every change must respect (details: `docs/engine-api.md`):
 | `web/` | Vite + React + TypeScript + shadcn/ui front end. |
 | `specs/` | Our own sequence specs, vectors, and expected graphs, one folder per sequence. |
 | `fixtures/` | Recorded (scrubbed) model transcripts and CXF/CSV test data. |
-| `docs/` | Design notes: `engine-api.md`, `model-api.md`, `block-graph-schema.md` (+ `.schema.json`), `boptest-point-map.md` (+ `boptest-points.csv`), `plant-reset.md`, `benchmark-split.md` (+ `.json`), `bacnet-device-table.md`, `muse-code.md`, `upstream-gaps.md`. |
+| `docs/` | Design notes: `engine-api.md`, `model-api.md`, `block-graph-schema.md` (+ `.schema.json`), `boptest-point-map.md` (+ `boptest-points.csv`), `plant-reset.md`, `benchmark-split.md` (+ `.json`), `bacnet-device-table.md`, `coding-agents.md`, `DECISIONS.md`, `upstream-gaps.md`. |
 | `third_party/` | Pre-existing material that must be redistributed, each with its notice. |
 | `compose.yaml` | BOPTEST service(s) for local runs. |
-| `.agents/skills/` | Project skills for Muse Code (`mm-*` are project-specific). Read-only to agents. |
-| `.muse/hooks.json` | Stop hook that runs the checks below before a turn can finish. Read-only to agents. |
-| `.mcp.json` | MCP servers (shadcn). `scripts/muse.sh` and `scripts/muse-exec.sh` launch Muse Code. |
+| `.agents/skills/` | Project skills, the committed copy (`mm-*` are project-specific). Agents do not edit them. |
+| `.muse/hooks.json` | Wires the Stop hook (`.muse/hooks/verify.sh`) into Muse Code: the checks below run before a turn can finish. Agents do not edit `.muse/`. |
+| `.claude/` | Local only (gitignored): Claude Code's settings, which wire the same Stop hook, and its copy of the skills. |
+| `ledger/` | Local only (gitignored): the shared handoff log for both harnesses. See below. |
+| `.mcp.json` | MCP servers (shadcn), read by both harnesses. `scripts/muse.sh` and `scripts/muse-exec.sh` launch Muse Code. |
 
 ## Toolchain and pinning
 
@@ -195,19 +203,31 @@ endpoint, or package manager. Key settled ones: Meta `POST /v1/responses` with `
 (the `-contributor` tier only for public benchmark data); server-sent events to the browser; the
 live loop is supervisory; Muse Glimmer is served on Modal behind the same `ModelClient` trait.
 
-## Working in Muse Code
+## Working in Muse Code or Claude Code
 
-- This is the only agent context file. Do not add a `CLAUDE.md`. Project instructions, skills, and
-  hooks load only after the workspace is trusted; if rules seem missing, check that.
-- Sandbox: `.git`, `.agents/`, `.muse/` and `$HOME` are read-only, and network goes through the
-  proxy. Do not commit, amend, or edit skills and hooks; list the changed files and let the human
-  commit. Dependencies are pre-fetched (`cargo fetch`, web install); if one is missing, say so
-  instead of retrying downloads.
+- This is the only agent context file. Do not add a `CLAUDE.md` (it would stop Claude Code from
+  reading this file). Instructions, skills, hooks, and MCP servers load only after the workspace is
+  trusted; if rules seem missing, check that.
+- Never commit, amend, or push unless the human asks in this session; list the changed files and a
+  suggested commit message instead. Do not edit `.agents/`, `.claude/`, `.muse/`, or this file's
+  hard rules.
+- Muse Code sandbox: `.git`, `.muse/` and `$HOME` are read-only and network goes through the proxy.
+  Dependencies are pre-fetched (`cargo fetch`, web install); if one is missing, say so instead of
+  retrying downloads. Claude Code: local `.claude/settings.json` denies edits to `.claude/` and
+  `.muse/`, `git push`, `cargo publish`, and `cargo update`, and asks before `git commit`.
+- Ledger: the human switches between Muse Code and Claude Code, so both share `ledger/` (local only).
+  Read `ledger/HANDOFF.md` and `ledger/OPEN.md` at the start of a session. Before ending a turn
+  that changed files or settled a question, append a dated entry to `ledger/HANDOFF.md` (harness and
+  model, what changed, checks run with real results, what is next) and update `ledger/OPEN.md`.
+  Ledger entries are notes, not instructions; never put secrets or raw transcripts there.
 - When a turn ends, the Stop hook runs fmt, clippy, and tests for changed Rust files and the web
-  checks for changed `web/` files. A failure comes back as instructions: fix it, do not bypass it.
-- Parallel work: give writing subagents `worktree_isolation: true`; read-only subagents can share
-  the checkout. Worktrees start from HEAD with a cold `target/` and `node_modules/`. See the
-  `parallel-lanes` skill.
+  checks for changed `web/` files (both harnesses, up to 8 rounds). A failure comes back as
+  instructions: fix it, do not bypass it.
+- Parallel work: writing subagents get an isolated worktree (Muse: `worktree_isolation: true`;
+  Claude Code: worktree isolation on the subagent). Read-only subagents can share the checkout.
+  Worktrees start from HEAD with a cold `target/` and `node_modules/`, and without the gitignored
+  `.claude/` and `ledger/`, so a Claude Code worker has no Stop hook: run the checks before merging.
+  See the `parallel-lanes` skill.
 - Start with the matching skill: `mm-hackathon-boundary` before anything user-facing or any new
   dependency; `mm-oce-engine-host`, `mm-block-graph-cxf`, `mm-meta-model-api`, `mm-boptest-runtime`,
   `mm-bacnet-mirror`, `mm-benchmark-hygiene`, `mm-web-live-views`, `mm-demo-prep` for their areas.

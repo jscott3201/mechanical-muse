@@ -17,7 +17,7 @@ Scoring: stage 1 pass/fail (theme fit, real Meta model use built in the event); 
 - First 15 s: name what is new (bridge, emitter, agent, runtime, BACnet mirror, web app, harness) and what is called (engine, library, rusty-bacnet, BOPTEST). Event-built work only (`mm-hackathon-boundary`).
 - Show a real red-to-green repair: a draft failing a vector or load check with its diagnostic `code()`, then the green receipt. Use a recorded run where it happened; never stage one.
 - Show the closed loop beside baseline KPIs, the refused-frame degraded path, and the benchmark figure with baseline, subset and model id (`mm-benchmark-hygiene`).
-- Meta tooling: show only what ran (Muse Spark through the Model API with structured output; Muse Code as the build harness). Mention Glimmer or open weights only if a run exists; confirm the Modal endpoint details first.
+- Meta tooling: show only what ran (Muse Spark through the Model API with structured output; name the build harnesses honestly, Muse Code first if it carried the work). Mention Glimmer or open weights only if a run exists; confirm the Modal endpoint details first.
 - Under 3:00 (aim 2:50). Format and hosting: check the portal.
 
 **Fallback ladder** (label every rung in the UI and the script; never call 2 to 4 live)

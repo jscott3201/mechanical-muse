@@ -3,8 +3,7 @@
     "shadcn": {
       "type": "stdio",
       "command": "npx",
-      "args": ["shadcn@latest", "mcp"],
-      "required": false
+      "args": ["shadcn@latest", "mcp"]
     }
   }
 }
