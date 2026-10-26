@@ -1,0 +1,21 @@
+[package]
+name = "mm-bench"
+description = "Fault-rule benchmark: scrubbed tasks from library cards, model runs, replay scoring, run records"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+mm-agent.workspace = true
+mm-bridge.workspace = true
+mm-graph.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+
+[lints]
+workspace = true

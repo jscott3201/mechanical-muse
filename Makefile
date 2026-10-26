@@ -1,5 +1,5 @@
 # Common commands. Rust checks match the Stop hook; web targets arrive with web/.
-.PHONY: check fmt fmt-check clippy test test-live live env-keys run fetch
+.PHONY: check fmt fmt-check clippy test test-live live bench env-keys run fetch
 
 check: fmt-check clippy test
 
@@ -25,6 +25,14 @@ live:
 	@set -a; . ./.env; set +a; \
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
 	cargo test -p mm-agent --test author_loop -- --ignored --nocapture
+
+# Benchmark run on a library checkout at the pinned commit. Example:
+#   make bench LIB=<open-control-library at 124427b> ARGS="--subset test_clean --tier b --out runs/x.json"
+# Add --dry-run to scrub tasks and compute baselines without any model call.
+bench:
+	@set -a; . ./.env; set +a; \
+	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
+	cargo run --release -q -p mm-bench -- --library "$(LIB)" --library-commit 124427b $(ARGS)
 
 # Names of the variables in .env, each marked set or empty. Never prints values.
 env-keys:

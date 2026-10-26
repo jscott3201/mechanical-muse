@@ -19,7 +19,7 @@ Mechanical Muse turns a written building-control sequence into a verified, runna
 6. A React web app shows the authoring trace, verification results, live trends, KPIs, and
    explanations.
 
-Status: `mm-graph`, `mm-bridge` and `mm-agent` work offline: all 1,760 library scenarios replay green on the pinned engine, and the draft-verify-repair loop converges against scripted model replies. Not yet run against the live Meta API. Update this line when milestones land.
+Status: offline pipeline (`mm-graph`, `mm-bridge`, `mm-agent`) and the benchmark harness (`mm-bench`) work; Muse Spark has run live (see `docs/benchmark-results.md`). Next: PlantReset spec and the BOPTEST runtime. Update this line when milestones land.
 
 ## Hard rules (these override convenience)
 
@@ -50,8 +50,8 @@ Status: `mm-graph`, `mm-bridge` and `mm-agent` work offline: all 1,760 library s
 6. **Determinism.** Same inputs must give byte-identical emitted CXF and identical vector results.
    No `HashMap` iteration order, wall-clock time, or unseeded randomness in emitters, validators,
    or verification. Sort explicitly.
-7. **Secrets stay server-side.** The Meta API key is read from the environment by `mm-server`
-   only. It never goes to the browser, logs, traces, or test fixtures.
+7. **Secrets stay server-side.** The Meta API key is read from the environment only by the
+   server-side binaries (`mm-server`, and the `mm-bench` CLI for benchmark runs). It never goes to the browser, logs, traces, or test fixtures.
 8. **Meta models only in the product.** Every model call the application makes (authoring, repair,
    explanations, benchmark runs) goes through `ModelClient` to the Meta Model API or the Glimmer
    endpoint. No other provider's SDK, endpoint, key, or model id in `crates/`, `web/`, `specs/`, or
@@ -94,6 +94,7 @@ Engine facts every change must respect (details: `docs/engine-api.md`):
 |---|---|
 | `crates/mm-graph` | Block-graph types, JSON Schema, catalog-backed validator, deterministic CXF emitter. No network I/O. |
 | `crates/mm-bridge` | The only crate that drives `oce-api` (with `mm-graph` reading the catalog). Load with receipts, DTO/serde layer, frame stepping, vector replay. |
+| `crates/mm-bench` | Benchmark: scrubs library cards into tasks, runs `mm-agent`, scores by replay, writes run records. |
 | `crates/mm-agent` | Meta Model API client (`reqwest`), prompts, structured-output schemas, repair loop. Behind a `ModelClient` trait. |
 | `crates/mm-runtime` | BOPTEST REST client, supervisory loop, frame builder, fail-safe, KPIs. |
 | `crates/mm-bacnet` | rusty-bacnet server, point map generated from `engine.point_list(None)`. |
