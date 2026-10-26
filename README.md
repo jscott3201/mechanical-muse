@@ -15,7 +15,7 @@ Everything in this repository was written during the event, starting October 26,
 | Component | Path | Status |
 | --- | --- | --- |
 | Engine bridge (JSON wrapper and CLI) | `crates/` | Planned |
-| Block-graph schema and CXF emitter | `crates/` | Planned |
+| Block-graph schema and CXF emitter | `crates/mm-graph` | Working offline: validator and emitter round-trip all 137 library rules |
 | Muse Spark authoring agent | `crates/` | Planned |
 | Library benchmark harness | `crates/` | Planned |
 | BOPTEST runtime host | `crates/` | Planned |
@@ -33,7 +33,7 @@ These are public, open-source projects pinned to commits from before the event a
 | Dependency | Author | License | Pinned commit | Used for |
 | --- | --- | --- | --- | --- |
 | [open-control-engine](https://github.com/jscott3201/open-control-engine) | Justin Scott | MIT OR Apache-2.0 | `4063202` | Executing and verifying CDL control sequences |
-| [open-control-library](https://github.com/jscott3201/open-control-library) | Justin Scott | MIT OR Apache-2.0 | `124427b` | Verified fault rules and test vectors for the benchmark |
+| [open-control-library](https://github.com/jscott3201/open-control-library) | Justin Scott | MIT OR Apache-2.0 | `124427b` | Fault rules and test vectors for the benchmark; six rules copied unmodified into `fixtures/open-control-library/` as test data |
 | [rusty-bacnet](https://github.com/jscott3201/rusty-bacnet) | Justin Scott | MIT | `1caf4db` (v0.14.0) | Simulated BACnet devices |
 | [BOPTEST](https://github.com/ibpsa/project1-boptest) | IBPSA Project 1 | BSD-3-Clause style | TBD | Large office building emulator and KPIs |
 | [yet-more-skills](https://github.com/jscott3201/yet-more-skills) | Justin Scott | MIT OR Apache-2.0 | `97d2a36` | Source of nine trimmed skill forks in `.agents/skills/` |

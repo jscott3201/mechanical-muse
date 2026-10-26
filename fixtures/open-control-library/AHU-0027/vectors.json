@@ -1,0 +1,77 @@
+{
+  "schema": "cxf-library/vectors/v1",
+  "clock": { "step_s": 300, "horizon_s": 172800 },
+  "scenarios": [
+    {
+      "name": "no_override",
+      "description": "Reference vector: no override anywhere in the 48 h window",
+      "inputs": { "override_active": false },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 172800, "equals": false }
+      ]
+    },
+    {
+      "name": "override_two_hours",
+      "description": "Reference vector: a 2 h override — normal troubleshooting, well inside max_override_duration",
+      "inputs": {
+        "override_active": [
+          { "t": 0, "value": true },
+          { "t": 7200, "value": false }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 172800, "equals": false }
+      ]
+    },
+    {
+      "name": "override_forty_eight_hours",
+      "description": "Reference vector: override held continuously; alarms at max_override_duration (86400 s) + alarm_delay (3600 s) = 90000 s",
+      "inputs": { "override_active": true },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 89700, "equals": false },
+        { "output": "yFault", "from_s": 90300, "to_s": 172800, "equals": true }
+      ]
+    },
+    {
+      "name": "release_just_before_alarm",
+      "description": "Timing edge: override released at 88800 s — past max_override_duration but 1200 s short of the alarm; never asserts",
+      "inputs": {
+        "override_active": [
+          { "t": 0, "value": true },
+          { "t": 88800, "value": false }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 172800, "equals": false }
+      ]
+    },
+    {
+      "name": "release_resets_duration",
+      "description": "Transient: a 20 h override released at 72000 s; the elapsed duration is discarded, so the remaining 28 h of the window stay clear",
+      "inputs": {
+        "override_active": [
+          { "t": 0, "value": true },
+          { "t": 72000, "value": false }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 172800, "equals": false }
+      ]
+    },
+    {
+      "name": "reoverride_restarts_duration",
+      "description": "Transient: released at 72000 s then re-applied at 75600 s; the clock restarts from the re-apply, alarming at 165600 s rather than 90000 s",
+      "inputs": {
+        "override_active": [
+          { "t": 0, "value": true },
+          { "t": 72000, "value": false },
+          { "t": 75600, "value": true }
+        ]
+      },
+      "expect": [
+        { "output": "yFault", "from_s": 0, "to_s": 165300, "equals": false },
+        { "output": "yFault", "from_s": 165900, "to_s": 172800, "equals": true }
+      ]
+    }
+  ]
+}

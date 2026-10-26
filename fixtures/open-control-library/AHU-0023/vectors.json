@@ -1,0 +1,460 @@
+{
+  "schema": "cxf-library/vectors/v1",
+  "clock": {
+    "step_s": 300,
+    "horizon_s": 777600
+  },
+  "scenarios": [
+    {
+      "name": "reset_working",
+      "description": "Reference vector: SAT_SP modulates ~4degC with OAT swings; no fault",
+      "inputs": {
+        "sat_sp": [
+          {
+            "t": 0,
+            "value": 13.0
+          },
+          {
+            "t": 43200,
+            "value": 17.0
+          },
+          {
+            "t": 86400,
+            "value": 13.0
+          },
+          {
+            "t": 129600,
+            "value": 17.0
+          },
+          {
+            "t": 172800,
+            "value": 13.0
+          },
+          {
+            "t": 216000,
+            "value": 17.0
+          },
+          {
+            "t": 259200,
+            "value": 13.0
+          },
+          {
+            "t": 302400,
+            "value": 17.0
+          },
+          {
+            "t": 345600,
+            "value": 13.0
+          },
+          {
+            "t": 388800,
+            "value": 17.0
+          },
+          {
+            "t": 432000,
+            "value": 13.0
+          },
+          {
+            "t": 475200,
+            "value": 17.0
+          },
+          {
+            "t": 518400,
+            "value": 13.0
+          },
+          {
+            "t": 561600,
+            "value": 17.0
+          },
+          {
+            "t": 604800,
+            "value": 13.0
+          },
+          {
+            "t": 648000,
+            "value": 17.0
+          },
+          {
+            "t": 691200,
+            "value": 13.0
+          },
+          {
+            "t": 734400,
+            "value": 17.0
+          },
+          {
+            "t": 777600,
+            "value": 13.0
+          }
+        ],
+        "oat": [
+          {
+            "t": 0,
+            "value": 5.0
+          },
+          {
+            "t": 43200,
+            "value": 20.0
+          },
+          {
+            "t": 86400,
+            "value": 5.0
+          },
+          {
+            "t": 129600,
+            "value": 20.0
+          },
+          {
+            "t": 172800,
+            "value": 5.0
+          },
+          {
+            "t": 216000,
+            "value": 20.0
+          },
+          {
+            "t": 259200,
+            "value": 5.0
+          },
+          {
+            "t": 302400,
+            "value": 20.0
+          },
+          {
+            "t": 345600,
+            "value": 5.0
+          },
+          {
+            "t": 388800,
+            "value": 20.0
+          },
+          {
+            "t": 432000,
+            "value": 5.0
+          },
+          {
+            "t": 475200,
+            "value": 20.0
+          },
+          {
+            "t": 518400,
+            "value": 5.0
+          },
+          {
+            "t": 561600,
+            "value": 20.0
+          },
+          {
+            "t": 604800,
+            "value": 5.0
+          },
+          {
+            "t": 648000,
+            "value": 20.0
+          },
+          {
+            "t": 691200,
+            "value": 5.0
+          },
+          {
+            "t": 734400,
+            "value": 20.0
+          },
+          {
+            "t": 777600,
+            "value": 5.0
+          }
+        ]
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 777600,
+          "equals": false
+        },
+        {
+          "output": "yOatVaried",
+          "from_s": 0,
+          "to_s": 777600,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "fixed_setpoint",
+      "description": "Reference vector: SAT_SP pinned at 13degC despite 15degC OAT swings; fault after evaluation_window (7d) + alarm_delay (24h)",
+      "inputs": {
+        "sat_sp": 13.0,
+        "oat": [
+          {
+            "t": 0,
+            "value": 5.0
+          },
+          {
+            "t": 43200,
+            "value": 20.0
+          },
+          {
+            "t": 86400,
+            "value": 5.0
+          },
+          {
+            "t": 129600,
+            "value": 20.0
+          },
+          {
+            "t": 172800,
+            "value": 5.0
+          },
+          {
+            "t": 216000,
+            "value": 20.0
+          },
+          {
+            "t": 259200,
+            "value": 5.0
+          },
+          {
+            "t": 302400,
+            "value": 20.0
+          },
+          {
+            "t": 345600,
+            "value": 5.0
+          },
+          {
+            "t": 388800,
+            "value": 20.0
+          },
+          {
+            "t": 432000,
+            "value": 5.0
+          },
+          {
+            "t": 475200,
+            "value": 20.0
+          },
+          {
+            "t": 518400,
+            "value": 5.0
+          },
+          {
+            "t": 561600,
+            "value": 20.0
+          },
+          {
+            "t": 604800,
+            "value": 5.0
+          },
+          {
+            "t": 648000,
+            "value": 20.0
+          },
+          {
+            "t": 691200,
+            "value": 5.0
+          },
+          {
+            "t": 734400,
+            "value": 20.0
+          },
+          {
+            "t": 777600,
+            "value": 5.0
+          }
+        ]
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 688800,
+          "equals": false
+        },
+        {
+          "output": "yFault",
+          "from_s": 694800,
+          "to_s": 777600,
+          "equals": true
+        },
+        {
+          "output": "yOatVaried",
+          "from_s": 0,
+          "to_s": 777600,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "insufficient_oat_variation",
+      "description": "Reference vector (NO_EVAL): flat SAT_SP but OAT never varies; yOatVaried drops false once OAT has been flat for a full window, so the host reports NO_EVAL; yFault must never fire",
+      "inputs": {
+        "sat_sp": 13.0,
+        "oat": 10.0
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 777600,
+          "equals": false
+        },
+        {
+          "output": "yOatVaried",
+          "from_s": 0,
+          "to_s": 602400,
+          "equals": true
+        },
+        {
+          "output": "yOatVaried",
+          "from_s": 608400,
+          "to_s": 777600,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "reset_resumes",
+      "description": "Setpoint flat for 4 days, then reset activity resumes before the window completes; flatness timer resets, never alarms",
+      "inputs": {
+        "sat_sp": [
+          {
+            "t": 0,
+            "value": 13.0
+          },
+          {
+            "t": 345600,
+            "value": 17.0
+          },
+          {
+            "t": 388800,
+            "value": 13.0
+          },
+          {
+            "t": 432000,
+            "value": 17.0
+          },
+          {
+            "t": 475200,
+            "value": 13.0
+          },
+          {
+            "t": 518400,
+            "value": 17.0
+          },
+          {
+            "t": 561600,
+            "value": 13.0
+          },
+          {
+            "t": 604800,
+            "value": 17.0
+          },
+          {
+            "t": 648000,
+            "value": 13.0
+          },
+          {
+            "t": 691200,
+            "value": 17.0
+          },
+          {
+            "t": 734400,
+            "value": 13.0
+          },
+          {
+            "t": 777600,
+            "value": 17.0
+          }
+        ],
+        "oat": [
+          {
+            "t": 0,
+            "value": 5.0
+          },
+          {
+            "t": 43200,
+            "value": 20.0
+          },
+          {
+            "t": 86400,
+            "value": 5.0
+          },
+          {
+            "t": 129600,
+            "value": 20.0
+          },
+          {
+            "t": 172800,
+            "value": 5.0
+          },
+          {
+            "t": 216000,
+            "value": 20.0
+          },
+          {
+            "t": 259200,
+            "value": 5.0
+          },
+          {
+            "t": 302400,
+            "value": 20.0
+          },
+          {
+            "t": 345600,
+            "value": 5.0
+          },
+          {
+            "t": 388800,
+            "value": 20.0
+          },
+          {
+            "t": 432000,
+            "value": 5.0
+          },
+          {
+            "t": 475200,
+            "value": 20.0
+          },
+          {
+            "t": 518400,
+            "value": 5.0
+          },
+          {
+            "t": 561600,
+            "value": 20.0
+          },
+          {
+            "t": 604800,
+            "value": 5.0
+          },
+          {
+            "t": 648000,
+            "value": 20.0
+          },
+          {
+            "t": 691200,
+            "value": 5.0
+          },
+          {
+            "t": 734400,
+            "value": 20.0
+          },
+          {
+            "t": 777600,
+            "value": 5.0
+          }
+        ]
+      },
+      "expect": [
+        {
+          "output": "yFault",
+          "from_s": 0,
+          "to_s": 777600,
+          "equals": false
+        }
+      ]
+    }
+  ]
+}

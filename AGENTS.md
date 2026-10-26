@@ -19,7 +19,7 @@ Mechanical Muse turns a written building-control sequence into a verified, runna
 6. A React web app shows the authoring trace, verification results, live trends, KPIs, and
    explanations.
 
-Status: Rust workspace skeleton builds against the pinned engine; porting `mm-graph` next. Update this line when milestones land.
+Status: `mm-graph` (validator + deterministic emitter) round-trips all 137 library rules and its output loads cleanly in the pinned engine; `mm-bridge` vector replay is next. Update this line when milestones land.
 
 ## Hard rules (these override convenience)
 
