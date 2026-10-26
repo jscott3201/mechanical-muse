@@ -8,6 +8,7 @@ use mm_bridge::{ReplayLimits, ScenarioOutcome, replay};
 use mm_graph::{Block, BlockGraph, EmitOptions, Palette, Param, ParamValue, SignalType, emit_cxf};
 use serde::Serialize;
 
+use crate::BenchError;
 use crate::library::Rule;
 
 /// Rules and scenarios a constant graph passes.
@@ -72,18 +73,17 @@ pub fn baseline_graph(interface: &BlockGraph, value: bool) -> BlockGraph {
     graph
 }
 
-/// Constant-false and constant-true baselines over `rules`.
-pub fn baselines(rules: &[Rule], palette: &Palette) -> (Baseline, Baseline) {
-    let run = |value: bool| {
+/// Constant-false and constant-true baselines over `rules`. A rule whose baseline cannot be
+/// emitted or replayed is an error, never a silently smaller denominator.
+pub fn baselines(rules: &[Rule], palette: &Palette) -> Result<(Baseline, Baseline), BenchError> {
+    let run = |value: bool| -> Result<Baseline, BenchError> {
         let mut total = Baseline::default();
         for rule in rules {
             let graph = baseline_graph(&rule.reference, value);
-            let Ok(cxf) = emit_cxf(&graph, palette, &EmitOptions::default()) else {
-                continue;
-            };
-            let Ok(report) = replay(&cxf, &rule.vectors, &ReplayLimits::default()) else {
-                continue;
-            };
+            let cxf = emit_cxf(&graph, palette, &EmitOptions::default())
+                .map_err(|e| BenchError::Other(format!("{} baseline: {e}", rule.id)))?;
+            let report = replay(&cxf, &rule.vectors, &ReplayLimits::default())
+                .map_err(|e| BenchError::Other(format!("{} baseline: {e}", rule.id)))?;
             total.scenarios += report.scenarios.len();
             total.scenarios_passed += report
                 .scenarios
@@ -92,7 +92,7 @@ pub fn baselines(rules: &[Rule], palette: &Palette) -> (Baseline, Baseline) {
                 .count();
             total.rules_passed += usize::from(report.passed());
         }
-        total
+        Ok(total)
     };
-    (run(false), run(true))
+    Ok((run(false)?, run(true)?))
 }

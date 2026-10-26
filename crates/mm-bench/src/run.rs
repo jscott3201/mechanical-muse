@@ -72,6 +72,29 @@ pub struct RuleResult {
 }
 
 impl RuleResult {
+    /// A job that crashed before producing a trace: counted, never verified.
+    fn harness_failure(
+        rule: &str,
+        run: u32,
+        scenarios: usize,
+        config: &AuthorConfig,
+        why: &str,
+    ) -> Self {
+        let trace = AuthoringTrace {
+            task: rule.to_owned(),
+            config: config.clone(),
+            attempts: Vec::new(),
+            verified: None,
+            repair_saw_vectors: false,
+            setup_error: Some(format!("job failed: {why}")),
+            usage: Usage::default(),
+        };
+        let mut result = Self::from_trace(rule, run, scenarios, trace);
+        result.first_failure = Some(FailureKind::HarnessError);
+        result.final_failure = Some(FailureKind::HarnessError);
+        result
+    }
+
     fn from_trace(rule: &str, run: u32, scenarios: usize, trace: AuthoringTrace) -> Self {
         let first = trace.attempts.first().map(|a| &a.outcome);
         let last = trace.attempts.last().map(|a| &a.outcome);
@@ -185,6 +208,9 @@ where
     }
     let mut pending = jobs.into_iter();
     let mut set = JoinSet::new();
+    // Which job each task is, so a panicked or cancelled job still produces a result row.
+    let mut running: std::collections::BTreeMap<tokio::task::Id, (String, u32, usize)> =
+        std::collections::BTreeMap::new();
     let mut results = Vec::new();
     let spawn = |set: &mut JoinSet<RuleResult>,
                  (id, run, task, vectors): (String, u32, TaskSpec, VectorFile)| {
@@ -192,7 +218,9 @@ where
         let palette = palette.clone();
         let exemplars = exemplars.clone();
         let author_config = config.author.clone();
-        set.spawn(async move {
+        let scenarios = vectors.scenarios.len();
+        let rule = id.clone();
+        let handle = set.spawn(async move {
             let trace = author(
                 client.as_ref(),
                 &palette,
@@ -204,16 +232,34 @@ where
             .await;
             RuleResult::from_trace(&id, run, vectors.scenarios.len(), trace)
         });
+        (handle.id(), (rule, run, scenarios))
     };
     for job in pending.by_ref().take(config.concurrency.max(1)) {
-        spawn(&mut set, job);
+        let (task_id, info) = spawn(&mut set, job);
+        running.insert(task_id, info);
     }
-    while let Some(done) = set.join_next().await {
-        if let Ok(result) = done {
-            results.push(result);
+    while let Some(done) = set.join_next_with_id().await {
+        match done {
+            Ok((task_id, result)) => {
+                running.remove(&task_id);
+                results.push(result);
+            }
+            Err(error) => {
+                // Never let a crashed job shrink the denominator: record it as a failure.
+                if let Some((rule, run, scenarios)) = running.remove(&error.id()) {
+                    results.push(RuleResult::harness_failure(
+                        &rule,
+                        run,
+                        scenarios,
+                        &config.author,
+                        &error.to_string(),
+                    ));
+                }
+            }
         }
         if let Some(job) = pending.next() {
-            spawn(&mut set, job);
+            let (task_id, info) = spawn(&mut set, job);
+            running.insert(task_id, info);
         }
     }
     results.sort_by(|a, b| (&a.rule, a.run).cmp(&(&b.rule, b.run)));

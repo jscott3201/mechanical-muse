@@ -34,6 +34,21 @@ mod anyhow_free {
     pub(crate) use bail;
 }
 
+/// The checkout must be at the commit the record will claim.
+fn check_commit(library: &std::path::Path, commit: &str) -> Result<(), Error> {
+    let head = std::process::Command::new("git")
+        .arg("-C")
+        .arg(library)
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .map_err(|e| format!("cannot run git in the library checkout: {e}"))?;
+    let head = String::from_utf8_lossy(&head.stdout).trim().to_owned();
+    if commit.len() < 7 || !head.starts_with(commit) {
+        bail!("library checkout is at {head:?}, not {commit}");
+    }
+    Ok(())
+}
+
 struct Args(BTreeMap<String, String>);
 
 impl Args {
@@ -92,6 +107,8 @@ fn effort(name: &str) -> Result<Option<Effort>, Error> {
 async fn main() -> Result<(), Error> {
     let args = Args::parse()?;
     let library = PathBuf::from(args.required("library")?);
+    let library_commit = args.required("library-commit")?;
+    check_commit(&library, &library_commit)?;
     let split = load_split(&PathBuf::from(
         args.get("split", "docs/benchmark-split.json"),
     ))?;
@@ -100,7 +117,7 @@ async fn main() -> Result<(), Error> {
         Some(ids) => ids.to_vec(),
         None => subset.split(',').map(str::to_owned).collect(),
     };
-    let tier = match args.get("tier", "b").as_str() {
+    let tier = match args.get("tier", "a").as_str() {
         "a" => Tier::A,
         "b" => Tier::B,
         other => bail!("unknown tier {other}"),
@@ -123,10 +140,11 @@ async fn main() -> Result<(), Error> {
             Err(e) => skipped.push((id.clone(), e.to_string())),
         }
     }
-    if let Some(show) = args.0.get("show")
-        && let Some((_, task, _)) = tasks.iter().find(|(id, _, _)| id == show)
-    {
-        println!("{}", mm_agent::task_message(task));
+    if let Some(show) = args.0.get("show") {
+        match tasks.iter().find(|(id, _, _)| id == show) {
+            Some((_, task, _)) => println!("{}", mm_agent::task_message(task)),
+            None => println!("{show}: not in this subset, or skipped (see below)"),
+        }
     }
 
     let exemplar_count: usize = args.number("exemplars", 0)?;
@@ -143,7 +161,7 @@ async fn main() -> Result<(), Error> {
         }
     }
 
-    let (constant_false, constant_true) = baselines(&rules, &palette);
+    let (constant_false, constant_true) = baselines(&rules, &palette)?;
     println!(
         "subset {subset} tier {tier:?}: {} rules ({} skipped), {dropped_sentences} leaking \
          sentences removed",
@@ -184,7 +202,7 @@ async fn main() -> Result<(), Error> {
         runs: args.number("runs", 1)?,
         exemplar_ids,
         concurrency: args.number("concurrency", 4)?,
-        library_commit: args.required("library-commit")?,
+        library_commit,
     };
     let out = PathBuf::from(args.required("out")?);
     let key = std::env::var("MODEL_API_KEY").map_err(|_| "MODEL_API_KEY is not set")?;

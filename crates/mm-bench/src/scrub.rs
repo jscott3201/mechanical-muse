@@ -57,23 +57,27 @@ pub struct Scrubbed {
 /// short names), the rule's own camelCase block ids, and implementation vocabulary.
 ///
 /// Plain short class names such as `And`, `Not` or `Switch` are not on the list: they are
-/// ordinary words in prose. All-lowercase block ids (`persist`, `gap`) only count when written
-/// as code (in backticks), for the same reason.
+/// ordinary words in prose. Block ids that are plain lowercase words (`persist`, `gap`) only
+/// count when written as code (in backticks), for the same reason; ids with capitals, digits or
+/// underscores always count.
 pub fn leak_tokens(palette: &Palette, graph: &BlockGraph) -> Vec<String> {
     let mut tokens = BTreeSet::new();
     for class in palette.classes() {
         tokens.insert(class.class.clone());
         let short = class.class.rsplit('.').next().unwrap_or_default();
         let capitals = short.chars().filter(char::is_ascii_uppercase).count();
-        if capitals >= 2 || ["Hysteresis", "Limiter", "Sampler", "Latch"].contains(&short) {
+        let distinctive = ["Hysteresis", "Limiter", "Sampler", "Latch"].contains(&short);
+        if capitals >= 2 || distinctive {
             tokens.insert(short.to_owned());
+            // The same name as words, any case: "moving average", "True-delay", "sampler".
+            tokens.insert(format!("{PHRASE}{}", spaced_lowercase(short)));
         }
     }
     for block in &graph.blocks {
         let id = &block.id;
         if id
             .chars()
-            .any(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
+            .any(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
         {
             tokens.insert(id.clone());
         } else {
@@ -83,15 +87,59 @@ pub fn leak_tokens(palette: &Palette, graph: &BlockGraph) -> Vec<String> {
     for word in ["CDL", "Buildings.Controls", "cxf", "CXF", "delayOnInit"] {
         tokens.insert(word.to_owned());
     }
+    // Any library rule id: a sibling rule's id points the model at its graph.
+    tokens.insert(RULE_ID.to_owned());
     tokens.into_iter().collect()
 }
 
-/// Tokens found in `text` as whole words (backticked tokens match literally).
+/// Token prefix for a lowercase phrase matched case-insensitively, hyphens read as spaces.
+const PHRASE: &str = "~";
+/// Token standing for any library rule id (`AHU-0017`).
+const RULE_ID: &str = "#rule-id";
+
+/// `MovingAverage` -> `moving average`.
+fn spaced_lowercase(name: &str) -> String {
+    let mut out = String::new();
+    for (i, c) in name.chars().enumerate() {
+        if c.is_ascii_uppercase() && i > 0 {
+            out.push(' ');
+        }
+        out.push(c.to_ascii_lowercase());
+    }
+    out
+}
+
+/// Tokens found in `text` as whole words. Backticked tokens match literally, phrase tokens
+/// case-insensitively, and the rule-id token reports the id it found.
 pub fn find_leaks(text: &str, tokens: &[String]) -> Vec<String> {
-    tokens
-        .iter()
-        .filter(|t| contains_word(text, t))
-        .cloned()
+    let folded = text.to_ascii_lowercase().replace('-', " ");
+    let mut found = Vec::new();
+    for token in tokens {
+        if token == RULE_ID {
+            found.extend(rule_ids(text));
+        } else if let Some(phrase) = token.strip_prefix(PHRASE) {
+            if contains_word(&folded, phrase) {
+                found.push(phrase.to_owned());
+            }
+        } else if contains_word(text, token) {
+            found.push(token.clone());
+        }
+    }
+    found
+}
+
+/// Library rule ids in `text`: 2-5 capitals, a hyphen, 4 digits (`AHU-0017`, `TOWER-0003`).
+fn rule_ids(text: &str) -> Vec<String> {
+    text.split(|c: char| !(c.is_ascii_alphanumeric() || c == '-'))
+        .filter(|word| {
+            word.split_once('-').is_some_and(|(family, number)| {
+                (2..=5).contains(&family.len())
+                    && family.chars().all(|c| c.is_ascii_uppercase())
+                    && number.len() == 4
+                    && number.chars().all(|c| c.is_ascii_digit())
+            })
+        })
+        .map(str::to_owned)
         .collect()
 }
 

@@ -107,7 +107,7 @@ fn baselines_validate_and_never_pass_a_whole_rule() {
             assert_eq!(validate(&g, &palette), vec![], "{} {value}", r.id);
         }
     }
-    let (f, t) = baselines(&rules, &palette);
+    let (f, t) = baselines(&rules, &palette).unwrap();
     let scenarios: usize = rules.iter().map(|r| r.vectors.scenarios.len()).sum();
     assert_eq!((f.scenarios, t.scenarios), (scenarios, scenarios));
     // Every library rule has at least one scenario that expects the fault to fire.
@@ -120,4 +120,19 @@ fn prompt_hash_is_stable() {
     assert_eq!(prompt_hash("abc"), prompt_hash("abc"));
     assert_ne!(prompt_hash("abc"), prompt_hash("abd"));
     assert!(prompt_hash("").starts_with("fnv1a64:"));
+}
+
+#[test]
+fn lowercase_class_names_and_rule_ids_are_leaks() {
+    let palette = Palette::pinned().unwrap();
+    let tokens = leak_tokens(&palette, &rule("AHU-0005", "ahu").reference);
+    let leaks = |text: &str| find_leaks(text, &tokens);
+    assert_eq!(
+        leaks("Rescales the moving average of the pulses"),
+        ["moving average"]
+    );
+    assert_eq!(leaks("a Moving-Average stage"), ["moving average"]);
+    assert_eq!(leaks("then a true delay of 900 s"), ["true delay"]);
+    assert_eq!(leaks("same graph as AHU-0017 reversed"), ["AHU-0017"]);
+    assert!(leaks("the average flow and a delay after start").is_empty());
 }
