@@ -1,0 +1,42 @@
+# cargo-deny: licenses, advisories, duplicate versions and dependency sources.
+# Reference: https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+all-features = false
+
+[advisories]
+ignore = [
+    # unsafe-libyaml is unmaintained (not a known vulnerability). It reaches us only through
+    # serde_yaml_ng in mm-bench, which parses the pinned open-control-library's card front
+    # matter: trusted data, a dev tool, never the product. Replace the parser to drop this.
+    { id = "RUSTSEC-2024-0449", reason = "dev-only YAML parser on pinned library cards; replacement tracked" },
+]
+
+[licenses]
+version = 2
+confidence-threshold = 0.93
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "CDLA-Permissive-2.0",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+# The pinned, pre-existing dependencies (AGENTS.md hard rule 2). Nothing else may come from git.
+allow-git = [
+    "https://github.com/jscott3201/open-control-engine",
+    "https://github.com/jscott3201/rusty-bacnet",
+]

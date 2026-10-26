@@ -12,6 +12,10 @@ Decisions for Mechanical Muse. Muse Code's `/grill-with-docs` writes here. Newes
 
 ## Decided
 
+- CI: GitHub Actions adapted from rusty-bacnet (`docs/ci.md`): pinned toolchain, SHA-checked
+  tools, SHA-pinned actions, nextest as the test runner, cargo-deny, and one aggregate `CI OK`
+  status. (2026-10-26)
+
 - Task runner: `make` (preinstalled everywhere, including Muse's sandbox). `make check` runs the
   same fmt, clippy and test commands as the Stop hook. (2026-10-26)
 - Web package manager: npm with Node 26, pinned in `web/.nvmrc`; the Stop hook already calls npm.

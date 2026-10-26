@@ -130,7 +130,8 @@ Engine facts every change must respect (details: `docs/engine-api.md`):
 ## Commands
 
 ```bash
-make check                                              # fmt-check + clippy + test (see Makefile)
+make check                                              # fmt-check + clippy + test (nextest if installed)
+make ci                                                 # what CI runs: lint, clippy, nextest, doctests, specs, deny (docs/ci.md)
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace                                  # offline, fast, no network

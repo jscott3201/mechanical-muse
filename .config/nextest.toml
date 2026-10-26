@@ -1,0 +1,17 @@
+# cargo-nextest settings: the workspace's test runner. Every test runs in its own process.
+# nextest does not run doctests; `cargo test --doc` does (see the Makefile and CI).
+# Reference: https://nexte.st/docs/configuration/
+
+nextest-version = { recommended = "0.9.146" }
+
+[profile.default]
+# Flag a test after 30 s and stop it after 2 min, so a hang is reported by name instead of
+# stalling the run. Engine replays are fast; the whole-library replay is an ignored test.
+slow-timeout = { period = "30s", terminate-after = 4 }
+
+[profile.ci]
+# Report every failure in one run, repeat failure output at the end, and list slow, skipped and
+# leaky tests in the summary.
+fail-fast = false
+failure-output = "immediate-final"
+final-status-level = "leak"
