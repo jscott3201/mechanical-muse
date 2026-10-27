@@ -22,10 +22,12 @@ Map the lifecycle before changing synchronization: who admits work, owns it, can
 - Dropping a `JoinHandle` detaches its task, dropping a `JoinSet` aborts its tasks, and a started `spawn_blocking` task cannot be aborted. Keep an owner, cancel cooperatively and observe the join result.
 - Keep `std` mutex guards short and never across `.await`; keep blocking and CPU work off the async path; keep a fixed lock order.
 - Bound queues as well as active work (a semaphore does not bound the waiters) and define overload behavior.
+- A `watch` flag (stop, shutdown) must be set with `send_replace`: `send` stores nothing while no receiver exists, so a stop sent before the task subscribes is silently lost. A permit guarding `spawn_blocking` work moves into the task (`acquire_owned`), or a disconnecting client frees it early.
 
 ## Shutdown and tests
 - Seal admission, drain admitted work to a deadline, signal cancellation, join owned tasks, then stop BACnet and close the streams.
 - Engine time is BOPTEST simulation seconds. Use `tokio::time::pause` only for wall-clock deadlines, and give every async test an outer timeout.
+- Run `cargo test --workspace` as well as nextest: it runs a file's tests as threads of one process (as the Stop hook does), which exposes shared scratch paths that nextest's process-per-test hides.
 - Test cases: [concurrency cases](references/cases.md)
 
 <!-- Adapted from yet-more-skills/rust-async-concurrency (MIT OR Apache-2.0) -->

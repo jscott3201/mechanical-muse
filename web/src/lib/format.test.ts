@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatWire, formatWithUnit } from "./format";
+import { formatNumber, formatWire, formatWithUnit } from "./format";
 
 describe("formatWithUnit", () => {
   it("adds Celsius to temperatures but not to temperature differences", () => {
@@ -18,5 +18,10 @@ describe("formatWithUnit", () => {
     expect(formatWire(true)).toBe("true");
     expect(formatWire("NaN")).toBe("NaN");
     expect(formatWire({ class: 3, ordinal: 1 })).toBe("enum 3#1");
+  });
+
+  it("never shows negative zero", () => {
+    expect(formatNumber(-0.004, 2)).toBe("0");
+    expect(formatNumber(-0.0001, 4)).toBe("-0.0001");
   });
 });

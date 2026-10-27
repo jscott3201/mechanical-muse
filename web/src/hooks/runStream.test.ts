@@ -77,4 +77,17 @@ describe("reduceRun", () => {
     expect(s.log.at(-1)?.severity).toBe("error");
     expect(s.ended?.message).toContain("timeout");
   });
+
+  it("marks a step degraded while the fail-safe acts, and clears it on a clean step", () => {
+    const tick = (seq: number, events: SupervisorEvent[]): Envelope => ({
+      run_id: "r", seq, sim_time_s: seq * 120, kind: "tick", outputs: {}, writes: {}, readings: {}, events,
+    });
+    const held = reduceRun(initialRunStream, [
+      tick(0, [{ kind: "clamped", point: "p", value: 300, sent: 288.15 }]),
+    ]);
+    expect(held.degraded).toBeNull();
+    const bad = reduceRun(held, [tick(1, [{ kind: "degraded", sequence: "chw", reason: "reading x is missing" }])]);
+    expect(bad.degraded).toContain("missing");
+    expect(reduceRun(bad, [tick(2, [])]).degraded).toBeNull();
+  });
 });

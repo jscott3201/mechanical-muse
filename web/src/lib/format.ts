@@ -2,7 +2,9 @@
 
 export function formatNumber(value: number, digits = 4): string {
   if (!Number.isFinite(value)) return "no data";
-  return value.toLocaleString("en-US", { maximumFractionDigits: digits });
+  const text = value.toLocaleString("en-US", { maximumFractionDigits: digits });
+  // A small negative that rounds to zero would read "-0".
+  return text === "-0" ? "0" : text;
 }
 
 /** A value with its unit, adding °C beside kelvin and kPa beside pascals. */

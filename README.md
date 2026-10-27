@@ -21,7 +21,7 @@ Everything in this repository was written during the event, starting October 26,
 | BOPTEST runtime host: supervisory loop, BOPTEST client, fail-safe | `crates/mm-runtime` | Runs the verified AHU requests and CHW plant reset against BOPTEST live; 10-hour comparison with the baseline in `docs/runtime-results.md` |
 | HTTP API: specs, typed block graphs, verification receipts | `crates/mm-server` | Working: spec, graph and verify endpoints; BOPTEST run sessions with a server-sent event stream and run records; generated TypeScript types |
 | BACnet device mirror | `crates/` | Planned |
-| Web app | `web/` | Started: spec list, interface and verification receipts against `mm-server`; run stream hook ready; live trends and the graph view next |
+| Web app | `web/` | Working: specs and verification receipts; start BOPTEST runs and follow them live (status, receipts, trends, KPIs, event log); graph view next |
 | Design notes and API references | `docs/` | Started |
 | Coding-agent setup: agent context, project skills, verification hook | `AGENTS.md`, `.agents/skills/`, `.muse/`, `.mcp.json`, `scripts/` | Started |
 
