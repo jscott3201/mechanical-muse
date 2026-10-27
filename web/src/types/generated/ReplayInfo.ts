@@ -14,6 +14,10 @@ start_s: number,
  */
 drafted: boolean, 
 /**
+ * True when the recorded run ran the duct static pressure resets.
+ */
+pressure: boolean, 
+/**
  * How the recorded run ended, if the record has its end.
  */
 state?: RunState, 

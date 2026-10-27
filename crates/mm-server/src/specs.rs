@@ -159,13 +159,12 @@ fn load_one(name: &str, dir: &Path, palette: &Palette) -> Result<Spec, SpecError
     let task: mm_agent::TaskSpec = read(name, dir, "task.json")?;
     let graph: BlockGraph = read(name, dir, "graph.json")?;
     let vectors: VectorFile = read(name, dir, "vectors.json")?;
-    let title = std::fs::read_to_string(dir.join("spec.md"))
-        .ok()
-        .and_then(|text| {
-            text.lines()
-                .find_map(|l| l.strip_prefix("# ").map(str::to_owned))
-        })
+    let doc = std::fs::read_to_string(dir.join("spec.md")).unwrap_or_default();
+    let title = doc
+        .lines()
+        .find_map(|l| l.strip_prefix("# ").map(str::to_owned))
         .unwrap_or_else(|| name.to_owned());
+    let about = first_paragraph(&doc);
     let point = |p: &CardPoint| TaskPoint {
         name: p.name.clone(),
         r#type: Some(signal(p.r#type.port_kind())),
@@ -182,6 +181,7 @@ fn load_one(name: &str, dir: &Path, palette: &Palette) -> Result<Spec, SpecError
     };
     let detail = SpecDetail {
         summary,
+        about,
         description: card.description,
         params: card
             .params
@@ -310,4 +310,16 @@ pub fn graph_view(graph: &BlockGraph, palette: &Palette) -> Result<GraphView, St
         blocks,
         connections,
     })
+}
+
+/// The first paragraph after the title, joined into one line.
+fn first_paragraph(doc: &str) -> String {
+    doc.lines()
+        .skip_while(|l| !l.starts_with("# "))
+        .skip(1)
+        .skip_while(|l| l.trim().is_empty())
+        .take_while(|l| !l.trim().is_empty() && !l.starts_with('#'))
+        .map(str::trim)
+        .collect::<Vec<_>>()
+        .join(" ")
 }

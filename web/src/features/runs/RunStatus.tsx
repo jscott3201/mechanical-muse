@@ -4,6 +4,7 @@ import {
   CircleStop,
   CircleX,
   Clock,
+  History,
   LoaderCircle,
   ShieldAlert,
   Unplug,
@@ -43,7 +44,12 @@ export function RunStatus({
       return <Badge variant="destructive"><Clock aria-hidden="true" /> stale: no update for {staleS} s</Badge>;
     if (stream.degraded !== null)
       return <Badge variant="destructive"><ShieldAlert aria-hidden="true" /> degraded: {stream.degraded}</Badge>;
-    return <Badge><Activity aria-hidden="true" /> live</Badge>;
+    // A replay streams recorded events: never call it live.
+    return stream.config?.replay ? (
+      <Badge variant="secondary"><History aria-hidden="true" /> replaying</Badge>
+    ) : (
+      <Badge><Activity aria-hidden="true" /> live</Badge>
+    );
   }
   return (
     <Badge variant="secondary">

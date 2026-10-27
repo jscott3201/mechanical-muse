@@ -250,6 +250,9 @@ pub struct ReplayInfo {
     pub start_s: f64,
     /// True when the recorded run used a model-drafted graph.
     pub drafted: bool,
+    /// True when the recorded run ran the duct static pressure resets.
+    #[serde(default)]
+    pub pressure: bool,
     /// How the recorded run ended, if the record has its end.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]

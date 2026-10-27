@@ -30,6 +30,8 @@ const SIGNALS: Record<Signal, { color: string; dash: string | undefined; label: 
 };
 
 const HEADER = 44;
+/** Smallest zoom the initial fit may use: block ids and ports stay legible. */
+const MIN_ZOOM = 0.8;
 const PORT_ROW = 22;
 const portTop = (i: number) => HEADER + i * PORT_ROW + PORT_ROW / 2;
 
@@ -178,8 +180,12 @@ export function GraphCanvas({
   label: string;
 }) {
   const [asTable, setAsTable] = useState(false);
-  const { nodes, edges } = useMemo(() => {
+  const { nodes, edges, height } = useMemo(() => {
     const laid = layout(graph);
+    // The canvas is as tall as the graph at a readable zoom, within limits; a long chain is
+    // panned sideways rather than shrunk until its labels cannot be read.
+    const bottom = Math.max(0, ...laid.nodes.map((n) => n.y + n.height));
+    const height = Math.min(640, Math.max(300, bottom * MIN_ZOOM + 96));
     const marks = new Set(flagged);
     const blocks = new Map(graph.blocks.map((b) => [b.id, b]));
     const points = new Map([...graph.inputs, ...graph.outputs].map((p) => [p.name, p]));
@@ -212,7 +218,7 @@ export function GraphCanvas({
         strokeOpacity: e.back ? 0.4 : 1,
       },
     }));
-    return { nodes, edges };
+    return { nodes, edges, height };
     // `flagged` is compared by content, so a new array with the same names keeps the layout.
   }, [graph, flagged.join(",")]);
   return (
@@ -226,12 +232,20 @@ export function GraphCanvas({
       {asTable ? (
         <ConnectionTable graph={graph} />
       ) : (
-        <div className="h-[560px] w-full rounded-md border">
+        <div className="w-full rounded-md border" style={{ height }}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
+            fitViewOptions={{ padding: 0.04, minZoom: MIN_ZOOM }}
+            onInit={(flow) => {
+              // A graph wider than the canvas at a legible zoom starts at its inputs (left).
+              void flow.fitView({ padding: 0.04, minZoom: MIN_ZOOM }).then(() => {
+                const v = flow.getViewport();
+                if (v.x < 0) void flow.setViewport({ ...v, x: 16 });
+              });
+            }}
             minZoom={0.2}
             nodesDraggable={false}
             nodesConnectable={false}

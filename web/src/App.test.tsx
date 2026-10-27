@@ -17,7 +17,8 @@ const summary: SpecSummary = {
 };
 const detail: SpecDetail = {
   summary,
-  description: "Requests from one air handler.",
+  about: "Requests from one air handler.",
+  description: "The task text given to the model.",
   params: [{ name: "persistence", unit: "s", meaning: "How long a condition must last", value: 120 }],
   scenarios: [
     { name: "steady_normal", description: "No requests." },
@@ -44,7 +45,7 @@ const receipt: Receipt = {
     },
   ],
 };
-const health: Health = { status: "ok", engine_rev: "4063202b9a9e50c7", specs: 1 };
+const health: Health = { status: "ok", engine_rev: "4063202b9a9e50c7", specs: 1, recorded_model: true };
 
 const routes: Record<string, unknown> = {
   "GET /api/health": health,
@@ -71,6 +72,9 @@ describe("App", () => {
     );
     render(<App />);
     expect(await screen.findByText("engine 4063202")).toBeTruthy();
+    expect(screen.getByText("recorded model only")).toBeTruthy();
+    // The app opens on the overview; its first action leads to the sequences.
+    fireEvent.click(screen.getByRole("button", { name: /Explore sequences/ }));
     fireEvent.click(await screen.findByRole("button", { name: /Air handler chilled-water requests/ }));
     expect(await screen.findByText("Requests from one air handler.")).toBeTruthy();
     expect(screen.getByText("120 s")).toBeTruthy();
@@ -84,6 +88,7 @@ describe("App", () => {
     vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new TypeError("fetch failed"))));
     render(<App />);
     expect(await screen.findByText("server offline")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Explore sequences/ }));
     expect(await screen.findByText("network")).toBeTruthy();
   });
 
@@ -111,6 +116,7 @@ describe("App", () => {
       }),
     );
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /Explore sequences/ }));
     fireEvent.click(await screen.findByRole("button", { name: /Air handler chilled-water requests/ }));
     fireEvent.click(await screen.findByRole("button", { name: /Verify/ }));
     // Switch specs while the first verification is still running, then let it answer.
