@@ -10,7 +10,7 @@ Built solo by Justin Scott for the Meta Global AI Developer Hackathon (Indie tra
 
 ## Built during the hackathon
 
-Everything in this repository was written during the event, starting October 26, 2026, except that nine skills in `.agents/skills/` are trimmed forks of a pre-existing library (listed below). The commit history is the record.
+Everything in this repository was written during the event, starting October 26, 2026. The commit history is the record.
 
 | Component | Path | Status |
 | --- | --- | --- |
@@ -38,11 +38,8 @@ These are public, open-source projects pinned to commits from before the event a
 | [rusty-bacnet](https://github.com/jscott3201/rusty-bacnet) | Justin Scott | MIT | `1caf4db` (v0.14.0) | Simulated BACnet devices |
 | [BOPTEST](https://github.com/ibpsa/project1-boptest) | IBPSA Project 1 | BSD-3-Clause style | `9b1610b` (v0.9.0) | Large office building emulator and KPIs |
 | [shadcn/ui](https://github.com/shadcn-ui/ui) components | shadcn | MIT | CLI 4.21.4, style radix-nova | UI primitives copied into `web/src/components/ui` by the shadcn CLI, used unmodified except that they import our own `cn` helper |
-| [yet-more-skills](https://github.com/jscott3201/yet-more-skills) | Justin Scott | MIT OR Apache-2.0 | `97d2a36` | Source of nine trimmed skill forks in `.agents/skills/` |
 
 Ordinary crates.io libraries (such as serde, reqwest, tokio and thiserror) and npm packages (such as React, Vite, Tailwind CSS and Radix UI) are used unmodified under their own licenses; `Cargo.lock` and `web/package-lock.json` pin every version. The Geist font (`@fontsource-variable/geist`) is under the SIL Open Font License 1.1.
-
-`.agents/skills/diagnosis-loop` also carries an upstream MIT notice from [mattpocock/skills](https://github.com/mattpocock/skills); see its `NOTICE` file.
 
 ## License
 

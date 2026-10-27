@@ -14,6 +14,7 @@ Scoring: stage 1 pass/fail (theme fit, real Meta model use built in the event); 
 - Mon Nov 9, 12:00: closing ceremony and live final. The product must start on demand from a clean checkout.
 
 **Video rules**
+- Organizers (Oct 27): show the project working, not slides, ideally presented by a person; highlight only features built in the event. No required tool or IDE.
 - First 15 s: name what is new (bridge, emitter, agent, runtime, BACnet mirror, web app, harness) and what is called (engine, library, rusty-bacnet, BOPTEST). Event-built work only (`mm-hackathon-boundary`).
 - Show a real red-to-green repair: a draft failing a vector or load check with its diagnostic `code()`, then the green receipt. Use a recorded run where it happened; never stage one.
 - Show the closed loop beside baseline KPIs, the refused-frame degraded path, and the benchmark figure with baseline, subset and model id (`mm-benchmark-hygiene`).

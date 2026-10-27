@@ -34,3 +34,14 @@ web/dist/
 
 # Claude Code: kept local for now (skills, settings, worktrees)
 /.claude/
+
+# General-purpose skills copied from a pre-event repo: kept local so the repo holds only event work
+/.agents/skills/building-fdd-validation/
+/.agents/skills/diagnosis-loop/
+/.agents/skills/diff-review/
+/.agents/skills/parallel-lanes/
+/.agents/skills/rust-async-concurrency/
+/.agents/skills/rust-test-design/
+/.agents/skills/rust-ts-contracts/
+/.agents/skills/source-verification/
+/.agents/skills/spike/
