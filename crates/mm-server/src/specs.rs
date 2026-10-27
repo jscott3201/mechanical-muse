@@ -59,6 +59,8 @@ struct CardParam {
 #[derive(Debug, Clone)]
 pub struct Spec {
     pub detail: SpecDetail,
+    /// The task as the model receives it (the same `task.json`).
+    pub task: mm_agent::TaskSpec,
     pub graph: BlockGraph,
     pub vectors: VectorFile,
     pub view: GraphView,
@@ -118,7 +120,16 @@ impl Spec {
     /// Emits the reference graph and replays the vectors (fresh engine per scenario). Blocking:
     /// call it from the blocking pool.
     pub fn replay(&self, palette: &Palette) -> Result<(Vec<u8>, ReplayReport), String> {
-        let cxf = emit_cxf(&self.graph, palette, &EmitOptions::default())
+        self.replay_graph(&self.graph, palette)
+    }
+
+    /// [`Spec::replay`] for another graph of this spec (a model's draft).
+    pub fn replay_graph(
+        &self,
+        graph: &BlockGraph,
+        palette: &Palette,
+    ) -> Result<(Vec<u8>, ReplayReport), String> {
+        let cxf = emit_cxf(graph, palette, &EmitOptions::default())
             .map_err(|e| format!("emit failed: {e}"))?;
         let report = replay(&cxf, &self.vectors, &ReplayLimits::default())
             .map_err(|e| format!("replay failed: {e}"))?;
@@ -145,6 +156,7 @@ fn read<T: for<'de> Deserialize<'de>>(
 
 fn load_one(name: &str, dir: &Path, palette: &Palette) -> Result<Spec, SpecError> {
     let card: TaskCard = read(name, dir, "task.json")?;
+    let task: mm_agent::TaskSpec = read(name, dir, "task.json")?;
     let graph: BlockGraph = read(name, dir, "graph.json")?;
     let vectors: VectorFile = read(name, dir, "vectors.json")?;
     let title = std::fs::read_to_string(dir.join("spec.md"))
@@ -198,6 +210,7 @@ fn load_one(name: &str, dir: &Path, palette: &Palette) -> Result<Spec, SpecError
     })?;
     Ok(Spec {
         detail,
+        task,
         graph,
         vectors,
         view,

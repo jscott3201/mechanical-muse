@@ -19,7 +19,7 @@ use mm_runtime::{
 };
 
 use crate::routes::AppState;
-use crate::run_dto::{Phase, RunConfig, RunEvent, RunState, SequenceInfo, SupervisorEvent};
+use crate::run_dto::{Origin, Phase, RunConfig, RunEvent, RunState, SequenceInfo, SupervisorEvent};
 use crate::runs::{PlantSource, RunHandle};
 
 enum AnyPlant {
@@ -62,9 +62,12 @@ pub async fn run(handle: Arc<RunHandle>, state: AppState) {
     );
 }
 
-/// Loads `spec`'s reference graph only if its vectors replay green (AGENTS.md hard rule 5).
+/// Loads `spec`'s graph only if its vectors replay green now (AGENTS.md hard rule 5): the
+/// reference graph, or the verified draft the run asked for, whose fresh content id must also
+/// match the one it was stored under.
 async fn load(
     state: &AppState,
+    config: &RunConfig,
     spec: &str,
     instances: Vec<(String, Vec<mm_runtime::InputBinding>)>,
     out: &mut Vec<SequenceInfo>,
@@ -74,13 +77,36 @@ async fn load(
         .get(spec)
         .ok_or_else(|| format!("spec {spec} is not loaded"))?
         .clone();
+    let draft = match config.drafts.get(spec) {
+        Some(id) => Some(
+            state
+                .authoring()
+                .drafts
+                .get(id)
+                .filter(|d| d.info.spec == spec)
+                .ok_or_else(|| format!("no verified draft {id} for {spec}"))?,
+        ),
+        None => None,
+    };
     let worker = state.clone();
-    let (cxf, report) = tokio::task::spawn_blocking(move || found.replay(worker.palette()))
-        .await
-        .map_err(|e| format!("verifying {spec} stopped: {e}"))??;
+    let graph = draft.as_ref().map(|d| d.graph.clone());
+    let (cxf, report) = tokio::task::spawn_blocking(move || match &graph {
+        Some(g) => found.replay_graph(g, worker.palette()),
+        None => found.replay(worker.palette()),
+    })
+    .await
+    .map_err(|e| format!("verifying {spec} stopped: {e}"))??;
     if !report.passed() {
         return Err(format!(
             "{spec} did not pass its vectors; refusing to run it"
+        ));
+    }
+    if let Some(d) = &draft
+        && d.info.content_id != report.content_id
+    {
+        return Err(format!(
+            "the draft for {spec} now has content id {}, not {}; refusing to run it",
+            report.content_id, d.info.content_id
         ));
     }
     let mut loaded = Vec::new();
@@ -89,6 +115,12 @@ async fn load(
             name: name.clone(),
             spec: spec.to_owned(),
             content_id: report.content_id.clone(),
+            origin: if draft.is_some() {
+                Origin::Drafted
+            } else {
+                Origin::Reference
+            },
+            model: draft.as_ref().map(|d| d.info.model.clone()),
         });
         loaded.push(
             RunningSequence::load(&name, &cxf, &report, bindings)
@@ -114,10 +146,10 @@ async fn supervisor(
             .iter()
             .map(|f| (preset::requests_name(*f), preset::request_bindings(*f)))
             .collect();
-        sequences.extend(load(state, REQUESTS_SPEC, instances, &mut info).await?);
+        sequences.extend(load(state, config, REQUESTS_SPEC, instances, &mut info).await?);
     }
     let reset = vec![(RESET.to_owned(), preset::reset_bindings(config.requests))];
-    sequences.extend(load(state, RESET_SPEC, reset, &mut info).await?);
+    sequences.extend(load(state, config, RESET_SPEC, reset, &mut info).await?);
     let sup = Supervisor::new(sequences, preset::reset_outputs(), FailSafe::Release)
         .map_err(|e| e.to_string())?;
     Ok((sup, info))

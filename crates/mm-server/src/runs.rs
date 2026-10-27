@@ -3,22 +3,40 @@
 //! broadcast channel (for live subscribers) and, if configured, a JSON-lines record on disk.
 
 use std::collections::BTreeMap;
-use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 
 use mm_runtime::{FakePlant, Measurements};
-use tokio::sync::{broadcast, watch};
+use tokio::sync::watch;
 
+use crate::journal::{Entry, Journal, lock};
 use crate::run_dto::{Envelope, RunConfig, RunEvent, RunInfo, RunRequest, RunState};
 
 /// Largest run a client may ask for (about a week of 120 s steps).
 pub const MAX_STEPS: u32 = 5_040;
 const MAX_WARMUP_S: f64 = 7.0 * 86_400.0;
 const YEAR_S: f64 = 365.0 * 86_400.0;
-/// Live subscribers that fall this far behind re-read the log instead.
-const CHANNEL: usize = 256;
+
+impl Entry for Envelope {
+    fn seq(&self) -> u64 {
+        self.seq
+    }
+
+    fn kind(&self) -> &'static str {
+        match &self.event {
+            RunEvent::Started { .. } => "started",
+            RunEvent::Phase { .. } => "phase",
+            RunEvent::Tick { .. } => "tick",
+            RunEvent::Kpi { .. } => "kpi",
+            RunEvent::Ended { .. } => "ended",
+        }
+    }
+
+    fn is_last(&self) -> bool {
+        matches!(self.event, RunEvent::Ended { .. })
+    }
+}
 
 /// Where a run's plant comes from.
 #[derive(Debug, Clone)]
@@ -53,16 +71,9 @@ pub struct RunHandle {
     pub id: String,
     pub config: RunConfig,
     state: Mutex<RunState>,
-    log: Mutex<Vec<Envelope>>,
-    tx: broadcast::Sender<Envelope>,
+    journal: Arc<Journal<Envelope>>,
     stop: watch::Sender<bool>,
     ticks: AtomicU32,
-    record: Mutex<Option<std::io::BufWriter<std::fs::File>>>,
-}
-
-fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
-    // A poisoned lock only means another thread panicked mid-update; the data is still usable.
-    m.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 impl RunHandle {
@@ -72,7 +83,7 @@ impl RunHandle {
             config: self.config.clone(),
             state: *lock(&self.state),
             ticks: self.ticks.load(Ordering::Relaxed),
-            events: u32::try_from(lock(&self.log).len()).unwrap_or(u32::MAX),
+            events: u32::try_from(self.journal.len()).unwrap_or(u32::MAX),
         }
     }
 
@@ -90,50 +101,16 @@ impl RunHandle {
 
     /// Appends an event to the log, the record and the live channel, in that order.
     pub(crate) fn publish(&self, sim_time_s: Option<f64>, event: RunEvent) {
-        let mut log = lock(&self.log);
-        let envelope = Envelope {
+        self.journal.append(|seq| Envelope {
             run_id: self.id.clone(),
-            seq: log.len() as u64,
+            seq,
             sim_time_s,
             event,
-        };
-        // About one event per 120 s simulated step: a buffered write and flush (no fsync)
-        // under the lock is cheap at this rate and keeps the record in log order.
-        if let Some(writer) = lock(&self.record).as_mut() {
-            match serde_json::to_string(&envelope) {
-                Ok(line) => {
-                    if let Err(e) = writeln!(writer, "{line}").and_then(|()| writer.flush()) {
-                        tracing::warn!(run = %self.id, error = %e, "run record write failed");
-                    }
-                }
-                Err(e) => tracing::warn!(run = %self.id, error = %e, "event not recorded"),
-            }
-        }
-        log.push(envelope.clone());
-        // No receivers is normal (nobody watching yet).
-        let _ = self.tx.send(envelope);
+        });
     }
 
-    /// Events after `after` (all of them when `None`), and a live receiver subscribed before
-    /// the snapshot was taken, so nothing falls between the two.
-    pub fn subscribe(&self, after: Option<u64>) -> (Vec<Envelope>, broadcast::Receiver<Envelope>) {
-        let log = lock(&self.log);
-        let rx = self.tx.subscribe();
-        let backlog = log
-            .iter()
-            .filter(|e| after.is_none_or(|a| e.seq > a))
-            .cloned()
-            .collect();
-        (backlog, rx)
-    }
-
-    /// Events after `after` (all of them when `None`), for a subscriber that fell behind.
-    pub fn since(&self, after: Option<u64>) -> Vec<Envelope> {
-        lock(&self.log)
-            .iter()
-            .filter(|e| after.is_none_or(|a| e.seq > a))
-            .cloned()
-            .collect()
+    pub fn journal(&self) -> Arc<Journal<Envelope>> {
+        Arc::clone(&self.journal)
     }
 
     pub fn request_stop(&self) {
@@ -205,24 +182,15 @@ impl Runs {
             .map(|d| d.as_secs())
             .unwrap_or_default();
         let id = format!("run-{started}-{}", reg.next);
-        let record = self.config.records.as_ref().and_then(|dir| {
-            std::fs::create_dir_all(dir)
-                .and_then(|()| std::fs::File::create(dir.join(format!("{id}.jsonl"))))
-                .map(std::io::BufWriter::new)
-                .map_err(|e| tracing::warn!(error = %e, "no run record"))
-                .ok()
-        });
-        let (tx, _) = broadcast::channel(CHANNEL);
+        let journal = Arc::new(Journal::new(&id, self.config.records.as_deref()));
         let (stop, _) = watch::channel(false);
         let handle = Arc::new(RunHandle {
             id: id.clone(),
             config,
             state: Mutex::new(RunState::Starting),
-            log: Mutex::new(Vec::new()),
-            tx,
+            journal,
             stop,
             ticks: AtomicU32::new(0),
-            record: Mutex::new(record),
         });
         reg.runs.insert(id, Arc::clone(&handle));
         Ok(handle)
@@ -266,6 +234,11 @@ fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
         )));
     }
     let baseline = r.baseline.unwrap_or(false);
+    if baseline && r.drafts.as_ref().is_some_and(|d| !d.is_empty()) {
+        return Err(StartError::Invalid(
+            "a baseline run uses no sequences, so it takes no drafts".into(),
+        ));
+    }
     Ok(RunConfig {
         baseline,
         // A baseline runs no sequence, so it uses no requests either.
@@ -275,5 +248,6 @@ fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
         steps,
         step_s: mm_runtime::preset::STEP_S,
         case: mm_runtime::preset::CASE.into(),
+        drafts: r.drafts.clone().unwrap_or_default(),
     })
 }

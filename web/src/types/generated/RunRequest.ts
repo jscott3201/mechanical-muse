@@ -17,4 +17,9 @@ requests?: boolean,
 /**
  * Simulation start, seconds from January 1.
  */
-start_s?: number, warmup_s?: number, steps?: number, };
+start_s?: number, warmup_s?: number, steps?: number, 
+/**
+ * Use a verified draft instead of a spec's reference graph: spec name to the draft's
+ * content id (see `/api/drafts`). Its vectors are replayed again before it loads.
+ */
+drafts?: { [key in string]: string }, };

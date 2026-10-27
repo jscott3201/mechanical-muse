@@ -1,6 +1,6 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml).
-.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down server
+.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down server server-live
 
 check: fmt-check clippy test
 
@@ -62,6 +62,12 @@ web:
 
 # The API on MM_ADDR (default 127.0.0.1:8080), serving specs/.
 server:
+	cargo run -p mm-server
+
+# The server with live Muse Spark authoring: maps the local .env key without printing it.
+server-live:
+	@set -a; . ./.env; set +a; \
+	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
 	cargo run -p mm-server
 
 # Needs BOPTEST up and/or MODEL_API_KEY.
