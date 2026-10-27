@@ -4,6 +4,21 @@ Live runs of verified sequences against BOPTEST. Each entry states the setup, wh
 what it does not show. Run records (JSON) stay local in the gitignored `runs/`; the numbers
 below are copied from them.
 
+## 2026-10-27 (afternoon): a live Muse Spark session, then its draft on BOPTEST
+
+**Setup.** A live authoring session in `mm-server` (`muse-spark-1.3`, high effort, up to 5
+attempts, loop-aware repair feedback; see `docs/benchmark-results.md`): the engine refused the
+first draft as an algebraic loop, the second passed 1 of 10 scenarios, the third passed 10 of 10
+(content id `cxf:fnv1a128:67beaa4b…`). Session record: `fixtures/authoring/chw_plant_reset-live.jsonl`.
+That draft then ran on BOPTEST v0.9.0 on Modal, same window and settings as below, after
+`mm-server` re-checked it.
+
+**Result.** 300 steps, no fail-safe event. Every setpoint write and every KPI matched the run
+below (and so the hand-built reference): `ener_tot` 0.3101, `cost_tot` 0.0213, `tdis_tot` 0.1564.
+Record: `fixtures/replays/day185-noon-live-spark-draft.jsonl`. This draft has a different
+content id from the one below, so Spark built the graph differently both times; the vectors and
+this window cannot tell them apart. The limits stated below apply here too.
+
 ## 2026-10-27: a Muse Spark draft running the plant, on BOPTEST hosted on Modal
 
 **Setup.** The plant reset graph that Muse Spark drafted in the recorded authoring session

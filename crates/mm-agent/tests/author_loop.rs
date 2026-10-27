@@ -436,8 +436,8 @@ async fn the_sequence_name_comes_from_the_task() {
 
 #[tokio::test]
 async fn an_algebraic_loop_is_explained_to_the_model() {
-    // y = u + y with no delay: the engine refuses it at the schedule stage with no diagnostic
-    // records, so the feedback must carry the engine's own explanation.
+    // y = u + y with no delay: the engine refuses it at the schedule stage, one diagnostic per
+    // loop member; the feedback names the cycle by block and says how to break it.
     let looped = right()
         .replace(
             r#"{"id": "gap", "class": "Reals.Subtract", "params": []}"#,
@@ -463,5 +463,9 @@ async fn an_algebraic_loop_is_explained_to_the_model() {
         AttemptOutcome::LoadFailed { .. }
     ));
     let feedback = last_input_text(&model.requests()[1]);
-    assert!(feedback.contains("algebraic loop"), "{feedback}");
+    assert!(
+        feedback.contains("algebraic-loop: loopAdd -> loopAdd"),
+        "{feedback}"
+    );
+    assert!(feedback.contains("Discrete.UnitDelay"), "{feedback}");
 }

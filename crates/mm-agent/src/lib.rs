@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 mod client;
+mod feedback;
 mod prompt;
 mod recorded;
 mod repair;
