@@ -9,8 +9,9 @@ ci` runs the same steps locally.
 | --- | --- |
 | Lint | `cargo fmt --check`; Rust files at most 500 lines of code (`scripts/ci/check-file-size.sh`); no secrets, tracked `.env` files or absolute home paths (`scripts/ci/check-no-secrets.sh`); the pins file format |
 | Clippy | `cargo clippy --workspace --all-targets --locked -- -D warnings` |
-| Test | `cargo nextest run --workspace --locked --profile ci`, then `cargo test --doc` (nextest skips doctests), then every `specs/*/reference.py`: its self-check must pass and it must regenerate the committed `vectors.json` byte for byte |
+| Test | `cargo nextest run --workspace --locked --profile ci`, then `cargo test --doc` (nextest skips doctests), then every `specs/*/reference.py`: its self-check must pass and it must regenerate the committed `vectors.json` byte for byte; the test run also regenerates the TypeScript types in `web/src/types/generated`, which must match the committed copies |
 | Deny | `cargo deny --locked check`: advisories, licenses, duplicate versions, and sources (crates.io plus the two pinned git repos only) |
+| Web | In `web/`, on the Node version in `.nvmrc`: `npm ci` from the lockfile (dependency install scripts stay blocked), `npm run typecheck`, `npm test` (Vitest), `npm run build` |
 | CI OK | Fails unless every job above succeeded. This is the one status to require on `main`. |
 
 Triggers: pull requests to `main`, pushes to `main`, a weekly run (advisory databases change on
