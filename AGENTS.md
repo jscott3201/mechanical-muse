@@ -19,7 +19,7 @@ Mechanical Muse turns a written building-control sequence into a verified, runna
 6. A React web app shows the authoring trace, verification results, live trends, KPIs, and
    explanations.
 
-Status: offline pipeline (`mm-graph`, `mm-bridge`, `mm-agent`) and the benchmark harness (`mm-bench`) work; Muse Spark has run live (see `docs/benchmark-results.md`). The CHW plant reset spec is validated, and `mm-runtime` has run it live against BOPTEST (`docs/runtime-results.md`). The AHU request spec feeds it live (10-hour run). `mm-server` serves specs, typed graphs, verification receipts and live BOPTEST runs over server-sent events. Next: the web views, then authoring over the API. Update this line when milestones land.
+Status: offline pipeline (`mm-graph`, `mm-bridge`, `mm-agent`) and the benchmark harness (`mm-bench`) work; Muse Spark has run live (see `docs/benchmark-results.md`). The CHW plant reset spec is validated, and `mm-runtime` has run it live against BOPTEST (`docs/runtime-results.md`). The AHU request spec feeds it live (10-hour run). `mm-server` serves specs, typed graphs, verification receipts and live BOPTEST runs over server-sent events. The web app shows specs and verification receipts. Next: live run trends and the graph view, then authoring over the API. Update this line when milestones land.
 
 ## Hard rules (these override convenience)
 

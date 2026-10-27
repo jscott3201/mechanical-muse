@@ -1,10 +1,10 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
-# (.github/workflows/ci.yml). Web targets arrive with web/.
-.PHONY: check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down server
+# (.github/workflows/ci.yml).
+.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down server
 
 check: fmt-check clippy test
 
-ci: lint clippy types doctest specs deny
+ci: lint clippy types doctest specs deny web
 
 fmt:
 	cargo fmt --all
@@ -55,6 +55,10 @@ boptest-up:
 
 boptest-down:
 	docker compose down
+
+# The web app: install from the lockfile, typecheck, test, build (Node per web/.nvmrc).
+web:
+	cd web && npm ci --no-audit && npm run typecheck && npm test && npm run build
 
 # The API on MM_ADDR (default 127.0.0.1:8080), serving specs/.
 server:

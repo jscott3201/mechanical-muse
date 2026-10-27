@@ -152,10 +152,34 @@ jobs:
       - name: Advisories, licenses, bans, sources
         run: cargo deny --locked check
 
+  web:
+    name: Web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - *checkout
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      # Lockfile only; npm 11 blocks dependency install scripts unless approved.
+      - name: Install
+        run: npm ci --no-audit
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build
+
   ci-ok:
     name: CI OK
     if: ${{ always() }}
-    needs: [lint, clippy, test, deny]
+    needs: [lint, clippy, test, deny, web]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
