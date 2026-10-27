@@ -71,7 +71,11 @@ and Integer values are JSON numbers, Boolean values are true or false. Leave enu
 parameters at their defaults.
 7. Convention: set delayOnInit = true on every Logical.TrueDelay, so a condition that is \
 already true at start-up still has to persist for the full delay.
-8. Use the task's parameter values exactly. Do not add behavior the task does not ask for.";
+8. Use the task's parameter values exactly. Do not add behavior the task does not ask for.
+9. Feedback: a path from a block's output back to its own input (a stored value, a hold that \
+clears itself) must pass through Discrete.UnitDelay (Real) or Logical.Pre (Boolean), which \
+output the previous step's value. Sampler, ZeroOrderHold, Latch, TrueDelay and TrueFalseHold \
+pass the current value through, so a loop through them alone is refused.";
 
 /// The authorable classes the schema offers, in schema order.
 pub(crate) fn schema_classes() -> Vec<String> {
