@@ -15,6 +15,9 @@ oce-api = { git = "https://github.com/jscott3201/open-control-engine", rev = "fa
 bacnet-objects = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
 bacnet-server = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
 bacnet-types = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
+bacnet-transport = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
+bacnet-client = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
+bacnet-encoding = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
 
 # Third-party
 serde = { version = "1", features = ["derive"] }

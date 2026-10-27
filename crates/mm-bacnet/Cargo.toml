@@ -1,6 +1,6 @@
 [package]
 name = "mm-bacnet"
-description = "BACnet mirror of engine points on rusty-bacnet"
+description = "Read-only BACnet mirror of a live run's points, on rusty-bacnet"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,7 +10,16 @@ publish.workspace = true
 [dependencies]
 bacnet-objects.workspace = true
 bacnet-server.workspace = true
+bacnet-transport.workspace = true
 bacnet-types.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+bacnet-client.workspace = true
+bacnet-encoding.workspace = true
+bytes = "1"
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [lints]
 workspace = true

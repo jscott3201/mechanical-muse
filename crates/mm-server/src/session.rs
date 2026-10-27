@@ -241,10 +241,15 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
             }
         }
     };
-    let outcome = AssertUnwindSafe(steps(handle, &mut sup, &mut plant, first))
+    let bacnet = state.bacnet().map(AsRef::as_ref);
+    let outcome = AssertUnwindSafe(steps(handle, &mut sup, &mut plant, first, bacnet))
         .catch_unwind()
         .await
         .unwrap_or_else(|_| Err("the control loop panicked".into()));
+    if let Some(bacnet) = bacnet {
+        // Nothing produces values once the run ends, whatever its outcome.
+        crate::bacnet::clear(bacnet).await;
+    }
     if let AnyPlant::Boptest(client) = &plant {
         match client.kpi().await {
             Ok(values) => handle.publish(None, RunEvent::Kpi { values }),
@@ -266,6 +271,7 @@ async fn steps(
     sup: &mut Supervisor,
     plant: &mut AnyPlant,
     mut readings: Measurements,
+    bacnet: Option<&crate::bacnet::BacnetMirror>,
 ) -> Result<RunState, String> {
     let stop = handle.stop_signal();
     let watch = preset::watch_points();
@@ -310,6 +316,9 @@ async fn steps(
                     reason: Some("test fault: reading replaced with NaN".into()),
                 },
             );
+        }
+        if let Some(bacnet) = bacnet {
+            crate::bacnet::update(bacnet, &event).await;
         }
         handle.publish(time, event);
         handle.count_tick();
