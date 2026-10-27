@@ -5,6 +5,10 @@ import type { TaskPoint } from "./TaskPoint";
 
 export type SpecDetail = { summary: SpecSummary, 
 /**
+ * The spec's opening paragraph (`spec.md`, our own words), for people.
+ */
+about: string, 
+/**
  * The task text given to the model.
  */
 description: string, params: Array<TaskPoint>, scenarios: Array<ScenarioInfo>, 

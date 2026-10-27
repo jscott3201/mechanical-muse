@@ -80,6 +80,8 @@ pub struct ScenarioInfo {
 #[ts(export)]
 pub struct SpecDetail {
     pub summary: SpecSummary,
+    /// The spec's opening paragraph (`spec.md`, our own words), for people.
+    pub about: String,
     /// The task text given to the model.
     pub description: String,
     pub params: Vec<TaskPoint>,

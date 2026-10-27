@@ -17,7 +17,8 @@ const summary: SpecSummary = {
 };
 const detail: SpecDetail = {
   summary,
-  description: "Requests from one air handler.",
+  about: "Requests from one air handler.",
+  description: "The task text given to the model.",
   params: [{ name: "persistence", unit: "s", meaning: "How long a condition must last", value: 120 }],
   scenarios: [
     { name: "steady_normal", description: "No requests." },
