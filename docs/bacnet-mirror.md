@@ -28,6 +28,10 @@ Device `599`, name `MECHANICAL-MUSE`. The project has no BACnet vendor id; the d
   (a degraded sequence handed back to BOPTEST, a baseline run, a released point) reads
   `NO_SENSOR` during normal operation, and an injected test fault shows only as `NO_SENSOR`; the
   web app's event log says which. A setpoint held by the fail-safe is sent, so it reads reliable.
+- A no-data point reads Event_State FAULT, so Status_Flags shows FAULT and IN_ALARM (the
+  library sets IN_ALARM whenever Event_State is not normal).
+- The device answers in segments (segmentation both), so a client can read every object in one
+  ReadPropertyMultiple, as device browsers do; without it that request was aborted.
 - One point the device refuses never leaves the others stale: it is flagged and the rest update.
   An update is given 2 s; past that the tick goes on without it (BACnet is a view, not the
   control path).
@@ -47,6 +51,22 @@ accepted as the library does by default; it changes no point.
 
 Not done: the 22-device layout and operator overrides proposed in `docs/bacnet-device-table.md`,
 COV, BBMD or foreign-device registration. No conformance or certification is claimed.
+
+## Check it with a BACnet client
+
+rusty-bacnet's own command-line tool (`bacnet`, from its `bacnet-cli` crate at the same pinned
+commit) is enough. On the server's machine give the tool its own port:
+
+```sh
+bacnet -i 127.0.0.1 -p 47809 discover --target 127.0.0.1:47808          # device 599, segmentation BOTH
+bacnet -i 127.0.0.1 -p 47809 readm 127.0.0.1:47808 ai:1 object-name,pv,reliability,status-flags av:7 pv
+bacnet --allow-write -i 127.0.0.1 -p 47809 write 127.0.0.1:47808 av:7 pv 300   # refused
+```
+
+Checked this way on 2026-10-27: discovery, one ReadPropertyMultiple of all 28 objects (140
+values), and WriteProperty (present value, out of service, object names), WritePropertyMultiple,
+CreateObject, DeleteObject and SubscribeCOV, each refused with services /
+service-request-denied and nothing changed.
 
 ## Run it
 

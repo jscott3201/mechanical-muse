@@ -10,6 +10,7 @@ use bacnet_encoding::primitives::{
     decode_application_value, encode_app_boolean, encode_app_character_string, encode_app_real,
 };
 use bacnet_transport::bip::BipTransport;
+use bacnet_types::constructed::{PropertyReference, ReadAccessSpecification};
 use bacnet_types::enums::{ErrorClass, ErrorCode, ObjectType, PropertyIdentifier, Reliability};
 use bacnet_types::error::Error;
 use bacnet_types::primitives::{ObjectIdentifier, PropertyValue};
@@ -245,6 +246,56 @@ async fn nothing_reads_as_good_before_the_first_value() {
         ["reaChiWatSys_TCHWSup_y", "oveChiWatSys_dpSet_u"]
     );
     assert!(report.errors.is_empty(), "{:?}", report.errors);
+    client.stop().await.unwrap();
+    mirror.stop().await.unwrap();
+}
+
+#[tokio::test]
+async fn one_read_of_every_object_is_answered_in_segments() {
+    // 30 points, five properties each: well past one APDU.
+    let specs = (1..=30)
+        .map(|i| PointSpec {
+            name: format!("point_{i:02}_y"),
+            source: if i % 2 == 0 {
+                Source::Measured
+            } else {
+                Source::Derived
+            },
+            unit: "K".into(),
+        })
+        .collect();
+    let mut mirror = Mirror::start(&config(), PointMap::new(specs).unwrap())
+        .await
+        .unwrap();
+    let mut client = client().await;
+    let mac = mirror.local_mac().to_vec();
+    let props = [
+        PropertyIdentifier::OBJECT_NAME,
+        PropertyIdentifier::PRESENT_VALUE,
+        PropertyIdentifier::RELIABILITY,
+        PropertyIdentifier::STATUS_FLAGS,
+        PropertyIdentifier::UNITS,
+    ];
+    let request: Vec<ReadAccessSpecification> = (1..=15)
+        .flat_map(|i| [ai(i), av(i)])
+        .map(|object_identifier| ReadAccessSpecification {
+            object_identifier,
+            list_of_property_references: props
+                .iter()
+                .map(|&property_identifier| PropertyReference {
+                    property_identifier,
+                    property_array_index: None,
+                })
+                .collect(),
+        })
+        .collect();
+    let ack = client.read_property_multiple(&mac, request).await.unwrap();
+    assert_eq!(ack.list_of_read_access_results.len(), 30);
+    assert!(
+        ack.list_of_read_access_results
+            .iter()
+            .all(|r| r.list_of_results.len() == props.len())
+    );
     client.stop().await.unwrap();
     mirror.stop().await.unwrap();
 }

@@ -14,7 +14,7 @@ use bacnet_objects::traits::BACnetObject;
 use bacnet_server::mutation::MutationPolicy;
 use bacnet_server::server::BACnetServer;
 use bacnet_transport::bip::BipTransport;
-use bacnet_types::enums::{ObjectType, PropertyIdentifier, Reliability};
+use bacnet_types::enums::{ObjectType, PropertyIdentifier, Reliability, Segmentation};
 use bacnet_types::primitives::{ObjectIdentifier, PropertyValue};
 use serde::Serialize;
 
@@ -60,8 +60,11 @@ pub struct Mirror {
 impl Mirror {
     /// Builds the device and its objects and starts serving.
     pub async fn start(config: &MirrorConfig, map: PointMap) -> Result<Self, MirrorError> {
+        // Segmented replies: a client reading every object in one ReadPropertyMultiple (as
+        // tools browsing a device do) gets an answer longer than one APDU.
         let identity = DeviceIdentity::new(config.device_instance, VENDOR_ID)?
-            .with_name(config.device_name.clone());
+            .with_name(config.device_name.clone())
+            .with_segmentation(Segmentation::BOTH);
         let mut device = DeviceObject::new(DeviceConfig {
             identity: identity.clone(),
             vendor_name: "Mechanical Muse (placeholder vendor id)".into(),
