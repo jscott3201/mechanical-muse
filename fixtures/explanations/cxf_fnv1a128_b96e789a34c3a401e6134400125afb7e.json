@@ -1,0 +1,58 @@
+{
+  "spec": "ahu_chw_requests",
+  "content_id": "cxf:fnv1a128:b96e789a34c3a401e6134400125afb7e",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "This sequence tells the chilled water plant how much cooling one air handler needs. It watches supply air temperature compared to its setpoint and how far open the cooling coil valve is. It sends a reset request from 0 to 3 for plant reset and a separate 0 or 1 request to keep the chillers running.",
+  "parts": [
+    {
+      "title": "Find how far supply air is above setpoint",
+      "text": "This part finds the temperature error by subtracting the supply air temperature setpoint in kelvin from the measured supply air temperature in kelvin. A positive result means the supply air is warmer than wanted.",
+      "blocks": [
+        "tempErr"
+      ]
+    },
+    {
+      "title": "Detect sustained warm supply air",
+      "text": "This part watches for supply air staying too warm. One check turns on when the error is above 3.0 kelvin and another when it is above 2.0 kelvin. Once on, each check stays on while the error stays above its threshold minus 0.1 kelvin, and it turns off at once otherwise. An error of exactly 3.0 or 2.0 kelvin does not turn the check on. Each check must stay on continuously for 120 seconds before its timed result turns on, and if the check turns off the timer restarts next time. If the check is already on at the first moment, the timed result turns on at once without waiting.",
+      "blocks": [
+        "high3",
+        "high2",
+        "high3Long",
+        "high2Long"
+      ]
+    },
+    {
+      "title": "Watch cooling valve position",
+      "text": "This part watches the cooling coil valve position on a scale of 0 to 1. The open check turns on when the valve is above 0.95 and stays on until the valve is at or below 0.90. The reset check turns on when the valve is below 0.85 and stays on until the valve is at or above 0.90. The closed check turns on when the valve is below 0.10 and stays on until the valve is at or above 0.15. A valve of exactly 0.95 does not turn the open check on, and valves of exactly 0.85 or 0.10 do not turn the clear checks on.",
+      "blocks": [
+        "valveOpen",
+        "valveReset",
+        "valveClosed"
+      ]
+    },
+    {
+      "title": "Remember valve demand with latches",
+      "text": "This part remembers valve demand between the valve checks. The reset latch sets when the open check turns on and clears when the reset check turns on, and keeps its state in between. The plant latch sets the same way but clears only when the closed check turns on. A latch only changes when its set or clear check turns on, using the current values, so a jump in one moment from below the reset level to above the open level sets the latch, and a valve already above the open level at the start begins with both latches set.",
+      "blocks": [
+        "resetLatch",
+        "plantLatch"
+      ]
+    },
+    {
+      "title": "Choose reset level and plant request",
+      "text": "This part chooses the two outputs. The reset output is 3 when the sustained 3.0 kelvin result is on, otherwise 2 when the sustained 2.0 kelvin result is on, otherwise 1 while the reset latch is set, otherwise 0. The plant request output is 1 while the plant latch is set and 0 otherwise. The reset output feeds the chilled water plant reset and the plant request says this air handler needs the chillers.",
+      "blocks": [
+        "three",
+        "two",
+        "one",
+        "zero",
+        "req1",
+        "req2",
+        "req3",
+        "plantReq"
+      ]
+    }
+  ],
+  "unknown_blocks": []
+}

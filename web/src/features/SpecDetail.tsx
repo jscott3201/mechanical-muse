@@ -16,6 +16,7 @@ import type { TaskPoint } from "@/types/generated/TaskPoint";
 
 import { AuthorPanel } from "./authoring/AuthorPanel";
 import { ErrorNote } from "./ErrorNote";
+import { ExplanationPanel } from "./graph/ExplanationPanel";
 import { GraphCanvas } from "./graph/GraphCanvas";
 import { Receipt } from "./Receipt";
 
@@ -58,9 +59,10 @@ function PointTable({
   );
 }
 
-/** Our hand-built reference graph, as the engine catalog types it. */
+/** Our hand-built reference graph, as the engine catalog types it, with Spark's explanation beside it. */
 function ReferenceGraph({ name }: { name: string }) {
   const graph = useResource<GraphView>(`/api/specs/${encodeURIComponent(name)}/graph`);
+  const [focus, setFocus] = useState<string[]>([]);
   return (
     <Card>
       <CardHeader>
@@ -70,10 +72,17 @@ function ReferenceGraph({ name }: { name: string }) {
           engine's catalog. Ports and connection types come from that catalog.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        {graph.status === "loading" && <Skeleton className="h-[480px] w-full" />}
-        {graph.status === "error" && <ErrorNote error={graph.error} onRetry={graph.reload} />}
-        {graph.status === "ready" && <GraphCanvas graph={graph.data} label={`Reference graph of ${name}`} />}
+      <CardContent className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_26rem]">
+        <div className="min-w-0 2xl:sticky 2xl:top-20 2xl:self-start">
+          {graph.status === "loading" && <Skeleton className="h-[480px] w-full" />}
+          {graph.status === "error" && <ErrorNote error={graph.error} onRetry={graph.reload} />}
+          {graph.status === "ready" && (
+            <GraphCanvas graph={graph.data} highlighted={focus} label={`Reference graph of ${name}`} />
+          )}
+        </div>
+        <div className="2xl:max-h-[640px] 2xl:overflow-auto">
+          <ExplanationPanel spec={name} onFocusBlocks={setFocus} />
+        </div>
       </CardContent>
     </Card>
   );

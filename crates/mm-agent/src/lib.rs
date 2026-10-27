@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 mod client;
+mod explain;
 mod feedback;
 mod prompt;
 mod recorded;
@@ -14,6 +15,9 @@ mod repair;
 mod responses;
 
 pub use client::{Effort, ModelClient, ModelError, ModelReply, ModelRequest, OutputSchema, Usage};
+pub use explain::{
+    Explained, ExplainedPart, Explanation, check_explanation, explain, explain_request,
+};
 pub use prompt::{
     Exemplar, ParamHint, PointSpec, TaskSpec, palette_listing, system_instructions, task_message,
 };

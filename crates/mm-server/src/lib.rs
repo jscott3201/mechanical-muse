@@ -9,6 +9,7 @@ pub mod authoring;
 pub mod bacnet;
 pub mod drafts;
 pub mod dto;
+pub mod explain;
 mod journal;
 mod recording;
 mod replay;

@@ -33,6 +33,7 @@ struct Inner {
     verify_slots: Arc<Semaphore>,
     runs: Runs,
     authoring: Authoring,
+    explanations: crate::explain::Explanations,
     shutdown: tokio::sync::watch::Sender<bool>,
     bacnet: std::sync::OnceLock<Arc<crate::bacnet::BacnetMirror>>,
 }
@@ -71,11 +72,19 @@ impl AppState {
                 palette,
                 verify_slots: Arc::new(Semaphore::new(VERIFY_SLOTS)),
                 runs: Runs::new(runs),
+                explanations: crate::explain::Explanations::new(
+                    authoring.records.as_ref().map(|d| d.join("explanations")),
+                    authoring.explanations.clone(),
+                ),
                 authoring: Authoring::new(authoring),
                 shutdown: tokio::sync::watch::channel(false).0,
                 bacnet: std::sync::OnceLock::new(),
             }),
         }
+    }
+
+    pub fn explanations(&self) -> &crate::explain::Explanations {
+        &self.inner.explanations
     }
 
     pub fn authoring(&self) -> &Authoring {
@@ -127,6 +136,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/specs/{name}/verify", post(verify_spec))
         .merge(crate::run_routes::routes())
         .merge(crate::author_routes::routes())
+        .merge(crate::explain::routes())
         .fallback(not_found)
         .with_state(state)
 }
