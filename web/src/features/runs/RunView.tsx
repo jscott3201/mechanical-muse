@@ -14,6 +14,7 @@ import type { RunInfo } from "@/types/generated/RunInfo";
 
 import { ErrorNote } from "../ErrorNote";
 import { change } from "./baseline";
+import { RunExplanationPanel } from "./RunExplanationPanel";
 import { RunStatus } from "./RunStatus";
 import { KpiTiles, RunProgress, SequenceGroups } from "./RunSummary";
 import { formatSimTime, trends } from "./trends";
@@ -235,7 +236,10 @@ function RunStream({
           <CardTitle>Events</CardTitle>
           <CardDescription>Phases, the start, fail-safe actions and the end. Never trimmed.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
+          {stream.config && !stream.config.baseline && (
+            <RunExplanationPanel key={runId} runId={runId} ended={stream.ended !== null} />
+          )}
           <ol className="flex max-h-72 flex-col gap-1 overflow-auto text-sm">
             {[...stream.log].reverse().map((e, i) => (
               <li key={`${e.seq}-${i}`} className="flex items-start gap-2">

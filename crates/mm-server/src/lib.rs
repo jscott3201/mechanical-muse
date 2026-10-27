@@ -15,6 +15,7 @@ mod recording;
 mod replay;
 mod routes;
 pub mod run_dto;
+pub mod run_explain;
 mod run_routes;
 pub mod runs;
 mod session;

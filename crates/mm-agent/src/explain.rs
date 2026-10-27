@@ -179,6 +179,111 @@ pub async fn explain<C: ModelClient>(
     })
 }
 
+/// What happened in a run, for an operator: model-written, from the run's own events.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RunExplanation {
+    pub summary: String,
+    pub items: Vec<RunExplainedItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RunExplainedItem {
+    /// When it happened, as the events give it (e.g. "day 186 00:40 to 00:48").
+    pub when: String,
+    pub title: String,
+    pub text: String,
+}
+
+const RUN_INSTRUCTIONS: &str = "You explain what happened during a supervisory control run on an emulated office \
+building to a building operator. You are given the run's settings, the control sequences that ran, and the events \
+the runtime logged: test faults injected, sequences that wrote no new setpoints and why, setpoints handed back to the \
+building's own controllers, clamps, and the end. Reply with one JSON object that follows the run_explanation schema.
+
+Rules:
+1. summary: two or three sentences on what the run did and whether anything went wrong, in plain words.
+2. items: one to six items in time order. Each has when (copied from the events), a short title, and a plain \
+explanation of what happened, why, and what the safeguard did. Group repeated events into one item.
+3. Explain only what the events show. Do not guess causes the events do not give, and do not claim energy or \
+comfort results.
+4. Plain sentences, no code, no markdown. Use the operator's words (supply air temperature, chilled water) rather than \
+point identifiers, but you may name an identifier once in brackets.";
+
+fn run_schema() -> Value {
+    json!({
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["summary", "items"],
+        "properties": {
+            "summary": {"type": "string"},
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["when", "title", "text"],
+                    "properties": {
+                        "when": {"type": "string"},
+                        "title": {"type": "string"},
+                        "text": {"type": "string"}
+                    }
+                }
+            }
+        }
+    })
+}
+
+/// The request for a run whose settings and events are `context` (built by the caller).
+pub fn explain_run_request(model: &str, context: &Value) -> ModelRequest {
+    ModelRequest {
+        model: model.to_owned(),
+        instructions: RUN_INSTRUCTIONS.to_owned(),
+        input: vec![json!({
+            "role": "user",
+            "content": [{"type": "input_text", "text": context.to_string()}],
+        })],
+        schema: Some(OutputSchema {
+            name: "run_explanation".into(),
+            schema: run_schema(),
+        }),
+        effort: Some(Effort::Medium),
+        max_output_tokens: 8_000,
+    }
+}
+
+/// Checks a run explanation: empty items removed, counts and lengths capped.
+pub fn check_run_explanation(text: &str) -> Result<RunExplanation, ModelError> {
+    let raw: RunExplanation = serde_json::from_str(text).map_err(|e| ModelError::Malformed {
+        message: format!("the explanation is not the expected JSON: {e}"),
+    })?;
+    let cap = |s: &str, n: usize| s.trim().chars().take(n).collect::<String>();
+    Ok(RunExplanation {
+        summary: cap(&raw.summary, MAX_CHARS),
+        items: raw
+            .items
+            .into_iter()
+            .filter(|i| !i.text.trim().is_empty())
+            .take(MAX_PARTS)
+            .map(|i| RunExplainedItem {
+                when: cap(&i.when, 80),
+                title: cap(&i.title, 120),
+                text: cap(&i.text, MAX_CHARS),
+            })
+            .collect(),
+    })
+}
+
+/// Asks `client` to explain a run from its `context`.
+pub async fn explain_run<C: ModelClient>(
+    client: &C,
+    model: &str,
+    context: &Value,
+) -> Result<(RunExplanation, Usage), ModelError> {
+    let reply = client
+        .complete(&explain_run_request(model, context))
+        .await?;
+    Ok((check_run_explanation(&reply.text)?, reply.usage))
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::indexing_slicing)]
 mod tests {
@@ -239,5 +344,22 @@ mod tests {
             r.schema.as_ref().unwrap().schema["additionalProperties"],
             false
         );
+    }
+
+    #[test]
+    fn a_run_explanation_is_capped_and_cleaned() {
+        let long = "x".repeat(2000);
+        let reply = json!({
+            "summary": "A fault was injected and handled.",
+            "items": [
+                {"when": "day 186 00:40", "title": "Fault", "text": long},
+                {"when": "day 186 00:50", "title": "Empty", "text": " "}
+            ]
+        });
+        let e = check_run_explanation(&reply.to_string()).unwrap();
+        assert_eq!(e.items.len(), 1);
+        assert_eq!(e.items[0].text.chars().count(), MAX_CHARS);
+        let r = explain_run_request("muse-spark-1.3", &json!({"events": []}));
+        assert_eq!(r.schema.unwrap().name, "run_explanation");
     }
 }

@@ -144,6 +144,7 @@ pub fn app(state: AppState) -> Router {
         .merge(crate::run_routes::routes())
         .merge(crate::author_routes::routes())
         .merge(crate::explain::routes())
+        .merge(crate::run_explain::routes())
         .fallback(fallback)
         .with_state(state)
 }

@@ -10,6 +10,8 @@ BOPTEST simulation time; Spark is `muse-spark-1.3` unless stated.
 
 | When | Kind | What | Result | Where |
 | --- | --- | --- | --- | --- |
+| 2026-10-28 | Feature | Muse Spark explains a run's events and its own verified drafts | fault demo: 5 event spans → 3 items, accurate; recorded copies committed | `fixtures/explanations/` |
+| 2026-10-28 | Rehearsal | `make demo` hero flow, recorded model | works; fixed live-without-key, draft-to-run path, fault shading, axis labels | demo-script |
 | 2026-10-27 | Feature | Muse Spark explains each reference graph in plain words | 4 graphs, 4–5 parts each, every named block exists | `fixtures/explanations/` |
 | 2026-10-27 | BOPTEST | Static pressure v2 (airflow-based zone requests) + CHW, day 185 noon, 10 h | energy −24.1 %, thermal discomfort −42.1 %, CO2 discomfort +17.4 %; no fail-safe event | runtime-results; `fixtures/replays/day185-noon-pressure.jsonl` |
 | 2026-10-27 | Spark | Zone requests v2, high, with vectors, 3 runs | first try 0/3 (all miss the exact 85 % damper release), after repair 3/3 | benchmark-results |
