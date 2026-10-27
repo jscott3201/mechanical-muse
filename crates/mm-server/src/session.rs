@@ -241,7 +241,8 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
             }
         }
     };
-    let outcome = AssertUnwindSafe(steps(handle, &mut sup, &mut plant, first))
+    let bacnet = state.bacnet().map(AsRef::as_ref);
+    let outcome = AssertUnwindSafe(steps(handle, &mut sup, &mut plant, first, bacnet))
         .catch_unwind()
         .await
         .unwrap_or_else(|_| Err("the control loop panicked".into()));
@@ -266,6 +267,7 @@ async fn steps(
     sup: &mut Supervisor,
     plant: &mut AnyPlant,
     mut readings: Measurements,
+    bacnet: Option<&crate::bacnet::BacnetMirror>,
 ) -> Result<RunState, String> {
     let stop = handle.stop_signal();
     let watch = preset::watch_points();
@@ -310,6 +312,16 @@ async fn steps(
                     reason: Some("test fault: reading replaced with NaN".into()),
                 },
             );
+        }
+        if let Some(bacnet) = bacnet {
+            // A mirror failure is logged, never fatal: BACnet is a view, not the control path.
+            if let Err(e) = bacnet
+                .mirror
+                .update(&crate::bacnet::tick_values(&event))
+                .await
+            {
+                tracing::warn!(error = %e, "BACnet mirror update failed");
+            }
         }
         handle.publish(time, event);
         handle.count_tick();

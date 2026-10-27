@@ -70,6 +70,9 @@ async fn main() -> anyhow::Result<()> {
         ..AuthoringConfig::default()
     };
     let state = AppState::build(specs, palette, runs, authoring);
+    if let Ok(bacnet) = std::env::var("MM_BACNET_ADDR") {
+        start_bacnet(&state, &bacnet).await?;
+    }
     let on_signal = state.clone();
     axum::serve(listener, app(state.clone()))
         .with_graceful_shutdown(async move {
@@ -89,5 +92,28 @@ async fn main() -> anyhow::Result<()> {
         }
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     }
+    Ok(())
+}
+
+/// Starts the read-only BACnet mirror on `ip:port` (47808 for BACnet/IP), as device 599.
+async fn start_bacnet(state: &AppState, addr: &str) -> anyhow::Result<()> {
+    let addr: std::net::SocketAddrV4 = addr
+        .parse()
+        .context("MM_BACNET_ADDR must be an IPv4 ip:port")?;
+    let map =
+        mm_server::bacnet::point_map(state.specs()).context("building the BACnet point map")?;
+    let config = mm_bacnet::MirrorConfig {
+        device_instance: 599,
+        device_name: "MECHANICAL-MUSE".into(),
+        interface: *addr.ip(),
+        port: addr.port(),
+        broadcast: std::net::Ipv4Addr::BROADCAST,
+    };
+    let mirror = mm_bacnet::Mirror::start(&config, map.clone())
+        .await
+        .context("starting the BACnet mirror")?;
+    let info = mm_server::bacnet::info(&map, config.device_instance, addr.port());
+    tracing::info!(device = config.device_instance, %addr, objects = info.points.len(), "BACnet mirror (read-only)");
+    state.set_bacnet(mm_server::bacnet::BacnetMirror { mirror, info });
     Ok(())
 }

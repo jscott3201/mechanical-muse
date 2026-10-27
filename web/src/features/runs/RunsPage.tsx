@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAction, useResource } from "@/hooks/useResource";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { BacnetInfo } from "@/types/generated/BacnetInfo";
 import type { DraftInfo } from "@/types/generated/DraftInfo";
 import type { ReplayInfo } from "@/types/generated/ReplayInfo";
 import type { ReplayRequest } from "@/types/generated/ReplayRequest";
@@ -105,6 +106,7 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
   const [hour, setHour] = useState(DEFAULTS.hour);
   const [steps, setSteps] = useState(DEFAULTS.steps);
   const stored = useResource<DraftInfo[]>("/api/drafts");
+  const bacnet = useResource<BacnetInfo>("/api/bacnet");
   const [fault, setFault] = useState(false);
   const [faultStep, setFaultStep] = useState(30);
   const [chosen, setChosen] = useState<Record<string, string | null>>({});
@@ -141,6 +143,12 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
           On the BOPTEST large-office emulator, with a one-day warm-up. Each run re-verifies its
           sequences first; one run at a time.
         </CardDescription>
+        {bacnet.status === "ready" && (
+          <p className="text-sm text-muted-foreground">
+            Live runs are also mirrored read-only over BACnet/IP: device {bacnet.data.device_instance},{" "}
+            {bacnet.data.points.length} objects, UDP port {bacnet.data.port}. Remote writes are refused.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
