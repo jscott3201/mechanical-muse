@@ -188,8 +188,12 @@ async fn unknown_spec_and_route_are_404_with_codes() {
 /// A copy of one spec with a planted mistake, served from its own directory.
 fn mutated_router(mutate: impl Fn(&mut Value, &mut Value)) -> axum::Router {
     let src = specs_dir().join("chw_plant_reset");
+    // One directory per call: `cargo test` runs these tests as threads of one process, so the
+    // process id alone would let two tests overwrite each other's mutated copies.
+    static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
-        .join(format!("mutated-specs-{}", std::process::id()));
+        .join(format!("mutated-specs-{}-{n}", std::process::id()));
     let dst = root.join("chw_plant_reset");
     std::fs::create_dir_all(&dst).unwrap();
     for file in ["task.json", "spec.md"] {
