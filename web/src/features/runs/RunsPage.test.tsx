@@ -239,6 +239,49 @@ describe("RunsPage replays", () => {
     expect(screen.queryByText(/Computed by BOPTEST for this run/)).toBeNull();
     expect(screen.getByText(/Nothing runs\s+against BOPTEST now/)).toBeTruthy();
   });
+
+  it("points out a linked record, grouped by window, without starting it", async () => {
+    const mine = { name: "day185-noon-your-sequence", recorded_run: "run-3", ticks: 300, baseline: false, start_s: 16027200, drafted: true, drafts: ["ahu1_sat_stpt"], pressure: false, own: ["ahu1_sat_stpt"], state: "completed" };
+    const early = { ...mine, name: "day143-morning-baseline", start_s: 12376800, baseline: true, drafted: false, drafts: [], own: [] };
+    const fetch = vi.fn(async (url: string) => {
+      if (url === "/api/bacnet") return bacnetOff();
+      return new Response(JSON.stringify(url === "/api/replays" ? [mine, early] : []), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetch);
+    render(<RunsPage replay="day185-noon-your-sequence" />);
+    const groups = await screen.findAllByRole("region");
+    expect(groups.map((g) => g.getAttribute("aria-label"))).toEqual(["Day 143 morning", "Day 185 noon"]);
+    const item = screen.getByText("Your sequence (Spark draft); plant reset hand-built").closest("li");
+    expect(item?.getAttribute("aria-current")).toBe("true");
+    expect(item?.textContent).toContain("day185-noon-your-sequence");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(fetch.mock.calls.some(([u]) => u === "/api/runs/replay")).toBe(false);
+  });
+
+  it("lists runs above the replays, each described in words", async () => {
+    const replay = { name: "day185-noon-requests", recorded_run: "run-1", ticks: 300, baseline: false, start_s: 16027200, drafted: false, drafts: [], pressure: false, own: [], state: "completed" };
+    const info = {
+      id: "run-5",
+      config: { baseline: false, requests: true, pressure: false, start_s: 16027200, warmup_s: 86400, steps: 30, step_s: 120, case: "c", drafts: { chw_plant_reset: "cxf:1" }, bindings: {} },
+      state: "completed",
+      ticks: 30,
+      events: 40,
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url === "/api/bacnet"
+          ? bacnetOff()
+          : new Response(JSON.stringify(url === "/api/runs" ? [info] : url === "/api/replays" ? [replay] : []), { status: 200 }),
+      ),
+    );
+    render(<RunsPage />);
+    const runs = await screen.findByRole("navigation", { name: "Runs" });
+    const link = screen.getByRole("link", { name: /Spark-drafted plant reset, chilled water/ });
+    expect(link.getAttribute("href")).toBe("#/runs/run-5");
+    const replays = await screen.findByText("Replay a recorded run");
+    expect(runs.compareDocumentPosition(replays) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });
 
 describe("RunsPage BACnet note", () => {

@@ -1,4 +1,4 @@
-import { Building2, CircleAlert, CircleCheck, History, LoaderCircle, Sparkles } from "lucide-react";
+import { ArrowRight, Building2, CircleAlert, CircleCheck, History, LoaderCircle, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -181,7 +181,16 @@ function BindingTable({ binding, onChange }: { binding: Binding; onChange?: (b: 
  * points feed each input and which setpoint each output writes, the checks list anything that
  * cannot run, and the engineer edits and confirms. Only then can a run use the sequence.
  */
-export function BindingPanel({ spec, onBound }: { spec: string; onBound: () => void }) {
+export function BindingPanel({
+  spec,
+  onBound,
+  next,
+}: {
+  spec: string;
+  onBound: () => void;
+  /** Where to go once bound: the run form with a verified draft, or drafting one first. */
+  next?: { label: string; href: string };
+}) {
   const current = useResource<BindingView>(`/api/workbench/${encodeURIComponent(spec)}/binding`);
   const propose = useProposeBinding(spec);
   const confirm = useConfirmBinding(spec);
@@ -214,9 +223,18 @@ export function BindingPanel({ spec, onBound }: { spec: string; onBound: () => v
       <CardContent className="flex flex-col gap-4">
         {bound && !draft && (
           <>
-            <Badge variant="secondary" className="self-start">
-              <CircleCheck aria-hidden="true" /> Bound: choose a verified draft, then run it from the Runs tab
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary">
+                <CircleCheck aria-hidden="true" /> Bound to the building
+              </Badge>
+              {next && (
+                <Button size="sm" asChild>
+                  <a href={next.href}>
+                    {next.label} <ArrowRight aria-hidden="true" />
+                  </a>
+                </Button>
+              )}
+            </div>
             <BindingTable binding={bound.binding} />
           </>
         )}

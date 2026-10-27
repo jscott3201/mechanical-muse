@@ -26,6 +26,7 @@ import type { SequenceDraft } from "@/types/generated/SequenceDraft";
 import type { WorkbenchAttachment } from "@/types/generated/WorkbenchAttachment";
 
 import { ErrorNote } from "../ErrorNote";
+import { JourneyBar } from "./JourneyBar";
 import { ScenarioTimeline } from "./ScenarioTimeline";
 
 const SAMPLES = [
@@ -428,11 +429,19 @@ function ReviewStep({
 export function WorkbenchPage({ onOpenSpec }: { onOpenSpec: (spec: string) => void }) {
   const read = useReadSequence();
   const state = read.state;
+  // Before a sequence exists, only reading and accepting can be done here.
+  const bar = <JourneyBar read={state.status === "done"} spec={null} verified={null} bound={false} />;
   if (state.status === "done") {
-    return <ReviewStep key={state.data.key} view={state.data} onAccepted={onOpenSpec} onRestart={read.reset} />;
+    return (
+      <div className="flex flex-col gap-4">
+        {bar}
+        <ReviewStep key={state.data.key} view={state.data} onAccepted={onOpenSpec} onRestart={read.reset} />
+      </div>
+    );
   }
   return (
     <div className="flex flex-col gap-4">
+      {bar}
       <SourceStep onRead={(text, attachments) => read.run({ text, attachments })} />
       {state.status === "running" && (
         <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">

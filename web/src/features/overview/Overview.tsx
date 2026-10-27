@@ -1,4 +1,4 @@
-import { ArrowRight, Building2, FileText, Network, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Building2, FileText, Network, ShieldCheck, Sparkles, Upload } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -6,15 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { change } from "@/features/runs/baseline";
+import { describe, replayFacts } from "@/features/runs/describe";
 import { formatSimTime } from "@/features/runs/trends";
 import { useResource } from "@/hooks/useResource";
 import { formatNumber } from "@/lib/format";
+import { format, type Route } from "@/lib/route";
 import type { DraftInfo } from "@/types/generated/DraftInfo";
 import type { Health } from "@/types/generated/Health";
 import type { ReplayInfo } from "@/types/generated/ReplayInfo";
 import type { SpecSummary } from "@/types/generated/SpecSummary";
 
-export type Destination = "sequences" | "runs";
 
 function Step({ n, icon, title, children, action }: { n: number; icon: ReactNode; title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -34,12 +35,6 @@ function Step({ n, icon, title, children, action }: { n: number; icon: ReactNode
       </CardContent>
     </Card>
   );
-}
-
-/** What a recorded run ran, in words. */
-function describe(r: ReplayInfo): string {
-  const graphs = r.drafted ? "Spark-drafted plant reset" : "Hand-built sequences";
-  return r.pressure ? `${graphs}, chilled water and static pressure` : `${graphs}, chilled water`;
 }
 
 /** "−24.1 %" style, with the sign spelled out; "no data" when there is nothing to compare. */
@@ -82,7 +77,10 @@ function Results({ replays }: { replays: ReplayInfo[] }) {
               <TableRow key={r.name}>
                 <TableCell>
                   <span className="flex flex-wrap items-center gap-2">
-                    {describe(r)}
+                    {/* Opens the Runs page with this record pointed out; it never starts by itself. */}
+                    <a href={format({ page: "runs", replay: r.name })} className="underline-offset-4 hover:underline">
+                      {describe(replayFacts(r))}
+                    </a>
                     {r.drafted && (
                       <Badge variant="outline">
                         <Sparkles aria-hidden="true" /> Spark draft
@@ -107,7 +105,7 @@ function Results({ replays }: { replays: ReplayInfo[] }) {
 }
 
 /** The pipeline at a glance, with what this server has done at each step. */
-export function Overview({ health, onGo }: { health: Health | null; onGo: (to: Destination) => void }) {
+export function Overview({ health, onGo }: { health: Health | null; onGo: (to: Route) => void }) {
   const specs = useResource<SpecSummary[]>("/api/specs");
   const drafts = useResource<DraftInfo[]>("/api/drafts");
   const replays = useResource<ReplayInfo[]>("/api/replays");
@@ -126,10 +124,13 @@ export function Overview({ health, onGo }: { health: Health | null; onGo: (to: D
           BACnet.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={() => onGo("sequences")}>
+          <Button onClick={() => onGo({ page: "sequences" })}>
             Explore sequences <ArrowRight aria-hidden="true" />
           </Button>
-          <Button variant="outline" onClick={() => onGo("runs")}>
+          <Button variant="outline" onClick={() => onGo({ page: "workbench" })}>
+            <Upload aria-hidden="true" /> Bring your own sequence
+          </Button>
+          <Button variant="outline" onClick={() => onGo({ page: "runs" })}>
             Runs and replays
           </Button>
         </div>
@@ -142,7 +143,16 @@ export function Overview({ health, onGo }: { health: Health | null; onGo: (to: D
             {scenarios === null ? "" : `${scenarios} `}test scenarios from an independent reference model.
           </p>
         </Step>
-        <Step n={2} icon={<Sparkles className="size-4" />} title="Muse Spark drafts it">
+        <Step
+          n={2}
+          icon={<Sparkles className="size-4" />}
+          title="Muse Spark drafts it"
+          action={
+            <Button size="sm" variant="outline" className="self-start" onClick={() => onGo({ page: "sequences" })}>
+              Choose a sequence to draft <ArrowRight aria-hidden="true" />
+            </Button>
+          }
+        >
           <p>
             Structured output from {health?.live_model ?? "Muse Spark"}; refusals and failing scenarios go back for repair.{" "}
             {draftList.length > 0 && `${draftList.length} verified drafts stored (${live} live, ${draftList.length - live} recorded).`}

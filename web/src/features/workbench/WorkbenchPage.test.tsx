@@ -60,6 +60,9 @@ describe("WorkbenchPage", () => {
     );
     const opened = vi.fn();
     render(<WorkbenchPage onOpenSpec={opened} />);
+    // The journey bar marks the step in words, not only by colour.
+    expect(screen.getByRole("link", { name: "Read (next)" })).toBeTruthy();
+    expect(screen.getByText("Draft & verify")).toBeTruthy();
     const read = screen.getByRole("button", { name: /Read with Muse Spark/ });
     expect((read as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText("Sequence text"), { target: { value: "Run the fan above 27 °C." } });
@@ -68,6 +71,8 @@ describe("WorkbenchPage", () => {
     expect(await screen.findByText(/Read by muse-spark-1.3/)).toBeTruthy();
     expect(screen.getByText(/\(recorded\)/)).toBeTruthy();
     expect(screen.getByText("Is the comparison strict?")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Read (done)" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Accept (next)" })).toBeTruthy();
     expect(screen.getByRole("img", { name: "Timeline of scenario hot" })).toBeTruthy();
     expect(calls[0]?.body).toEqual({ text: "Run the fan above 27 °C.", attachments: [] });
 

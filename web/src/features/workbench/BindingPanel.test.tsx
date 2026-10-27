@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { format, parse } from "@/lib/route";
 import type { BindingView } from "@/types/generated/BindingView";
 
 import { BindingPanel } from "./BindingPanel";
@@ -56,5 +57,17 @@ describe("BindingPanel", () => {
       binding: { inputs: { kind: string; threshold: number }[] };
     };
     expect(sent.binding.inputs[0]).toMatchObject({ kind: "above", threshold: 0.5 });
+  });
+
+  it("once bound, links to the run form with a verified draft chosen", async () => {
+    const confirmed: BindingView = { ...proposal, problems: [], confirmed: true, proposed_by: undefined };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(confirmed), { status: 200 })));
+    const href = format({ page: "runs", draft: { spec: "sat", contentId: "cxf:fnv1a128:abc" } });
+    render(<BindingPanel spec="sat" onBound={() => {}} next={{ label: "Run a verified draft", href }} />);
+    expect(await screen.findByText("Bound to the building")).toBeTruthy();
+    const link = screen.getByRole("link", { name: /Run a verified draft/ });
+    expect(link.getAttribute("href")).toBe("#/runs?spec=sat&draft=cxf%3Afnv1a128%3Aabc");
+    // The link lands on the run form with that draft preset.
+    expect(parse(href)).toEqual({ page: "runs", draft: { spec: "sat", contentId: "cxf:fnv1a128:abc" } });
   });
 });
