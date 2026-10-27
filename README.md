@@ -18,7 +18,7 @@ Everything in this repository was written during the event, starting October 26,
 | Block-graph schema and CXF emitter | `crates/mm-graph` | Working offline: validator and emitter round-trip all 137 library rules |
 | Muse Spark authoring agent: prompt, Responses client, draft-verify-repair loop | `crates/mm-agent` | Working offline against scripted replies and live against Muse Spark (`docs/model-api.md` section 10) |
 | Library benchmark harness: scrubbed tasks, baselines, run records | `crates/mm-bench` | First results in `docs/benchmark-results.md` |
-| BOPTEST runtime host: supervisory loop, BOPTEST client, fail-safe | `crates/mm-runtime` | Runs the verified CHW plant reset against BOPTEST live; first 4-hour comparison with the baseline in `docs/runtime-results.md`; request wiring pending |
+| BOPTEST runtime host: supervisory loop, BOPTEST client, fail-safe | `crates/mm-runtime` | Runs the verified AHU requests and CHW plant reset against BOPTEST live; 10-hour comparison with the baseline in `docs/runtime-results.md` |
 | BACnet device mirror | `crates/` | Planned |
 | Web app | `web/` | Planned |
 | Design notes and API references | `docs/` | Started |
