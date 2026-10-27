@@ -4,6 +4,65 @@ Live runs of verified sequences against BOPTEST. Each entry states the setup, wh
 what it does not show. Run records (JSON) stay local in the gitignored `runs/`; the numbers
 below are copied from them.
 
+## 2026-10-27: plant reset with air handler requests, 10 hours
+
+Setup as above, with the request side wired: three instances of the verified
+`specs/ahu_chw_requests` sequence (one per floor's air handler) run before the plant reset each
+tick, and the reset reads the sum of their requests. Each instance reads its floor's supply air
+temperature, the supply air setpoint BOPTEST reports in effect (`floorN_TSupAirSet_u`), and the
+measured cooling valve position. Window: day 185 (Monday) 12:00 to 22:00 after a 1-day warm-up,
+300 steps of 120 s. Command: `MM_LIVE_STEPS=300 MM_LIVE_START=16027200 cargo test -p mm-runtime
+--test live_boptest -- --ignored`, and again with `MM_LIVE_BASELINE=1`.
+
+| Time | Requests (sum) | TSupSet (K) | Measured CHW supply (K) | dpSet (Pa) | Measured dp (Pa) | Valves (floors 1-3) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 12:00 | 0 | 278.71 | 278.73 | 239,125 | 239,206 | 0.40, 0.40, 0.48 |
+| 14:30 | 0 | 282.15 | 280.65 | 227,647 | 231,179 | 0.48, 0.48, 0.57 |
+| 16:30 | 0 | 282.15 | 282.02 | 95,650 | 100,982 | 0.69, 0.69, 0.78 |
+| 16:52 | 3 | 282.15 | 282.08 | 95,650 | 31,978 | 0.95, 0.95, 1.00 |
+| 16:56 | 3 | 282.15 | 282.09 | 98,520 | 36,154 | 0.99, 0.98, 1.00 |
+| 17:00 | 3 | 282.15 | 282.10 | 101,389 | 43,918 | 0.96, 0.95, 1.00 |
+| 17:06 | 1 | 282.15 | 282.11 | 95,650 | 65,593 | 0.84, 0.84, 0.94 |
+| 17:30 | 0 | 282.15 | 282.14 | 95,650 | 100,063 | 0.69, 0.69, 0.78 |
+| 21:00 | 0 | 278.71 | 282.15 | 239,125 | 95,470 | 0.68, 0.69, 0.77 |
+
+What it shows:
+
+- The whole chain ran live for 300 steps with no fail-safe event: three request sequences and
+  the reset, all loaded only from CXF with a passing replay receipt.
+- The reset responded to requests. It trimmed through the afternoon (supply water at its warm
+  limit by 14:30, pressure at its floor by 16:30). At about 16:50 the measured loop pressure fell
+  well below its setpoint (to about 32 kPa; the cause inside BOPTEST was not investigated) and
+  the cooling valves opened past 95 %. Each air handler's latch set, giving 3 requests; with 2
+  ignored, the reset gained 1 % per update and the pressure setpoint rose in two steps. When the
+  valves eased under 85 % the latches cleared and the reset trimmed back to its floor, where the
+  plant then held, valves near 70 % and supply air on setpoint.
+- At 21:00 occupancy ended, the plant enable dropped, and both setpoints returned to design at
+  once, as the spec says.
+- From 12:00 to 16:00 the requests stayed at 0 (supply air within 0.6 K of setpoint, valves
+  under 72 %), so that part matches a run with the request count fixed at 0.
+
+Against the baseline over the same 10 hours (the two runs agree to within 0.3 kW of chiller
+power, out of about 520 kW, until the reset's first trim at 12:20):
+
+| Over the 10 h window | Baseline | Plant reset with requests | Change |
+| --- | --- | --- | --- |
+| BOPTEST `ener_tot` (kWh/m², whole building) | 0.3255 | 0.3101 | −4.7% |
+| BOPTEST `cost_tot` | 0.0227 | 0.0213 | −6.2% |
+| BOPTEST `emis_tot` | 0.0930 | 0.0879 | −5.6% |
+| BOPTEST `tdis_tot` (thermal discomfort, K·h/zone) | 0.1534 | 0.1564 | +2.0% |
+| BOPTEST `idis_tot` (CO2 discomfort) | 1463.0 | 1463.0 | no change |
+| Chiller energy (kWh, from 120 s power samples) | 4,710 | 4,042 | −14.2% |
+| CHW pump energy (kWh, same method) | 2,300 | 2,352 | +2.2% |
+
+What it does not show:
+
+- One summer afternoon and evening. Thermal discomfort rose 2 % (about 0.003 K·h per zone over
+  10 hours), a small cost that a longer comparison should track.
+- The pressure half again saved no pump energy: warmer supply water needs more flow, and pump
+  energy rose slightly. The saving is at the chillers.
+- The large CO2 discomfort total comes from the case itself; it is the same in both runs.
+
 ## 2026-10-26: chilled-water plant reset, first live run
 
 Setup: BOPTEST v0.9.0 (`compose.yaml`, local Docker on Apple silicon, x86 worker emulated),
@@ -64,7 +123,7 @@ What it does not show:
   this window, but a hotter afternoon could need the response half. That needs the AHU request
   sequence wired as an upstream sequence, then the comparison repeated.
 
-Speed: initialize took 939 to 1,239 s with a 1-day warm-up (over BOPTEST's default 20 min
+Speed: initialize took 939 to 1,555 s with a 1-day warm-up (over BOPTEST's default 20 min
 worker-reply timeout, hence the compose override). Steps on this summer morning took
 0.84 s each (101 s for 120 steps), against 9.4 s each in a January spike: step cost depends
 strongly on the period simulated, so time a demo window before relying on it.
