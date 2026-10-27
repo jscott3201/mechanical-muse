@@ -1,0 +1,64 @@
+{
+  "spec": "ahu1_sat_rev_b",
+  "binding": {
+    "floors": [
+      1,
+      2,
+      3
+    ],
+    "inputs": [
+      {
+        "input": "ahuEnable",
+        "kind": "above",
+        "point": "floor{floor}_reaAHU_occ_y",
+        "threshold": 0.5,
+        "value": 0
+      },
+      {
+        "input": "outdoorAirTemp",
+        "kind": "measurement",
+        "point": "weaSta_reaWeaTDryBul_y",
+        "threshold": 0.0,
+        "value": 0
+      },
+      {
+        "input": "returnAirRh",
+        "kind": "measurement",
+        "point": "floor{floor}_reaAHU_phiAHURet_y",
+        "threshold": 0.0,
+        "value": 0
+      }
+    ],
+    "outputs": [
+      {
+        "output": "dischargeAirTempSetpoint",
+        "point": "floor{floor}_TSupAirSet",
+        "measured": "floor{floor}_reaAHU_TSup_y",
+        "min": 285.9,
+        "max": 291.5
+      },
+      {
+        "output": "dehumActive",
+        "point": "",
+        "measured": "",
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "notes": [
+      "AHU enable has no dedicated building point so occupancy status is used as a stand-in with threshold 0.5.",
+      "Dehumidification active output is for operator graphics display only and is not written to the building."
+    ],
+    "units": {
+      "floor{floor}_TSupAirSet_u": "K",
+      "floor{floor}_reaAHU_TSup_y": "K",
+      "floor{floor}_reaAHU_occ_y": "1",
+      "floor{floor}_reaAHU_phiAHURet_y": "1",
+      "weaSta_reaWeaTDryBul_y": "K"
+    }
+  },
+  "problems": [],
+  "proposed_by": "live",
+  "confirmed": false,
+  "task": "task:7b57f804aba3bc06"
+}

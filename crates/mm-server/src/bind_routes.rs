@@ -48,13 +48,26 @@ pub fn routes() -> Router<AppState> {
 }
 
 fn task_digest(task: &mm_agent::TaskSpec) -> String {
-    let text = serde_json::to_string(task).unwrap_or_default();
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for byte in text.bytes() {
-        hash ^= u64::from(byte);
-        hash = hash.wrapping_mul(0x0100_0000_01b3);
+    crate::specs::task_key(task)
+}
+
+/// A recorded proposal for this task: the file named after the spec, or any whose task matches.
+fn recorded(dir: &std::path::Path, name: &str, digest: &str) -> Option<BindingView> {
+    if let Some(v) = saved(dir, name).filter(|v| v.task == digest) {
+        return Some(v);
     }
-    format!("task:{hash:016x}")
+    let mut paths: Vec<_> = std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .map(|e| e.path())
+        .collect();
+    paths.sort();
+    paths.into_iter().find_map(|p| {
+        let text = std::fs::read_to_string(p).ok()?;
+        serde_json::from_str::<BindingView>(&text)
+            .ok()
+            .filter(|v| v.task == digest)
+    })
 }
 
 /// Only engineers' sequences are bound here; ours have hand-written wiring.
@@ -94,8 +107,7 @@ async fn propose(
             let recorded = config
                 .bindings
                 .as_deref()
-                .and_then(|d| saved(d, &name))
-                .filter(|v| v.task == digest)
+                .and_then(|d| recorded(d, &name, &digest))
                 .ok_or_else(|| {
                     Failure::new(
                         StatusCode::SERVICE_UNAVAILABLE,

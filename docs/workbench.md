@@ -95,7 +95,34 @@ humidity thresholds keep its reset from ever acting in this building. A reviewer
 know that before deploying it. The day 185 and day 143 runs are replays in `fixtures/replays/`
 (labelled "with your sequence").
 
-These runs used Spark's first binding. Its lower limit of 285.93 K sat 0.002 K above 55 °F, so
+### Revision B: the engineer adjusts the sheet (2026-10-27)
+`fixtures/sequences/ahu-sat-reset-sample-v2.md` raises the dehumidification thresholds to suit
+this building: on above 70 %, off below 65 %. Everything else is unchanged. It went through the
+whole product again, live:
+- **Read** from the PNG in 47 s, with no check problems; the reference grader agrees at 108 of
+  108 checked instants (`--rev b`).
+- **Accepted** under a new name.
+- **Drafted.** Attempt 1 passed 4 of 6 scenarios: it sent 65 °F inside the 10-minute start-up
+  hold. Attempt 2, after the failing scenarios went back to Spark, passed all 6.
+- **Bound** by a clean proposal.
+- **Run** over the same day 143 window as revision A (06:00, 8 h). Revision B, our sequences
+  alone, and a baseline over the window are all replays in `fixtures/replays/day143-morning-*`.
+
+| Day 143, 06:00, 8 h, against baseline | Energy | Cost | Emissions | Thermal discomfort |
+| --- | --- | --- | --- | --- |
+| Our sequences alone | −3.3 % | −5.3 % | −4.3 % | +0.5 % |
+| + revision A | −0.7 % | −3.4 % | −2.1 % | +6.7 % |
+| + revision B | **−37.3 %** | **−27.9 %** | **−32.5 %** | **−10.7 %** |
+
+With revision B the setpoint followed the outdoor-air reset from 12.8 to 18.3 °C (55 to 65 °F).
+The override came on only once, for 5 steps on floor 3 around 08:40, when that floor's return
+air reached 70 %; it released below 65 %, as the sheet says. There was no fail-safe event and no clamp. This is one mild
+8-hour window on one day, not a rate; BOPTEST computes the KPIs.
+
+Offline, revision B plays back under the name Spark gives it: recorded sessions and bindings
+are found by a digest of the task's content (`task_key`), not only by name.
+
+These revision A runs used Spark's first binding. Its lower limit of 285.93 K sat 0.002 K above 55 °F, so
 the replays log a `clamped` event on every write. The binding prompt now asks for limits that
 include every value the sequence sends. Three new live proposals all chose 285.9–291.5 K, and
 the recorded binding in `fixtures/bindings/` is one of them; the offline test requires zero

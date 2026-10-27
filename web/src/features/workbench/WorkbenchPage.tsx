@@ -28,7 +28,10 @@ import type { WorkbenchAttachment } from "@/types/generated/WorkbenchAttachment"
 import { ErrorNote } from "../ErrorNote";
 import { ScenarioTimeline } from "./ScenarioTimeline";
 
-const SAMPLE = { url: "/samples/ahu-sat-reset-sample.png", name: "ahu-sat-reset-sample.png" };
+const SAMPLES = [
+  { url: "/samples/ahu-sat-reset-sample.png", name: "ahu-sat-reset-sample.png", label: "Use the sample sequence sheet" },
+  { url: "/samples/ahu-sat-reset-sample-v2.png", name: "ahu-sat-reset-sample-v2.png", label: "Revision B of the sample" },
+] as const;
 
 function Elapsed({ since }: { since: number }) {
   const [now, setNow] = useState(() => Date.now());
@@ -59,11 +62,11 @@ function SourceStep({ onRead }: { onRead: (text: string, files: WorkbenchAttachm
     }
     setFiles((old) => [...old, ...next].slice(0, 4));
   };
-  const useSample = async () => {
-    const blob = await (await fetch(SAMPLE.url)).blob();
-    setFiles([await fileToAttachment(blob, SAMPLE.name)]);
+  const useSample = async (sample: (typeof SAMPLES)[number]) => {
+    const blob = await (await fetch(sample.url)).blob();
+    setFiles([await fileToAttachment(blob, sample.name)]);
     setText("");
-    setPreview(SAMPLE.url);
+    setPreview(sample.url);
   };
 
   return (
@@ -135,13 +138,16 @@ function SourceStep({ onRead }: { onRead: (text: string, files: WorkbenchAttachm
           <Button onClick={() => onRead(text, files)} disabled={!text.trim() && files.length === 0}>
             <Sparkles aria-hidden="true" /> Read with Muse Spark
           </Button>
-          <Button variant="outline" onClick={() => void useSample()}>
-            Use the sample sequence sheet
-          </Button>
+          {SAMPLES.map((sample) => (
+            <Button key={sample.url} variant="outline" onClick={() => void useSample(sample)}>
+              {sample.label}
+            </Button>
+          ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          The sample is a one-page sheet we wrote for this demo (an AHU supply air temperature reset, in °F). Without a
-          model key, the server answers with its recorded reading of the sample, labelled recorded.
+          The sample is a one-page sheet we wrote for this demo (an AHU supply air temperature reset, in °F); revision B
+          raises its humidity thresholds to suit this building. Without a model key, the server answers with its recorded
+          reading of either, labelled recorded.
         </p>
       </CardContent>
     </Card>
@@ -246,9 +252,15 @@ function ReviewStep({
                   Read by {view.model}
                   {view.source === "recorded" ? " (recorded)" : ""}
                 </Badge>
-                <Badge variant="secondary" className="font-mono">
-                  {draft.name}
-                </Badge>
+              </div>
+              <div className="mt-3 flex max-w-sm flex-col gap-1">
+                <Label htmlFor="wb-name">Sequence name (letters, digits and underscores)</Label>
+                <Input
+                  id="wb-name"
+                  value={draft.name}
+                  onChange={(e) => setDraft({ ...draft, name: e.target.value.trim() })}
+                  className="font-mono"
+                />
               </div>
             </div>
             <Button variant="ghost" onClick={onRestart}>

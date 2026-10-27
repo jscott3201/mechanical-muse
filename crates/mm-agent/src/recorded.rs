@@ -34,6 +34,10 @@ pub struct Recording {
     /// Where and when it was recorded, in a few words.
     #[serde(default)]
     pub note: String,
+    /// Digest of the task the replies answered, without its name (`task:<hex>`), so the same
+    /// task accepted under another name finds this recording.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_digest: Option<String>,
     pub replies: Vec<RecordedReply>,
 }
 
@@ -59,6 +63,7 @@ impl Recording {
             model: trace.config.model.clone(),
             task: trace.task.clone(),
             note: String::new(),
+            task_digest: None,
             replies,
         }
     }

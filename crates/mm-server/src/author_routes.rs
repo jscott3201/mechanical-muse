@@ -46,16 +46,16 @@ async fn start(
 ) -> Result<(StatusCode, Json<AuthorInfo>), Failure> {
     let Json(request) =
         request.map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.body_text()))?;
-    if state.spec(&name).is_none() {
+    let Some(spec) = state.spec(&name) else {
         return Err(Failure::new(
             StatusCode::NOT_FOUND,
             "unknown-spec",
             "no spec with that name",
         ));
-    }
+    };
     let session = state
         .authoring()
-        .create(&name, &request)
+        .create(&name, Some(&spec.task), &request)
         .map_err(|e| match e {
             StartError::Active(_) => {
                 Failure::new(StatusCode::CONFLICT, "author-active", e.to_string())

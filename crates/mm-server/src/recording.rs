@@ -7,12 +7,18 @@ use mm_agent::{AuthoringTrace, Recording};
 /// Writes `<records>/recordings/<session>.json`: the model's replies in order (graph JSON, or
 /// the error a call ended with). No request, key or reasoning is kept. To use one as the
 /// recorded fallback, copy it to `fixtures/recordings/<spec>.json`.
-pub(crate) fn save(records: Option<&Path>, session: &str, trace: &AuthoringTrace) {
+pub(crate) fn save(
+    records: Option<&Path>,
+    session: &str,
+    trace: &AuthoringTrace,
+    task: &mm_agent::TaskSpec,
+) {
     let Some(dir) = records.map(|d| d.join("recordings")) else {
         return;
     };
     let mut recording = Recording::from_trace(trace);
-    recording.note = format!("mm-server live session {session}");
+    recording.note = "mm-server live session".into();
+    recording.task_digest = Some(crate::specs::task_key(task));
     let written = std::fs::create_dir_all(&dir).and_then(|()| {
         let text = serde_json::to_string_pretty(&recording).map_err(std::io::Error::other)?;
         std::fs::write(dir.join(format!("{session}.json")), text)
@@ -63,12 +69,16 @@ mod tests {
         assert!(verified.is_some(), "the committed recording verifies");
 
         let dir = std::env::temp_dir().join(format!("mm-recording-{}", std::process::id()));
-        save(Some(&dir), "author-1", &trace);
+        save(Some(&dir), "author-1", &trace, &spec.task);
         let saved: Recording =
             serde_json::from_slice(&std::fs::read(dir.join("recordings/author-1.json")).unwrap())
                 .unwrap();
         assert_eq!(saved.replies, original.replies);
-        assert_eq!(saved.note, "mm-server live session author-1");
+        assert_eq!(
+            saved.note, "mm-server live session",
+            "no session id in a recording"
+        );
+        assert_eq!(saved.task_digest, Some(crate::specs::task_key(&spec.task)));
         // Played back, the saved recording verifies the same draft.
         let again = run(saved).await;
         assert_eq!(again.verified.map(|v| v.content_id), verified);

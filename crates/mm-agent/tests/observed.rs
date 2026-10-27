@@ -55,6 +55,7 @@ fn config(attempts: u32) -> AuthorConfig {
 
 fn recording(replies: Vec<RecordedReply>) -> Recording {
     Recording {
+        task_digest: None,
         model: "muse-spark-1.3".into(),
         task: "AHU-0005".into(),
         note: String::new(),

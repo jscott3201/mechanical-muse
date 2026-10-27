@@ -1,0 +1,479 @@
+{
+  "key": "read:1a23e63fdf5677b8",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "draft": {
+    "name": "ahu1_supply_air_temp_setpoint",
+    "title": "AHU-1 Supply Air Temperature Setpoint",
+    "description": "The building automation system computes the discharge air temperature setpoint once per minute. When AHU enable is off the setpoint is 285.93 K (55 F). On every rising edge of enable a 600 s startup hold starts and forces 285.93 K. After the hold expires while still enabled the setpoint follows outdoor air temperature: 291.48 K (65 F) when outdoor is at or below 288.71 K (60 F), 285.93 K when outdoor is at or above 294.26 K (70 F), linear between and clamped outside, so the operating range is 285.93 K to 291.48 K. A dehumidification override latches on when return air relative humidity has stayed above 0.70 continuously for 300 s, forces 285.93 K regardless of outdoor temperature, and sets dehumidification active true. It unlatches without delay when humidity falls below 0.65, returning to outdoor reset and clearing the flag. The document defines no sensor failure, stale data, or power-up initialization beyond off and startup hold.",
+    "inputs": [
+      {
+        "name": "ahuEnable",
+        "type": "bool",
+        "unit": "1",
+        "meaning": "AHU run enable, true is on"
+      },
+      {
+        "name": "outdoorAirTemp",
+        "type": "real",
+        "unit": "K",
+        "meaning": "outdoor air temperature"
+      },
+      {
+        "name": "returnAirRh",
+        "type": "real",
+        "unit": "1",
+        "meaning": "return air relative humidity as fraction 0 to 1"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "dischargeAirTempSetpoint",
+        "type": "real",
+        "unit": "K",
+        "meaning": "discharge air temperature setpoint commanded to cooling coil loop"
+      },
+      {
+        "name": "dehumActive",
+        "type": "bool",
+        "unit": "1",
+        "meaning": "dehumidification override active for operator graphics"
+      }
+    ],
+    "params": [
+      {
+        "name": "lowSetpoint",
+        "value": 285.9277777777778,
+        "unit": "K",
+        "meaning": "setpoint when off, during startup hold, at warm outdoor, and when dehumidification is active, 55 F"
+      },
+      {
+        "name": "highSetpoint",
+        "value": 291.4833333333333,
+        "unit": "K",
+        "meaning": "setpoint at cold outdoor at or below 60 F, 65 F"
+      },
+      {
+        "name": "oatWarmThreshold",
+        "value": 294.26111111111106,
+        "unit": "K",
+        "meaning": "outdoor threshold at or above which low setpoint is used, 70 F"
+      },
+      {
+        "name": "oatColdThreshold",
+        "value": 288.7055555555555,
+        "unit": "K",
+        "meaning": "outdoor threshold at or below which high setpoint is used, 60 F"
+      },
+      {
+        "name": "startupHoldDuration",
+        "value": 600.0,
+        "unit": "s",
+        "meaning": "startup hold duration after every AHU start"
+      },
+      {
+        "name": "dehumEnterThreshold",
+        "value": 0.7,
+        "unit": "1",
+        "meaning": "humidity level that starts dehumidification entry timing, 70 percent"
+      },
+      {
+        "name": "dehumEnterDelay",
+        "value": 300.0,
+        "unit": "s",
+        "meaning": "continuous time above entry threshold before dehumidification latches"
+      },
+      {
+        "name": "dehumExitThreshold",
+        "value": 0.65,
+        "unit": "1",
+        "meaning": "humidity level below which dehumidification unlatches, 65 percent"
+      }
+    ],
+    "step_s": 60.0,
+    "horizon_s": 1800.0,
+    "scenarios": [
+      {
+        "name": "normalResetMidOat",
+        "description": "Run continuously enabled past startup with 65 F outdoor and 60 percent humidity. Setpoint should be interpolated 60 F and dehumidification off.",
+        "rationale": "Pins down steady outdoor reset interpolation at mid outdoor after startup.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "outdoorAirTemp",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 291.4833333333333
+              }
+            ]
+          },
+          {
+            "point": "returnAirRh",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.6
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 720.0,
+            "to_s": 1200.0,
+            "equals": 288.7055555555555,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 720.0,
+            "to_s": 1200.0,
+            "equals": false
+          }
+        ]
+      },
+      {
+        "name": "startupHoldThenColdReset",
+        "description": "Start disabled then enable at 120 s with cold 50 F outdoor. Hold at 55 F through 720 s then release to 65 F.",
+        "rationale": "Pins down 600 s startup hold delay and cold outdoor clamp before and after expiry.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": false
+              },
+              {
+                "t": 120.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "outdoorAirTemp",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 283.15
+              }
+            ]
+          },
+          {
+            "point": "returnAirRh",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.6
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 240.0,
+            "to_s": 660.0,
+            "equals": 285.9277777777778,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 780.0,
+            "to_s": 1200.0,
+            "equals": 291.4833333333333,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 780.0,
+            "to_s": 1200.0,
+            "equals": false
+          }
+        ]
+      },
+      {
+        "name": "warmOatLowLimit",
+        "description": "Run continuously enabled past startup with hot 75 F outdoor. Reset clamps to low 55 F setpoint.",
+        "rationale": "Pins down warm outdoor clamp to low setpoint.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "outdoorAirTemp",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 297.0388888888889
+              }
+            ]
+          },
+          {
+            "point": "returnAirRh",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.6
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 720.0,
+            "to_s": 1200.0,
+            "equals": 285.9277777777778,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 720.0,
+            "to_s": 1200.0,
+            "equals": false
+          }
+        ]
+      },
+      {
+        "name": "dehumEntryDelay",
+        "description": "Cold outdoor gives 65 F normally, humidity rises above 70 percent at 720 s. Before 300 s elapses override is off, after it forces 55 F.",
+        "rationale": "Pins down 5 minute dehumidification entry delay by checking just before and just after.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "outdoorAirTemp",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 283.15
+              }
+            ]
+          },
+          {
+            "point": "returnAirRh",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.6
+              },
+              {
+                "t": 720.0,
+                "value": 0.72
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 780.0,
+            "to_s": 960.0,
+            "equals": 291.4833333333333,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 780.0,
+            "to_s": 960.0,
+            "equals": false
+          },
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 1080.0,
+            "to_s": 1320.0,
+            "equals": 285.9277777777778,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 1080.0,
+            "to_s": 1320.0,
+            "equals": true
+          }
+        ]
+      },
+      {
+        "name": "dehumExitRecovery",
+        "description": "Latch dehumidification with sustained high humidity then drop below 65 percent at 1200 s to recover to outdoor reset.",
+        "rationale": "Pins down dehumidification latch and immediate exit when humidity falls below 0.65.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "outdoorAirTemp",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 283.15
+              }
+            ]
+          },
+          {
+            "point": "returnAirRh",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.6
+              },
+              {
+                "t": 660.0,
+                "value": 0.75
+              },
+              {
+                "t": 1200.0,
+                "value": 0.6
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 1020.0,
+            "to_s": 1140.0,
+            "equals": 285.9277777777778,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 1020.0,
+            "to_s": 1140.0,
+            "equals": true
+          },
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 1260.0,
+            "to_s": 1500.0,
+            "equals": 291.4833333333333,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 1260.0,
+            "to_s": 1500.0,
+            "equals": false
+          }
+        ]
+      },
+      {
+        "name": "offAndRestartHold",
+        "description": "Run with mid outdoor, stop at 840 s and restart at 1080 s. Off forces 55 F and each start restarts the 600 s hold.",
+        "rationale": "Pins down off setpoint and restart of 10 minute hold on every start.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": true
+              },
+              {
+                "t": 840.0,
+                "value": false
+              },
+              {
+                "t": 1080.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "outdoorAirTemp",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 291.4833333333333
+              }
+            ]
+          },
+          {
+            "point": "returnAirRh",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.6
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 660.0,
+            "to_s": 780.0,
+            "equals": 288.7055555555555,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 900.0,
+            "to_s": 1020.0,
+            "equals": 285.9277777777778,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 1140.0,
+            "to_s": 1320.0,
+            "equals": 285.9277777777778,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dischargeAirTempSetpoint",
+            "from_s": 1740.0,
+            "to_s": 1800.0,
+            "equals": 288.7055555555555,
+            "tolerance": 0.01
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 1740.0,
+            "to_s": 1800.0,
+            "equals": false
+          }
+        ]
+      }
+    ],
+    "open_questions": [
+      "Does starting the test with ahuEnable true at t equals 0 count as a start that triggers the 600 s hold, and what are the initial timer and dehumidification latch values before the first one minute update?",
+      "Does the 300 s above 0.70 timer run while the AHU is off or during the 600 s startup hold, or only after the hold while enabled, and does it reset on AHU stop or on any sample at or below 0.70?",
+      "Are the outdoor comparisons inclusive at exactly 288.71 K and 294.26 K and the humidity comparisons inclusive at exactly 0.70 and 0.65, and must humidity stay continuously above 0.70 for the full 300 s?",
+      "Does dehumActive simply mirror the dehumidification latch even when the AHU is off or in startup hold, or is it forced false when the AHU is off?",
+      "What shall the logic do on invalid, stale, or out of range outdoor temperature or return humidity since the document defines no failsafe?",
+      "Does once per minute execution mean the 600 s and 300 s delays are counted as whole samples and outputs only change on minute boundaries?"
+    ]
+  },
+  "problems": []
+}

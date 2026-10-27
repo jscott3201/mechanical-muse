@@ -7,9 +7,13 @@ scenario on its clock and compares every checked instant. Where the sheet is sil
 each reading separately (strict or inclusive 60 % threshold; whether the dehumidification flag
 can be on while the AHU is off) and reports agreement for each one on its own.
 
-usage: python3 fixtures/sequences/ahu-sat-reset-reference.py <reading.json>
+usage: python3 fixtures/sequences/ahu-sat-reset-reference.py <reading.json> [--rev b]
+(--rev b for ahu-sat-reset-sample-v2.md: dehumidification on above 70 %, off below 65 %)
 """
 import json, sys
+
+REV_B = "--rev" in sys.argv and sys.argv[-1].lower() == "b"
+RH_ON, RH_OFF = (70, 65) if REV_B else (60, 55)
 
 F = lambda f: (f - 32) * 5 / 9 + 273.15
 T55, T65, OA_HI, OA_LO = F(55), F(65), F(70), F(60)
@@ -45,14 +49,14 @@ def simulate(inputs, names, clock, strict_rh=True, dehum_when_off=False, rh_scal
         if on and not prev_on:
             on_since = t
         prev_on = on
-        high = rh > 60 if strict_rh else rh >= 60
+        high = rh > RH_ON if strict_rh else rh >= RH_ON
         if high:
             high_since = t if high_since is None else high_since
         else:
             high_since = None
         if not dehum and high_since is not None and t - high_since >= 300:
             dehum = True
-        if dehum and rh < 55:
+        if dehum and rh < RH_OFF:
             dehum = False
         active = dehum and (on or dehum_when_off)
         if not on:
@@ -100,8 +104,8 @@ def main():
     rh_unit = rh.get("unit", "")
     scale = 100.0 if rh_unit in ("1", "fraction") else 1.0
     variants = {
-        "strict >60, dehum off when AHU off": dict(strict_rh=True, dehum_when_off=False),
-        ">=60": dict(strict_rh=False, dehum_when_off=False),
+        "strict threshold, dehum off when AHU off": dict(strict_rh=True, dehum_when_off=False),
+        "inclusive threshold": dict(strict_rh=False, dehum_when_off=False),
         "dehum flag also while off": dict(strict_rh=True, dehum_when_off=True),
     }
     for vname, kw in variants.items():
