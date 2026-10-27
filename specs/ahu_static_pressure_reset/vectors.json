@@ -1,0 +1,809 @@
+{
+ "schema": "mechanical-muse/vectors/v1",
+ "clock": {
+  "step_s": 60.0,
+  "horizon_s": 5400
+ },
+ "scenarios": [
+  {
+   "name": "trim_from_fan_on",
+   "description": "Fan on from the start, no requests. The setpoint holds at 400 Pa for the start delay plus one update period (720 s), then trims 12 Pa every 120 s down to its 50 Pa floor.",
+   "inputs": {
+    "nReqPre": 0,
+    "u1FanOn": true
+   },
+   "expect": [
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 400.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 720.0,
+     "to_s": 780.0,
+     "equals": 388.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 840.0,
+     "to_s": 900.0,
+     "equals": 376.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 960.0,
+     "to_s": 1020.0,
+     "equals": 364.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1080.0,
+     "to_s": 1140.0,
+     "equals": 352.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1200.0,
+     "to_s": 1260.0,
+     "equals": 340.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1320.0,
+     "to_s": 1380.0,
+     "equals": 328.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1440.0,
+     "to_s": 1500.0,
+     "equals": 316.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1560.0,
+     "to_s": 1620.0,
+     "equals": 304.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1680.0,
+     "to_s": 1740.0,
+     "equals": 292.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1800.0,
+     "to_s": 1860.0,
+     "equals": 280.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1920.0,
+     "to_s": 1980.0,
+     "equals": 268.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2040.0,
+     "to_s": 2100.0,
+     "equals": 256.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2160.0,
+     "to_s": 2220.0,
+     "equals": 244.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2280.0,
+     "to_s": 2340.0,
+     "equals": 232.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2400.0,
+     "to_s": 2460.0,
+     "equals": 220.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2520.0,
+     "to_s": 2580.0,
+     "equals": 208.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2640.0,
+     "to_s": 2700.0,
+     "equals": 196.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2760.0,
+     "to_s": 2820.0,
+     "equals": 184.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2880.0,
+     "to_s": 2940.0,
+     "equals": 172.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3000.0,
+     "to_s": 3060.0,
+     "equals": 160.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3120.0,
+     "to_s": 3180.0,
+     "equals": 148.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3240.0,
+     "to_s": 3300.0,
+     "equals": 136.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3360.0,
+     "to_s": 3420.0,
+     "equals": 124.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3480.0,
+     "to_s": 3540.0,
+     "equals": 112.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3600.0,
+     "to_s": 3660.0,
+     "equals": 100.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3720.0,
+     "to_s": 3780.0,
+     "equals": 88.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3840.0,
+     "to_s": 3900.0,
+     "equals": 76.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3960.0,
+     "to_s": 4020.0,
+     "equals": 64.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 4080.0,
+     "to_s": 4140.0,
+     "equals": 52.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 4200.0,
+     "to_s": 5400.0,
+     "equals": 50.0,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "ignore_respond_cap",
+   "description": "After trimming to 316 Pa, requests step 2, 3, 4, 5, 10 on update instants. Up to 2 requests are ignored; above that each extra request adds 15 Pa before the 12 Pa trim, capped at 32 Pa, and the setpoint never rises above 400 Pa.",
+   "inputs": {
+    "nReqPre": [
+     {
+      "t": 0.0,
+      "value": 0
+     },
+     {
+      "t": 1560.0,
+      "value": 2
+     },
+     {
+      "t": 1800.0,
+      "value": 3
+     },
+     {
+      "t": 2040.0,
+      "value": 4
+     },
+     {
+      "t": 2280.0,
+      "value": 5
+     },
+     {
+      "t": 2520.0,
+      "value": 10
+     }
+    ],
+    "u1FanOn": true
+   },
+   "expect": [
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 400.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 720.0,
+     "to_s": 780.0,
+     "equals": 388.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 840.0,
+     "to_s": 900.0,
+     "equals": 376.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 960.0,
+     "to_s": 1020.0,
+     "equals": 364.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1080.0,
+     "to_s": 1140.0,
+     "equals": 352.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1200.0,
+     "to_s": 1260.0,
+     "equals": 340.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1320.0,
+     "to_s": 1380.0,
+     "equals": 328.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1440.0,
+     "to_s": 1500.0,
+     "equals": 316.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1560.0,
+     "to_s": 1620.0,
+     "equals": 304.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1680.0,
+     "to_s": 1740.0,
+     "equals": 292.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1800.0,
+     "to_s": 1860.0,
+     "equals": 295.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1920.0,
+     "to_s": 1980.0,
+     "equals": 298.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2040.0,
+     "to_s": 2100.0,
+     "equals": 316.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2160.0,
+     "to_s": 2220.0,
+     "equals": 334.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2280.0,
+     "to_s": 2340.0,
+     "equals": 354.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2400.0,
+     "to_s": 2460.0,
+     "equals": 374.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2520.0,
+     "to_s": 2580.0,
+     "equals": 394.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2640.0,
+     "to_s": 3000.0,
+     "equals": 400.0,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "ceiling_clamp",
+   "description": "Three requests from the start: the net change is +3 Pa, but the setpoint cannot rise above 400 Pa.",
+   "inputs": {
+    "nReqPre": 3,
+    "u1FanOn": true
+   },
+   "expect": [
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 3000.0,
+     "equals": 400.0,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "saturate_then_release",
+   "description": "Five requests until 3000 s hold the setpoint at its 400 Pa ceiling; when they stop, trimming starts from 400 Pa at the next update, not from some value above it.",
+   "inputs": {
+    "nReqPre": [
+     {
+      "t": 0.0,
+      "value": 5
+     },
+     {
+      "t": 3000.0,
+      "value": 0
+     }
+    ],
+    "u1FanOn": true
+   },
+   "expect": [
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 2940.0,
+     "equals": 400.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3000.0,
+     "to_s": 3060.0,
+     "equals": 388.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3120.0,
+     "to_s": 3180.0,
+     "equals": 376.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3240.0,
+     "to_s": 3300.0,
+     "equals": 364.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3360.0,
+     "to_s": 3420.0,
+     "equals": 352.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3480.0,
+     "to_s": 3540.0,
+     "equals": 340.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3600.0,
+     "to_s": 3600.0,
+     "equals": 328.0,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "off_grid_requests",
+   "description": "Requests that change between update instants are counted at the next update: four requests from 1500 s count at 1560 s and stop counting at 2040 s after they end at 1950 s; a pulse of six requests from 2100 s to 2160 s ends before an update reads it and is never counted.",
+   "inputs": {
+    "nReqPre": [
+     {
+      "t": 0.0,
+      "value": 0
+     },
+     {
+      "t": 1500.0,
+      "value": 4
+     },
+     {
+      "t": 1980.0,
+      "value": 0
+     },
+     {
+      "t": 2100.0,
+      "value": 6
+     },
+     {
+      "t": 2160.0,
+      "value": 0
+     }
+    ],
+    "u1FanOn": true
+   },
+   "expect": [
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 400.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 720.0,
+     "to_s": 780.0,
+     "equals": 388.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 840.0,
+     "to_s": 900.0,
+     "equals": 376.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 960.0,
+     "to_s": 1020.0,
+     "equals": 364.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1080.0,
+     "to_s": 1140.0,
+     "equals": 352.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1200.0,
+     "to_s": 1260.0,
+     "equals": 340.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1320.0,
+     "to_s": 1380.0,
+     "equals": 328.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1440.0,
+     "to_s": 1500.0,
+     "equals": 316.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1560.0,
+     "to_s": 1620.0,
+     "equals": 334.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1680.0,
+     "to_s": 1740.0,
+     "equals": 352.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1800.0,
+     "to_s": 1860.0,
+     "equals": 370.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1920.0,
+     "to_s": 1980.0,
+     "equals": 388.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2040.0,
+     "to_s": 2100.0,
+     "equals": 376.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2160.0,
+     "to_s": 2220.0,
+     "equals": 364.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2280.0,
+     "to_s": 2340.0,
+     "equals": 352.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2400.0,
+     "to_s": 2400.0,
+     "equals": 340.0,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "fan_off_and_on",
+   "description": "The fan stops from 3000 s to 3600 s: the setpoint returns to 400 Pa at once, and the start delay begins again when the fan restarts.",
+   "inputs": {
+    "nReqPre": 0,
+    "u1FanOn": [
+     {
+      "t": 0.0,
+      "value": true
+     },
+     {
+      "t": 3000.0,
+      "value": false
+     },
+     {
+      "t": 3600.0,
+      "value": true
+     }
+    ]
+   },
+   "expect": [
+    {
+     "output": "dpSet",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 400.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 720.0,
+     "to_s": 780.0,
+     "equals": 388.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 840.0,
+     "to_s": 900.0,
+     "equals": 376.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 960.0,
+     "to_s": 1020.0,
+     "equals": 364.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1080.0,
+     "to_s": 1140.0,
+     "equals": 352.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1200.0,
+     "to_s": 1260.0,
+     "equals": 340.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1320.0,
+     "to_s": 1380.0,
+     "equals": 328.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1440.0,
+     "to_s": 1500.0,
+     "equals": 316.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1560.0,
+     "to_s": 1620.0,
+     "equals": 304.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1680.0,
+     "to_s": 1740.0,
+     "equals": 292.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1800.0,
+     "to_s": 1860.0,
+     "equals": 280.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 1920.0,
+     "to_s": 1980.0,
+     "equals": 268.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2040.0,
+     "to_s": 2100.0,
+     "equals": 256.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2160.0,
+     "to_s": 2220.0,
+     "equals": 244.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2280.0,
+     "to_s": 2340.0,
+     "equals": 232.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2400.0,
+     "to_s": 2460.0,
+     "equals": 220.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2520.0,
+     "to_s": 2580.0,
+     "equals": 208.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2640.0,
+     "to_s": 2700.0,
+     "equals": 196.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2760.0,
+     "to_s": 2820.0,
+     "equals": 184.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 2880.0,
+     "to_s": 2940.0,
+     "equals": 172.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 3000.0,
+     "to_s": 4260.0,
+     "equals": 400.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 4320.0,
+     "to_s": 4380.0,
+     "equals": 388.0,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "dpSet",
+     "from_s": 4440.0,
+     "to_s": 4500.0,
+     "equals": 376.0,
+     "tolerance": 1e-06
+    }
+   ]
+  }
+ ]
+}

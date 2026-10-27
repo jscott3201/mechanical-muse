@@ -1,0 +1,228 @@
+{
+ "name": "ahu_static_pressure_reset",
+ "inputs": [
+  {
+   "name": "nReqPre",
+   "type": "int",
+   "unit": "1",
+   "description": "Static pressure reset requests from the zones on this air handler"
+  },
+  {
+   "name": "u1FanOn",
+   "type": "bool",
+   "unit": "bool",
+   "description": "Supply fan running"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "dpSet",
+   "type": "real",
+   "description": "Duct static pressure setpoint (Pa)"
+  }
+ ],
+ "blocks": [
+  {
+   "id": "startDelay",
+   "class": "Logical.TrueDelay",
+   "params": [
+    {
+     "name": "delayTime",
+     "value": 720.0
+    },
+    {
+     "name": "delayOnInit",
+     "value": true
+    }
+   ]
+  },
+  {
+   "id": "reqReal",
+   "class": "Conversions.IntegerToReal",
+   "params": []
+  },
+  {
+   "id": "reqSampled",
+   "class": "Discrete.Sampler",
+   "params": [
+    {
+     "name": "samplePeriod",
+     "value": 120.0
+    }
+   ]
+  },
+  {
+   "id": "excess",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": -2.0
+    }
+   ]
+  },
+  {
+   "id": "anyExcess",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "id": "responding",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "respGain",
+   "class": "Reals.MultiplyByParameter",
+   "params": [
+    {
+     "name": "k",
+     "value": 15.0
+    }
+   ]
+  },
+  {
+   "id": "respCapValue",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 32.0
+    }
+   ]
+  },
+  {
+   "id": "respCapped",
+   "class": "Reals.Min",
+   "params": []
+  },
+  {
+   "id": "trimAndResp",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": -12.0
+    }
+   ]
+  },
+  {
+   "id": "trimValue",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": -12.0
+    }
+   ]
+  },
+  {
+   "id": "zero",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "id": "trimIfActive",
+   "class": "Reals.Switch",
+   "params": []
+  },
+  {
+   "id": "change",
+   "class": "Reals.Switch",
+   "params": []
+  },
+  {
+   "id": "previous",
+   "class": "Discrete.UnitDelay",
+   "params": [
+    {
+     "name": "samplePeriod",
+     "value": 120.0
+    },
+    {
+     "name": "y_start",
+     "value": 400.0
+    }
+   ]
+  },
+  {
+   "id": "proposed",
+   "class": "Reals.Add",
+   "params": []
+  },
+  {
+   "id": "clamped",
+   "class": "Reals.Limiter",
+   "params": [
+    {
+     "name": "uMin",
+     "value": 50.0
+    },
+    {
+     "name": "uMax",
+     "value": 400.0
+    }
+   ]
+  },
+  {
+   "id": "initial",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 400.0
+    }
+   ]
+  },
+  {
+   "id": "fanValue",
+   "class": "Reals.Switch",
+   "params": []
+  },
+  {
+   "id": "reset",
+   "class": "Reals.Switch",
+   "params": []
+  }
+ ],
+ "connections": [
+  "u1FanOn -> startDelay.u",
+  "nReqPre -> reqReal.u",
+  "reqReal.y -> reqSampled.u",
+  "reqSampled.y -> excess.u",
+  "excess.y -> anyExcess.u",
+  "startDelay.y -> responding.u1",
+  "anyExcess.y -> responding.u2",
+  "excess.y -> respGain.u",
+  "respGain.y -> respCapped.u1",
+  "respCapValue.y -> respCapped.u2",
+  "respCapped.y -> trimAndResp.u",
+  "trimValue.y -> trimIfActive.u1",
+  "startDelay.y -> trimIfActive.u2",
+  "zero.y -> trimIfActive.u3",
+  "trimAndResp.y -> change.u1",
+  "responding.y -> change.u2",
+  "trimIfActive.y -> change.u3",
+  "previous.y -> proposed.u1",
+  "change.y -> proposed.u2",
+  "proposed.y -> clamped.u",
+  "clamped.y -> fanValue.u1",
+  "u1FanOn -> fanValue.u2",
+  "initial.y -> fanValue.u3",
+  "fanValue.y -> previous.u",
+  "fanValue.y -> reset.u1",
+  "startDelay.y -> reset.u2",
+  "initial.y -> reset.u3",
+  "reset.y -> dpSet"
+ ]
+}
