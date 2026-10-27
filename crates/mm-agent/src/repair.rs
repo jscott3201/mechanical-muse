@@ -282,70 +282,131 @@ pub fn check_reply(
     check_draft(text, task, palette, vectors).0
 }
 
+/// What [`check_graph`] found: the outcome the loop records and, when the vectors were replayed,
+/// the full report (every scenario, passing ones included, and the engine content id).
+#[derive(Debug, Clone, PartialEq)]
+pub struct GraphCheck {
+    pub outcome: AttemptOutcome,
+    pub report: Option<mm_bridge::ReplayReport>,
+    /// The emitted CXF, when the graph got that far.
+    pub cxf: Option<Vec<u8>>,
+}
+
 fn check_draft(
     text: &str,
     task: &TaskSpec,
     palette: &Palette,
     vectors: &VectorFile,
 ) -> (AttemptOutcome, Option<VerifiedDraft>) {
-    let mut graph: BlockGraph = match serde_json::from_str(text) {
+    let graph: BlockGraph = match serde_json::from_str(text) {
         Ok(graph) => graph,
         Err(e) => {
             let detail = e.to_string();
             return (AttemptOutcome::NotAGraph { detail }, None);
         }
     };
+    let (check, graph) = check_named_graph(graph, task, palette, vectors);
+    let verified = match (&check.outcome, check.cxf) {
+        (
+            AttemptOutcome::Passed {
+                content_id,
+                scenarios,
+            },
+            Some(cxf),
+        ) => Some(VerifiedDraft {
+            graph,
+            cxf,
+            content_id: content_id.clone(),
+            scenarios: *scenarios,
+        }),
+        _ => None,
+    };
+    (check.outcome, verified)
+}
+
+/// Checks a parsed graph the way the loop checks a reply (interface, validator, emitter, engine
+/// load, replay). The graph is renamed to the task's name first, as the loop does.
+pub fn check_graph(
+    graph: BlockGraph,
+    task: &TaskSpec,
+    palette: &Palette,
+    vectors: &VectorFile,
+) -> GraphCheck {
+    check_named_graph(graph, task, palette, vectors).0
+}
+
+fn check_named_graph(
+    mut graph: BlockGraph,
+    task: &TaskSpec,
+    palette: &Palette,
+    vectors: &VectorFile,
+) -> (GraphCheck, BlockGraph) {
+    let stop = |outcome| GraphCheck {
+        outcome,
+        report: None,
+        cxf: None,
+    };
     // The sequence name is ours to choose, not the model's: it names the CXF namespace.
     graph.name.clone_from(&task.name);
     let problems = interface_problems(&graph, task);
     if !problems.is_empty() {
-        return (AttemptOutcome::InterfaceMismatch { problems }, None);
+        return (stop(AttemptOutcome::InterfaceMismatch { problems }), graph);
     }
     let findings = validate(&graph, palette);
     if !findings.is_empty() {
-        return (AttemptOutcome::Invalid { findings }, None);
+        return (stop(AttemptOutcome::Invalid { findings }), graph);
     }
     let cxf = match emit_cxf(&graph, palette, &EmitOptions::default()) {
         Ok(cxf) => cxf,
         Err(e) => {
             let detail = e.to_string();
-            return (AttemptOutcome::NotAGraph { detail }, None);
+            return (stop(AttemptOutcome::NotAGraph { detail }), graph);
         }
     };
     let report = match replay(&cxf, vectors, &ReplayLimits::default()) {
         Ok(report) => report,
         Err(mm_bridge::ReplayError::Load(failure)) => {
-            return (AttemptOutcome::LoadFailed { failure }, None);
+            let mut check = stop(AttemptOutcome::LoadFailed { failure });
+            check.cxf = Some(cxf);
+            return (check, graph);
         }
         Err(mm_bridge::ReplayError::Invalid { code, detail }) => {
             // Checked before the loop, so this is a harness bug; never shown to the model.
             let detail = format!("vector file rejected ({code}): {detail}");
-            return (AttemptOutcome::HarnessError { detail }, None);
+            return (stop(AttemptOutcome::HarnessError { detail }), graph);
         }
     };
-    if report.passed() {
-        let outcome = AttemptOutcome::Passed {
+    let outcome = if report.passed() {
+        AttemptOutcome::Passed {
             content_id: report.content_id.clone(),
             scenarios: report.scenarios.len(),
-        };
-        let verified = VerifiedDraft {
-            graph,
-            cxf,
-            content_id: report.content_id,
-            scenarios: report.scenarios.len(),
-        };
-        return (outcome, Some(verified));
-    }
-    let failures: Vec<ScenarioReport> = report
-        .scenarios
-        .iter()
-        .filter(|s| s.outcome != ScenarioOutcome::Pass)
-        .cloned()
-        .collect();
-    let outcome = AttemptOutcome::ReplayFailed {
-        passed: report.pass_count(),
-        total: report.scenarios.len(),
-        failures,
+        }
+    } else {
+        AttemptOutcome::ReplayFailed {
+            passed: report.pass_count(),
+            total: report.scenarios.len(),
+            failures: report
+                .scenarios
+                .iter()
+                .filter(|s| s.outcome != ScenarioOutcome::Pass)
+                .cloned()
+                .collect(),
+        }
     };
-    (outcome, None)
+    let check = GraphCheck {
+        outcome,
+        report: Some(report),
+        cxf: Some(cxf),
+    };
+    (check, graph)
+}
+
+/// The repair message the loop would send after `outcome` (empty for a pass or a harness
+/// error). `feedback` decides whether failing scenarios are described.
+pub fn repair_message(
+    outcome: &AttemptOutcome,
+    feedback: Feedback,
+    vectors: &VectorFile,
+) -> String {
+    feedback_message(outcome, feedback, vectors)
 }

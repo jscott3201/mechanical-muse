@@ -51,7 +51,9 @@ pub struct Exemplar {
     pub graph: BlockGraph,
 }
 
-const RULES: &str = "\
+/// The authoring rules the model reads before the palette (the stable start of its system
+/// prompt). Coding agents using our MCP tools read the same text.
+pub const AUTHORING_RULES: &str = "\
 You write building control sequences as compact CDL block graphs. Reply with one JSON object \
 that follows the block_graph schema, and nothing else.
 
@@ -139,7 +141,10 @@ pub fn palette_listing(palette: &Palette) -> String {
 
 /// The stable prefix: rules, palette, then worked examples.
 pub fn system_instructions(palette: &Palette, exemplars: &[Exemplar]) -> String {
-    let mut out = format!("{RULES}\n\nBlock classes:\n{}", palette_listing(palette));
+    let mut out = format!(
+        "{AUTHORING_RULES}\n\nBlock classes:\n{}",
+        palette_listing(palette)
+    );
     for (i, example) in exemplars.iter().enumerate() {
         let answer = serde_json::to_string(&example.graph).unwrap_or_default();
         out.push_str(&format!(
