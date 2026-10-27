@@ -1,0 +1,788 @@
+{
+ "schema": "mechanical-muse/vectors/v1",
+ "clock": {
+  "step_s": 60.0,
+  "horizon_s": 2400
+ },
+ "scenarios": [
+  {
+   "name": "steady_normal",
+   "description": "Supply air 0.5 K above setpoint, valve half open: no requests.",
+   "inputs": {
+    "TAirSup": 286.5,
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 1200.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1200.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "three_requests",
+   "description": "Supply air 3.5 K above setpoint from 600 s: after 120 s the air handler sends 3 requests (the 2-request condition is also met, but 3 wins). When the error falls to 0.5 K at 1200 s the requests stop at once.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 600.0,
+      "value": 289.5
+     },
+     {
+      "t": 1200.0,
+      "value": 286.5
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 720.0,
+     "to_s": 1140.0,
+     "equals": 3
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1200.0,
+     "to_s": 1500.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1500.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "two_requests",
+   "description": "Supply air 2.5 K above setpoint from 600 s: 2 requests after 120 s.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 600.0,
+      "value": 288.5
+     },
+     {
+      "t": 1200.0,
+      "value": 286.5
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 720.0,
+     "to_s": 1140.0,
+     "equals": 2
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1200.0,
+     "to_s": 1500.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1500.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "at_thresholds",
+   "description": "The error is exactly 3 K from 600 s: that is not more than 3 K, so only the 2-request condition starts. At 1200 s it is exactly 2 K, which is still inside the 2-request release band (it releases only at 1.9 K or less), so 2 requests continue; at 1500 s it is 1.875 K and the requests stop.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 600.0,
+      "value": 289.0
+     },
+     {
+      "t": 1200.0,
+      "value": 288.0
+     },
+     {
+      "t": 1500.0,
+      "value": 287.875
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 720.0,
+     "to_s": 1440.0,
+     "equals": 2
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1500.0,
+     "to_s": 1800.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1800.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "three_release_band",
+   "description": "3 requests from 420 s. At 900 s the error falls to 2.90625 K: still above 2.9 K, so 3 requests continue. At 1200 s it is 2.890625 K: the 3-request condition releases and the 2-request condition, met all along, gives 2 at once. At 1500 s, 1.875 K: 0.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 300.0,
+      "value": 289.5
+     },
+     {
+      "t": 900.0,
+      "value": 288.90625
+     },
+     {
+      "t": 1200.0,
+      "value": 288.890625
+     },
+     {
+      "t": 1500.0,
+      "value": 287.875
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 360.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 420.0,
+     "to_s": 1140.0,
+     "equals": 3
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1200.0,
+     "to_s": 1440.0,
+     "equals": 2
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1500.0,
+     "to_s": 1800.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1800.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "two_from_below",
+   "description": "The error rises to exactly 2 K at 300 s: not above 2 K, so nothing starts. At 900 s it is 2.0625 K and 2 requests follow 120 s later. At 1500 s it eases to 1.90625 K, still above 1.9 K, so they continue; at 1800 s, 1.890625 K, they stop.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 300.0,
+      "value": 288.0
+     },
+     {
+      "t": 900.0,
+      "value": 288.0625
+     },
+     {
+      "t": 1500.0,
+      "value": 287.90625
+     },
+     {
+      "t": 1800.0,
+      "value": 287.890625
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 960.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1020.0,
+     "to_s": 1740.0,
+     "equals": 2
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1800.0,
+     "to_s": 2100.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 2100.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "starts_two",
+   "description": "The error is 2.5 K from the first frame: 2 requests at 0 s, as a condition already met at the start counts as having lasted.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 288.5
+     },
+     {
+      "t": 600.0,
+      "value": 286.5
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 540.0,
+     "equals": 2
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 600.0,
+     "to_s": 900.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 900.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "two_beats_valve",
+   "description": "Valve latched from the start (1 request); the error rises to 2.5 K at 600 s, giving 2 requests from 720 s; when it clears at 1200 s the latched 1 request remains.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 600.0,
+      "value": 288.5
+     },
+     {
+      "t": 1200.0,
+      "value": 286.5
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.97
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 720.0,
+     "to_s": 1140.0,
+     "equals": 2
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1200.0,
+     "to_s": 1500.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1500.0,
+     "equals": 1
+    }
+   ]
+  },
+  {
+   "name": "timer_restarts",
+   "description": "The error jumps to 3.5 K at 600 s, drops to 1 K at 660 s and returns to 3.5 K at 720 s. The 120 s count starts again at 720 s, so requests begin at 840 s.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 600.0,
+      "value": 289.5
+     },
+     {
+      "t": 660.0,
+      "value": 287.0
+     },
+     {
+      "t": 720.0,
+      "value": 289.5
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 780.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 840.0,
+     "to_s": 1200.0,
+     "equals": 3
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1200.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "starts_high",
+   "description": "The error is 3.5 K from the first frame: a condition already true at the start counts as having lasted, so 3 requests are sent at 0 s. After it clears at 600 s, a new rise at 900 s waits the full 120 s again.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 289.5
+     },
+     {
+      "t": 600.0,
+      "value": 286.5
+     },
+     {
+      "t": 900.0,
+      "value": 289.5
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 540.0,
+     "equals": 3
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 600.0,
+     "to_s": 960.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1020.0,
+     "to_s": 1200.0,
+     "equals": 3
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1200.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "valve_latch",
+   "description": "The cooling valve opens past 95 % at 300 s: 1 request and a plant request at once. It stays latched when the valve eases to 92 % and 88 %, and through a second opening to 97 %. At 1500 s the valve is 84 %, under 85 %: the request clears but the plant request stays. At 1800 s, 93 % is not enough to latch again; at 2100 s, 96 % is.",
+   "inputs": {
+    "TAirSup": 286.5,
+    "TAirSupSet": 286.0,
+    "uCooCoi": [
+     {
+      "t": 0.0,
+      "value": 0.5
+     },
+     {
+      "t": 300.0,
+      "value": 0.96
+     },
+     {
+      "t": 600.0,
+      "value": 0.92
+     },
+     {
+      "t": 900.0,
+      "value": 0.88
+     },
+     {
+      "t": 1200.0,
+      "value": 0.97
+     },
+     {
+      "t": 1500.0,
+      "value": 0.84
+     },
+     {
+      "t": 1800.0,
+      "value": 0.93
+     },
+     {
+      "t": 2100.0,
+      "value": 0.96
+     }
+    ]
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 300.0,
+     "to_s": 1440.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1500.0,
+     "to_s": 2040.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 2100.0,
+     "to_s": 2400.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 300.0,
+     "to_s": 2400.0,
+     "equals": 1
+    }
+   ]
+  },
+  {
+   "name": "valve_boundaries",
+   "description": "A valve at exactly 95 % does not latch; 95.1 % does. At exactly 85 % the request stays; at 84.9 % it clears.",
+   "inputs": {
+    "TAirSup": 286.5,
+    "TAirSupSet": 286.0,
+    "uCooCoi": [
+     {
+      "t": 0.0,
+      "value": 0.5
+     },
+     {
+      "t": 300.0,
+      "value": 0.95
+     },
+     {
+      "t": 600.0,
+      "value": 0.951
+     },
+     {
+      "t": 900.0,
+      "value": 0.85
+     },
+     {
+      "t": 1200.0,
+      "value": 0.849
+     }
+    ]
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 540.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 600.0,
+     "to_s": 1140.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1200.0,
+     "to_s": 1500.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 540.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 600.0,
+     "to_s": 1500.0,
+     "equals": 1
+    }
+   ]
+  },
+  {
+   "name": "plant_request",
+   "description": "The valve starts at 97 %, so both are latched from the first frame. Falling to 50 % clears the reset request but not the plant request; that needs the valve under 10 %: exactly 10 % keeps it, 9 % clears it. Reopening past 95 % sets both.",
+   "inputs": {
+    "TAirSup": 286.5,
+    "TAirSupSet": 286.0,
+    "uCooCoi": [
+     {
+      "t": 0.0,
+      "value": 0.97
+     },
+     {
+      "t": 600.0,
+      "value": 0.5
+     },
+     {
+      "t": 900.0,
+      "value": 0.1
+     },
+     {
+      "t": 1200.0,
+      "value": 0.09
+     },
+     {
+      "t": 1500.0,
+      "value": 0.5
+     },
+     {
+      "t": 1800.0,
+      "value": 0.97
+     }
+    ]
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 540.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 600.0,
+     "to_s": 1740.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1800.0,
+     "to_s": 2100.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1140.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 1200.0,
+     "to_s": 1740.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 1800.0,
+     "to_s": 2100.0,
+     "equals": 1
+    }
+   ]
+  },
+  {
+   "name": "clear_and_set_together",
+   "description": "Latched from the start; the valve drops to 80 % at 300 s (cleared) and jumps straight to 97 % at 600 s. In that frame the clear condition ends as the open condition starts, and the latch sets again.",
+   "inputs": {
+    "TAirSup": 286.5,
+    "TAirSupSet": 286.0,
+    "uCooCoi": [
+     {
+      "t": 0.0,
+      "value": 0.97
+     },
+     {
+      "t": 300.0,
+      "value": 0.8
+     },
+     {
+      "t": 600.0,
+      "value": 0.97
+     }
+    ]
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 300.0,
+     "to_s": 540.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 600.0,
+     "to_s": 900.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 900.0,
+     "equals": 1
+    }
+   ]
+  },
+  {
+   "name": "temperature_beats_valve",
+   "description": "Valve latched from the start (1 request); the error rises to 3.5 K at 600 s, giving 3 requests from 720 s; when it clears at 1200 s the latched 1 request remains.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 600.0,
+      "value": 289.5
+     },
+     {
+      "t": 1200.0,
+      "value": 286.5
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.97
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 720.0,
+     "to_s": 1140.0,
+     "equals": 3
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1200.0,
+     "to_s": 1500.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1500.0,
+     "equals": 1
+    }
+   ]
+  }
+ ]
+}

@@ -158,3 +158,139 @@ fn chw_plant_reset_vectors_catch_common_mistakes() {
         );
     }
 }
+
+#[test]
+fn ahu_chw_requests_reference_passes() {
+    let (graph, vectors) = load("ahu_chw_requests");
+    let failures = failing(&graph, &vectors);
+    assert!(failures.is_empty(), "{failures:#?}");
+}
+
+#[test]
+fn ahu_chw_requests_vectors_catch_common_mistakes() {
+    let (graph, vectors) = load("ahu_chw_requests");
+    let n = ParamValue::Number;
+    type Mutation = (&'static str, Box<dyn Fn(&mut BlockGraph)>);
+    let mutations: Vec<Mutation> = vec![
+        (
+            "3-request threshold of 2.5 K",
+            Box::new(move |g| set_param(g, "high3", "t", n(2.5))),
+        ),
+        (
+            "2-request threshold of 1.5 K",
+            Box::new(move |g| set_param(g, "high2", "t", n(1.5))),
+        ),
+        // "More than 3 K", not "at least": an error of exactly 3 K gives 2 requests.
+        (
+            "3-request compared with >=",
+            Box::new(move |g| set_param(g, "high3", "t", n(2.999))),
+        ),
+        (
+            "no release band on 3 requests",
+            Box::new(move |g| set_param(g, "high3", "h", n(0.0))),
+        ),
+        (
+            "no release band on 2 requests",
+            Box::new(move |g| set_param(g, "high2", "h", n(0.0))),
+        ),
+        (
+            "60 s persistence",
+            Box::new(move |g| set_param(g, "high3Long", "delayTime", n(60.0))),
+        ),
+        (
+            // A condition true from the first frame passes straight through.
+            "delay counted from the first frame",
+            Box::new(|g| {
+                set_param(g, "high3Long", "delayOnInit", ParamValue::Bool(true));
+            }),
+        ),
+        (
+            "2 checked before 3",
+            Box::new(|g| {
+                rewire(g, "three.y -> req3.u1", "two.y -> req3.u1");
+                rewire(g, "two.y -> req2.u1", "three.y -> req2.u1");
+            }),
+        ),
+        (
+            "1 checked before 2",
+            Box::new(|g| {
+                rewire(g, "resetLatch.y -> req1.u2", "high2Long.y -> req1.u2");
+                rewire(g, "one.y -> req1.u1", "two.y -> req1.u1");
+                rewire(g, "high2Long.y -> req2.u2", "resetLatch.y -> req2.u2");
+                rewire(g, "two.y -> req2.u1", "one.y -> req2.u1");
+            }),
+        ),
+        (
+            "2-request delay counted from the first frame",
+            Box::new(|g| {
+                set_param(g, "high2Long", "delayOnInit", ParamValue::Bool(true));
+            }),
+        ),
+        (
+            "2-request compared with >=",
+            Box::new(move |g| set_param(g, "high2", "t", n(1.999))),
+        ),
+        (
+            "2-request threshold of 2.05 K",
+            Box::new(move |g| set_param(g, "high2", "t", n(2.05))),
+        ),
+        (
+            "2-request band of 0.05 K",
+            Box::new(move |g| set_param(g, "high2", "h", n(0.05))),
+        ),
+        (
+            "2-request band of 0.12 K",
+            Box::new(move |g| set_param(g, "high2", "h", n(0.12))),
+        ),
+        (
+            "3-request band of 0.08 K",
+            Box::new(move |g| set_param(g, "high3", "h", n(0.08))),
+        ),
+        (
+            "3-request band of 0.12 K",
+            Box::new(move |g| set_param(g, "high3", "h", n(0.12))),
+        ),
+        (
+            "valve request without the latch",
+            Box::new(|g| rewire(g, "resetLatch.y -> req1.u2", "valveOpen.y -> req1.u2")),
+        ),
+        (
+            "valve opens at 90 %",
+            Box::new(move |g| set_param(g, "valveOpen", "t", n(0.9))),
+        ),
+        (
+            "reset request clears at 90 %",
+            Box::new(move |g| set_param(g, "valveReset", "t", n(0.9))),
+        ),
+        (
+            "plant request clears with the reset request",
+            Box::new(|g| {
+                rewire(
+                    g,
+                    "valveClosed.y -> plantLatch.clr",
+                    "valveReset.y -> plantLatch.clr",
+                )
+            }),
+        ),
+        (
+            "plant request clears at 15 %",
+            Box::new(move |g| set_param(g, "valveClosed", "t", n(0.15))),
+        ),
+        (
+            "temperature error reversed",
+            Box::new(|g| {
+                rewire(g, "TAirSup -> tempErr.u1", "TAirSupSet -> tempErr.u1");
+                rewire(g, "TAirSupSet -> tempErr.u2", "TAirSup -> tempErr.u2");
+            }),
+        ),
+    ];
+    for (what, mutate) in mutations {
+        let mut mutant = graph.clone();
+        mutate(&mut mutant);
+        assert_ne!(mutant, graph, "{what}: mutation did not apply");
+        assert!(
+            !failing(&mutant, &vectors).is_empty(),
+            "vectors do not catch: {what}"
+        );
+    }
+}

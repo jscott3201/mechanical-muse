@@ -6,14 +6,18 @@
 //! Use `cargo test`, not nextest: nextest's 2 min limit would kill the test mid-initialize and
 //! leave the BOPTEST test holding the only worker until its idle timeout.
 //!
-//! Environment (all optional): `BOPTEST_URL` (default `http://127.0.0.1:80`), `MM_LIVE_STEPS`
-//! (120 s steps, default 30), `MM_LIVE_START` (simulation seconds, default 05:30 on day 185, the
-//! Monday after the case's peak cooling day; day 184 is a Sunday, unoccupied), `MM_LIVE_WARMUP` (seconds, default one day), `MM_LIVE_OUT` (path
-//! for a JSON run record, relative to the workspace root), `MM_LIVE_BASELINE=1` (no sequence,
-//! no writes: the baseline controllers over the same window).
+//! Environment (all optional):
+//! - `BOPTEST_URL` (default `http://127.0.0.1:80`);
+//! - `MM_LIVE_STEPS`: 120 s steps (default 30);
+//! - `MM_LIVE_START`: simulation seconds (default 05:30 on day 185, the Monday after the case's
+//!   peak cooling day; day 184 is a Sunday, unoccupied);
+//! - `MM_LIVE_WARMUP`: seconds (default one day);
+//! - `MM_LIVE_OUT`: path for a JSON run record, relative to the workspace root;
+//! - `MM_LIVE_BASELINE=1`: no sequence and no writes (the baseline controllers, same window);
+//! - `MM_LIVE_REQUESTS=0`: request count fixed at 0, as in the first live run.
 //!
-//! No reset requests are wired yet (the AHU request sequence comes next), so the request count
-//! is a constant 0: after the start delay the reset trims, warming the supply water first.
+//! By default three instances of the verified `ahu_chw_requests` sequence (one per floor's air
+//! handler) run first each tick, and the plant reset reads the sum of their requests.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 // Progress goes to stderr: a live run is watched with --nocapture.
@@ -23,20 +27,46 @@ mod common;
 
 use common::*;
 use mm_runtime::{
-    BoptestClient, Event, FailSafe, InputBinding, Plant, PlantError, Scalar, Source, Supervisor,
+    BoptestClient, Event, FailSafe, InputBinding, Plant, PlantError, RunningSequence, Scalar,
+    Source, Supervisor,
 };
 use serde_json::json;
 
 const CASE: &str = "multizone_office_complex_air";
 const STEP: f64 = 120.0;
-const WATCH: [&str; 6] = [
+const WATCH: [&str; 12] = [
     "reaChiWatSys_TCHWSup_y",
     "reaChiWatSys_dp_y",
     "reaChiWatSys_mCHWTot_y",
     "reaChiWatSys_reaPChi_y",
     "reaChiWatSys_reaPPum_y",
     "floor2_reaAHU_occ_y",
+    "floor1_reaAHU_TSup_y",
+    "floor2_reaAHU_TSup_y",
+    "floor3_reaAHU_TSup_y",
+    "floor1_reaAHU_yCooVal_y",
+    "floor2_reaAHU_yCooVal_y",
+    "floor3_reaAHU_yCooVal_y",
 ];
+const AHUS: [u8; 3] = [1, 2, 3];
+
+fn ahu(floor: u8) -> String {
+    format!("ahu{floor}")
+}
+
+/// One floor's air handler requests: its supply air temperature, the supply air setpoint in
+/// effect (BOPTEST echoes every `_u` value, baseline or overwritten), and its measured valve.
+fn request_bindings(floor: u8) -> Vec<InputBinding> {
+    let reading = |input: &str, point: String| InputBinding {
+        input: input.into(),
+        source: Source::Measurement { point },
+    };
+    vec![
+        reading("TAirSup", format!("floor{floor}_reaAHU_TSup_y")),
+        reading("TAirSupSet", format!("floor{floor}_TSupAirSet_u")),
+        reading("uCooCoi", format!("floor{floor}_reaAHU_yCooVal_y")),
+    ]
+}
 
 fn env_f64(name: &str, default: f64) -> f64 {
     std::env::var(name)
@@ -45,7 +75,7 @@ fn env_f64(name: &str, default: f64) -> f64 {
         .unwrap_or(default)
 }
 
-fn live_bindings() -> Vec<InputBinding> {
+fn live_bindings(requests: bool) -> Vec<InputBinding> {
     let occupied = |floor: u8| Source::MeasurementAbove {
         point: format!("floor{floor}_reaAHU_occ_y"),
         threshold: 0.5,
@@ -53,8 +83,20 @@ fn live_bindings() -> Vec<InputBinding> {
     vec![
         InputBinding {
             input: "nReqRes".into(),
-            source: Source::Constant {
-                value: Scalar::Int(0),
+            source: if requests {
+                Source::SumInt {
+                    of: AHUS
+                        .iter()
+                        .map(|f| Source::Output {
+                            sequence: ahu(*f),
+                            output: "yChiWatResReq".into(),
+                        })
+                        .collect(),
+                }
+            } else {
+                Source::Constant {
+                    value: Scalar::Int(0),
+                }
             },
         },
         InputBinding {
@@ -86,10 +128,23 @@ async fn chw_reset_drives_boptest() {
     let mut sup = if baseline {
         Supervisor::new(Vec::new(), Vec::new(), FailSafe::Release).unwrap()
     } else {
+        let requests = std::env::var("MM_LIVE_REQUESTS").map_or(true, |v| v != "0");
+        let mut sequences = Vec::new();
+        if requests {
+            let (cxf, receipt) = verified("ahu_chw_requests");
+            for floor in AHUS {
+                sequences.push(
+                    RunningSequence::load(&ahu(floor), &cxf, &receipt, request_bindings(floor))
+                        .expect("verified request sequence loads"),
+                );
+            }
+        }
         let cxf = cxf();
-        let seq = mm_runtime::RunningSequence::load(SEQ, &cxf, &receipt(&cxf), live_bindings())
-            .expect("verified sequence loads with live bindings");
-        Supervisor::new(vec![seq], outputs(None, 288.15), FailSafe::Release).unwrap()
+        sequences.push(
+            RunningSequence::load(SEQ, &cxf, &receipt(&cxf), live_bindings(requests))
+                .expect("verified sequence loads with live bindings"),
+        );
+        Supervisor::new(sequences, outputs(None, 288.15), FailSafe::Release).unwrap()
     };
 
     let mut plant = BoptestClient::select(&url, CASE).await.expect("select");
@@ -143,7 +198,7 @@ async fn drive(
         eprintln!(
             "t={:>9.0} out={:?} seen={}",
             report.time,
-            report.outputs.get(SEQ),
+            report.outputs,
             serde_json::Value::Object(seen.clone())
         );
         if report
