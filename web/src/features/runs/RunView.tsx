@@ -28,6 +28,9 @@ const KPI_LABELS: Record<string, string> = {
 
 const STALE_MS = 60_000;
 const MAX_RESUBSCRIBE = 3;
+/** Three air handlers send up to 3 requests each; 0 to 3 keeps a quiet afternoon readable. */
+const REQUESTS_DOMAIN: [number, number] = [0, 3];
+const PERCENT_DOMAIN: [number, number] = [0, 100];
 
 /** One run: status, the sequences and receipts it loaded, live trends, KPIs and the event log. */
 export function RunView({ runId, onEnded }: { runId: string; onEnded?: () => void }) {
@@ -150,8 +153,8 @@ function RunStream({
         <div className="grid gap-4 lg:grid-cols-2">
           <LineChart title="Chilled-water supply temperature" unit="°C" series={t.supplyTemperature} formatX={formatSimTime} formatY={(v) => formatNumber(v, 2)} />
           <LineChart title="Loop differential pressure" unit="kPa" series={t.pressure} formatX={formatSimTime} formatY={(v) => formatNumber(v, 1)} />
-          <LineChart title="Reset requests, all air handlers" unit="count" series={t.requests} step formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
-          <LineChart title="Cooling coil valves" unit="% open" series={t.valves} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
+          <LineChart title="Reset requests, all air handlers" unit="count" series={t.requests} step domain={REQUESTS_DOMAIN} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
+          <LineChart title="Cooling coil valves" unit="% open" series={t.valves} domain={PERCENT_DOMAIN} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
           <LineChart title="Chiller power" unit="kW" series={t.chillerPower} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
         </div>
       )}

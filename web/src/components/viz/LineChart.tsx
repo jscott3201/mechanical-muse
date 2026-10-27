@@ -20,6 +20,8 @@ interface Props {
   formatY: (y: number) => string;
   /** Draw horizontal steps (counts, latched states) instead of slopes. */
   step?: boolean;
+  /** A range the y-axis always covers (data outside it still widens it), e.g. [0, 100] %. */
+  domain?: [number, number];
   height?: number;
 }
 
@@ -47,6 +49,7 @@ export const LineChart = memo(function LineChart({
   formatY,
   step = false,
   height = 168,
+  domain,
 }: Props) {
   const [ref, width] = useWidth();
   const [hover, setHover] = useState<number | null>(null);
@@ -72,19 +75,25 @@ export const LineChart = memo(function LineChart({
         }
       }
     const xsSorted = [...xsSet].sort((a, b) => a - b);
+    if (domain) {
+      ylo = Math.min(ylo, domain[0]);
+      yhi = Math.max(yhi, domain[1]);
+    }
     if (!Number.isFinite(ylo)) {
       ylo = 0;
       yhi = 1;
     }
     const span = yhi - ylo || Math.abs(yhi) * 0.1 || 1;
+    // A fixed domain is drawn edge to edge; a data-driven one gets a little headroom.
+    const pad = domain ? 0 : span * 0.08;
     return {
       xs: xsSorted,
       x0: xsSorted[0] ?? 0,
       x1: xsSorted.at(-1) ?? 1,
-      y0: ylo - span * 0.08,
-      y1: yhi + span * 0.08,
+      y0: ylo - pad,
+      y1: yhi + pad,
     };
-  }, [series]);
+  }, [series, domain]);
 
   const plotW = Math.max(width - PAD.left - PAD.right, 10);
   const plotH = height - PAD.top - PAD.bottom;
