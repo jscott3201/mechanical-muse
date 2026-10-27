@@ -80,6 +80,26 @@ went undetected. On those weaker vectors it reported after-repair passes of 2 of
 (engine #340). The repair message dropped the engine's explanation in the earliest runs; it is
 passed on in all runs reported here.
 
+### With vector feedback (run of 2026-10-27)
+
+This is the product's own setting for our unpublished specs: the repair message names each
+failing scenario, the time, and the expected and actual values. A pass after this kind of repair
+is "repaired against the scoring vectors", not a blind score.
+
+| Task version | Effort | Feedback | Attempts | First try | After repair | Best scenarios per run |
+| --- | --- | --- | --- | --- | --- | --- |
+| v2 | high | with vectors | up to 5 | 0 of 3 | **2 of 3** | 10, 8, 10 of 10 |
+
+- Run 1: replay 8/10, then passed. Run 3: the engine refused the first draft as an algebraic
+  loop (`load-failed-schedule`), the repair passed 8 of 10, the next passed all 10.
+- Run 2 never passed: 8, 8 and 6 of 10 after its first draft was refused, then its fifth call
+  came back HTTP 400 "filtered due to the prompt triggering our content management policy". The
+  prompt is graph JSON and scenario values; we have no explanation for the filter.
+- Run 3's replies are committed as `fixtures/recordings/chw_plant_reset.json`; a test replays
+  them through the loop on the pinned engine and checks the same three outcomes, so the demo
+  can show this run without a model call (labelled "recorded").
+- Tokens: 28,001 / 111,874 / 55,963 input and 31,164 / 63,206 / 41,321 output per run.
+
 ## Control sequence: air handler chilled-water requests (run of 2026-10-26)
 
 Our own spec (`specs/ahu_chw_requests/`): one air handler's chilled-water reset requests (0 to
