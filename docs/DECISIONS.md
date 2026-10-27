@@ -31,7 +31,8 @@ Decisions for Mechanical Muse. Muse Code's `/grill-with-docs` writes here. Newes
 - Web package manager: npm with Node 26, pinned in `web/.nvmrc`; the Stop hook already calls npm.
   (2026-10-26)
 - Rust-to-TS types: ts-rs. DTOs derive `TS` and a test run exports the `.ts` files; no hand-written
-  mirrors. (2026-10-26)
+  mirrors. They land in `web/src/types/generated` (`.cargo/config.toml`), are committed, and CI
+  fails if a test run changes them (`make types`). (2026-10-26; output path 2026-10-27)
 
 - Coding harnesses: Muse Code and Claude Code, used interchangeably to build. The organizers
   confirmed in the event's rules channel (2026-10-26) that any build tools are allowed, Claude Code

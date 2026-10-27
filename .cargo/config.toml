@@ -1,0 +1,4 @@
+# ts-rs writes the generated TypeScript types here when `cargo test` runs (AGENTS.md: DTOs get
+# generated TS types; never hand-write mirrors).
+[env]
+TS_RS_EXPORT_DIR = { value = "web/src/types/generated", relative = true }

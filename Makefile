@@ -1,10 +1,10 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml). Web targets arrive with web/.
-.PHONY: check ci fmt fmt-check clippy test doctest specs lint deny test-live live bench env-keys run fetch boptest-up boptest-down
+.PHONY: check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down server
 
 check: fmt-check clippy test
 
-ci: lint clippy test doctest specs deny
+ci: lint clippy test doctest specs types deny
 
 fmt:
 	cargo fmt --all
@@ -32,6 +32,11 @@ specs:
 	@for ref in specs/*/reference.py; do [ -f "$$ref" ] || continue; python3 -I "$$ref" || exit 1; done
 	git diff --exit-code -- specs/
 
+# ts-rs writes the TypeScript types during the test run; the committed copies must match.
+types: test
+	@test -z "$$(git status --porcelain -- web/src/types/generated)" || \
+		{ git status --porcelain -- web/src/types/generated; echo "regenerate and commit web/src/types/generated"; exit 1; }
+
 lint: fmt-check
 	bash scripts/ci/check-file-size.sh
 	bash scripts/ci/check-no-secrets.sh
@@ -47,6 +52,10 @@ boptest-up:
 
 boptest-down:
 	docker compose down
+
+# The API on MM_ADDR (default 127.0.0.1:8080), serving specs/.
+server:
+	cargo run -p mm-server
 
 # Needs BOPTEST up and/or MODEL_API_KEY.
 test-live:

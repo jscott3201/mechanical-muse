@@ -131,6 +131,12 @@ jobs:
             python3 -I "$ref"
           done
           git diff --exit-code -- specs/
+      # The test run regenerates the TypeScript types from the Rust DTOs (ts-rs). The committed
+      # copies must match, so a DTO change cannot ship without its types.
+      - name: Generated TypeScript types are current
+        run: |
+          git status --porcelain -- web/src/types/generated
+          test -z "$(git status --porcelain -- web/src/types/generated)"
 
   deny:
     name: Deny
