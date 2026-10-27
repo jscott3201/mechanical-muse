@@ -1,0 +1,1272 @@
+{
+    "name": "chw_plant_reset",
+    "inputs": [
+        {
+            "name": "nReqRes",
+            "signal": "Integer",
+            "description": "Chilled-water reset requests from the air handlers"
+        },
+        {
+            "name": "u1Ena",
+            "signal": "Boolean",
+            "description": "Plant enabled"
+        },
+        {
+            "name": "u1StaPro",
+            "signal": "Boolean",
+            "description": "Chiller staging in progress"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "TSupSet",
+            "signal": "Real",
+            "description": "Chilled-water supply temperature setpoint (K)"
+        },
+        {
+            "name": "dpSet",
+            "signal": "Real",
+            "description": "Chilled-water differential pressure setpoint (Pa)"
+        }
+    ],
+    "blocks": [
+        {
+            "id": "startDelay",
+            "class": "Logical.TrueDelay",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "delayTime",
+                    "value": 1200.0
+                },
+                {
+                    "name": "delayOnInit",
+                    "value": true
+                }
+            ]
+        },
+        {
+            "id": "sampleTick",
+            "class": "Logical.Sources.SampleTrigger",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "period",
+                    "value": 300.0
+                }
+            ]
+        },
+        {
+            "id": "reqReal",
+            "class": "Conversions.IntegerToReal",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Integer"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "reqSampled",
+            "class": "Discrete.Sampler",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "samplePeriod",
+                    "value": 300.0
+                }
+            ]
+        },
+        {
+            "id": "excess",
+            "class": "Reals.AddParameter",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "p",
+                    "value": -2.0
+                }
+            ]
+        },
+        {
+            "id": "anyExcess",
+            "class": "Reals.GreaterThreshold",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "t",
+                    "value": 0.0
+                }
+            ]
+        },
+        {
+            "id": "responding",
+            "class": "Logical.And",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "respGain",
+            "class": "Reals.MultiplyByParameter",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 0.03
+                }
+            ]
+        },
+        {
+            "id": "respCapValue",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 0.07
+                }
+            ]
+        },
+        {
+            "id": "respCapped",
+            "class": "Reals.Min",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "trimAndResp",
+            "class": "Reals.AddParameter",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "p",
+                    "value": -0.02
+                }
+            ]
+        },
+        {
+            "id": "trimValue",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": -0.02
+                }
+            ]
+        },
+        {
+            "id": "zero",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 0.0
+                }
+            ]
+        },
+        {
+            "id": "trimIfActive",
+            "class": "Reals.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "change",
+            "class": "Reals.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "stagingHold",
+            "class": "Logical.TrueFalseHold",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "trueHoldDuration",
+                    "value": 900.0
+                },
+                {
+                    "name": "falseHoldDuration",
+                    "value": 0.0
+                }
+            ]
+        },
+        {
+            "id": "notHolding",
+            "class": "Logical.Not",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "clearAtTick",
+            "class": "Logical.And",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "frozen",
+            "class": "Logical.Latch",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "clr",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "heldChange",
+            "class": "Reals.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "previous",
+            "class": "Discrete.UnitDelay",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "samplePeriod",
+                    "value": 300.0
+                },
+                {
+                    "name": "y_start",
+                    "value": 1.0
+                }
+            ]
+        },
+        {
+            "id": "proposed",
+            "class": "Reals.Add",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "clamped",
+            "class": "Reals.Limiter",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "uMin",
+                    "value": 0.0
+                },
+                {
+                    "name": "uMax",
+                    "value": 1.0
+                }
+            ]
+        },
+        {
+            "id": "one",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 1.0
+                }
+            ]
+        },
+        {
+            "id": "enabledValue",
+            "class": "Reals.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "reset",
+            "class": "Reals.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "half",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 0.5
+                }
+            ]
+        },
+        {
+            "id": "tempLimit",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 282.15
+                }
+            ]
+        },
+        {
+            "id": "tempDesign",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 278.71
+                }
+            ]
+        },
+        {
+            "id": "dpLow",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 95650.0
+                }
+            ]
+        },
+        {
+            "id": "dpDesign",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 239125.0
+                }
+            ]
+        },
+        {
+            "id": "tempMap",
+            "class": "Reals.Line",
+            "inputs": [
+                {
+                    "name": "x1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "f1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "x2",
+                    "signal": "Real"
+                },
+                {
+                    "name": "f2",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "dpMap",
+            "class": "Reals.Line",
+            "inputs": [
+                {
+                    "name": "x1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "f1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "x2",
+                    "signal": "Real"
+                },
+                {
+                    "name": "f2",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        }
+    ],
+    "connections": [
+        {
+            "from": {
+                "node": "u1Ena"
+            },
+            "to": {
+                "node": "startDelay",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "nReqRes"
+            },
+            "to": {
+                "node": "reqReal",
+                "port": "u"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "reqReal",
+                "port": "y"
+            },
+            "to": {
+                "node": "reqSampled",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "reqSampled",
+                "port": "y"
+            },
+            "to": {
+                "node": "excess",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "excess",
+                "port": "y"
+            },
+            "to": {
+                "node": "anyExcess",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "startDelay",
+                "port": "y"
+            },
+            "to": {
+                "node": "responding",
+                "port": "u1"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "anyExcess",
+                "port": "y"
+            },
+            "to": {
+                "node": "responding",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "excess",
+                "port": "y"
+            },
+            "to": {
+                "node": "respGain",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "respGain",
+                "port": "y"
+            },
+            "to": {
+                "node": "respCapped",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "respCapValue",
+                "port": "y"
+            },
+            "to": {
+                "node": "respCapped",
+                "port": "u2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "respCapped",
+                "port": "y"
+            },
+            "to": {
+                "node": "trimAndResp",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "trimValue",
+                "port": "y"
+            },
+            "to": {
+                "node": "trimIfActive",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "startDelay",
+                "port": "y"
+            },
+            "to": {
+                "node": "trimIfActive",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "zero",
+                "port": "y"
+            },
+            "to": {
+                "node": "trimIfActive",
+                "port": "u3"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "trimAndResp",
+                "port": "y"
+            },
+            "to": {
+                "node": "change",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "responding",
+                "port": "y"
+            },
+            "to": {
+                "node": "change",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "trimIfActive",
+                "port": "y"
+            },
+            "to": {
+                "node": "change",
+                "port": "u3"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "u1StaPro"
+            },
+            "to": {
+                "node": "stagingHold",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "stagingHold",
+                "port": "y"
+            },
+            "to": {
+                "node": "notHolding",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "notHolding",
+                "port": "y"
+            },
+            "to": {
+                "node": "clearAtTick",
+                "port": "u1"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "sampleTick",
+                "port": "y"
+            },
+            "to": {
+                "node": "clearAtTick",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "sampleTick",
+                "port": "y"
+            },
+            "to": {
+                "node": "frozen",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "clearAtTick",
+                "port": "y"
+            },
+            "to": {
+                "node": "frozen",
+                "port": "clr"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "zero",
+                "port": "y"
+            },
+            "to": {
+                "node": "heldChange",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "frozen",
+                "port": "y"
+            },
+            "to": {
+                "node": "heldChange",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "change",
+                "port": "y"
+            },
+            "to": {
+                "node": "heldChange",
+                "port": "u3"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "previous",
+                "port": "y"
+            },
+            "to": {
+                "node": "proposed",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "heldChange",
+                "port": "y"
+            },
+            "to": {
+                "node": "proposed",
+                "port": "u2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "proposed",
+                "port": "y"
+            },
+            "to": {
+                "node": "clamped",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "clamped",
+                "port": "y"
+            },
+            "to": {
+                "node": "enabledValue",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "u1Ena"
+            },
+            "to": {
+                "node": "enabledValue",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "one",
+                "port": "y"
+            },
+            "to": {
+                "node": "enabledValue",
+                "port": "u3"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "enabledValue",
+                "port": "y"
+            },
+            "to": {
+                "node": "previous",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "enabledValue",
+                "port": "y"
+            },
+            "to": {
+                "node": "reset",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "startDelay",
+                "port": "y"
+            },
+            "to": {
+                "node": "reset",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "one",
+                "port": "y"
+            },
+            "to": {
+                "node": "reset",
+                "port": "u3"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "half",
+                "port": "y"
+            },
+            "to": {
+                "node": "tempMap",
+                "port": "x1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "tempLimit",
+                "port": "y"
+            },
+            "to": {
+                "node": "tempMap",
+                "port": "f1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "one",
+                "port": "y"
+            },
+            "to": {
+                "node": "tempMap",
+                "port": "x2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "tempDesign",
+                "port": "y"
+            },
+            "to": {
+                "node": "tempMap",
+                "port": "f2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "reset",
+                "port": "y"
+            },
+            "to": {
+                "node": "tempMap",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "zero",
+                "port": "y"
+            },
+            "to": {
+                "node": "dpMap",
+                "port": "x1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "dpLow",
+                "port": "y"
+            },
+            "to": {
+                "node": "dpMap",
+                "port": "f1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "half",
+                "port": "y"
+            },
+            "to": {
+                "node": "dpMap",
+                "port": "x2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "dpDesign",
+                "port": "y"
+            },
+            "to": {
+                "node": "dpMap",
+                "port": "f2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "reset",
+                "port": "y"
+            },
+            "to": {
+                "node": "dpMap",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "tempMap",
+                "port": "y"
+            },
+            "to": {
+                "node": "TSupSet"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "dpMap",
+                "port": "y"
+            },
+            "to": {
+                "node": "dpSet"
+            },
+            "signal": "Real"
+        }
+    ]
+}

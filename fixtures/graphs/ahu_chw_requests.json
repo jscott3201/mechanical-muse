@@ -1,0 +1,739 @@
+{
+    "name": "ahu_chw_requests",
+    "inputs": [
+        {
+            "name": "TAirSup",
+            "signal": "Real",
+            "description": "Measured supply air temperature"
+        },
+        {
+            "name": "TAirSupSet",
+            "signal": "Real",
+            "description": "Supply air temperature setpoint"
+        },
+        {
+            "name": "uCooCoi",
+            "signal": "Real",
+            "description": "Cooling coil valve position, 0 to 1"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "yChiWatResReq",
+            "signal": "Integer",
+            "description": "Chilled-water reset requests (0 to 3)"
+        },
+        {
+            "name": "yChiPlaReq",
+            "signal": "Integer",
+            "description": "Chiller plant request (0 or 1)"
+        }
+    ],
+    "blocks": [
+        {
+            "id": "tempErr",
+            "class": "Reals.Subtract",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "high3",
+            "class": "Reals.GreaterThreshold",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "t",
+                    "value": 3.0
+                },
+                {
+                    "name": "h",
+                    "value": 0.1
+                }
+            ]
+        },
+        {
+            "id": "high2",
+            "class": "Reals.GreaterThreshold",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "t",
+                    "value": 2.0
+                },
+                {
+                    "name": "h",
+                    "value": 0.1
+                }
+            ]
+        },
+        {
+            "id": "high3Long",
+            "class": "Logical.TrueDelay",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "delayTime",
+                    "value": 120.0
+                },
+                {
+                    "name": "delayOnInit",
+                    "value": false
+                }
+            ]
+        },
+        {
+            "id": "high2Long",
+            "class": "Logical.TrueDelay",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "delayTime",
+                    "value": 120.0
+                },
+                {
+                    "name": "delayOnInit",
+                    "value": false
+                }
+            ]
+        },
+        {
+            "id": "valveOpen",
+            "class": "Reals.GreaterThreshold",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "t",
+                    "value": 0.95
+                },
+                {
+                    "name": "h",
+                    "value": 0.05
+                }
+            ]
+        },
+        {
+            "id": "valveReset",
+            "class": "Reals.LessThreshold",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "t",
+                    "value": 0.85
+                },
+                {
+                    "name": "h",
+                    "value": 0.05
+                }
+            ]
+        },
+        {
+            "id": "valveClosed",
+            "class": "Reals.LessThreshold",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "t",
+                    "value": 0.1
+                },
+                {
+                    "name": "h",
+                    "value": 0.05
+                }
+            ]
+        },
+        {
+            "id": "resetLatch",
+            "class": "Logical.Latch",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "clr",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "plantLatch",
+            "class": "Logical.Latch",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "clr",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "three",
+            "class": "Integers.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Integer"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 3.0
+                }
+            ]
+        },
+        {
+            "id": "two",
+            "class": "Integers.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Integer"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 2.0
+                }
+            ]
+        },
+        {
+            "id": "one",
+            "class": "Integers.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Integer"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 1.0
+                }
+            ]
+        },
+        {
+            "id": "zero",
+            "class": "Integers.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Integer"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 0.0
+                }
+            ]
+        },
+        {
+            "id": "req1",
+            "class": "Integers.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Integer"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Integer"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Integer"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "req2",
+            "class": "Integers.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Integer"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Integer"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Integer"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "req3",
+            "class": "Integers.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Integer"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Integer"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Integer"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "plantReq",
+            "class": "Integers.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Integer"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Integer"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Integer"
+                }
+            ],
+            "params": []
+        }
+    ],
+    "connections": [
+        {
+            "from": {
+                "node": "TAirSup"
+            },
+            "to": {
+                "node": "tempErr",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "TAirSupSet"
+            },
+            "to": {
+                "node": "tempErr",
+                "port": "u2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "tempErr",
+                "port": "y"
+            },
+            "to": {
+                "node": "high3",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "tempErr",
+                "port": "y"
+            },
+            "to": {
+                "node": "high2",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "high3",
+                "port": "y"
+            },
+            "to": {
+                "node": "high3Long",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "high2",
+                "port": "y"
+            },
+            "to": {
+                "node": "high2Long",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "uCooCoi"
+            },
+            "to": {
+                "node": "valveOpen",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "uCooCoi"
+            },
+            "to": {
+                "node": "valveReset",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "uCooCoi"
+            },
+            "to": {
+                "node": "valveClosed",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "valveOpen",
+                "port": "y"
+            },
+            "to": {
+                "node": "resetLatch",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "valveReset",
+                "port": "y"
+            },
+            "to": {
+                "node": "resetLatch",
+                "port": "clr"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "valveOpen",
+                "port": "y"
+            },
+            "to": {
+                "node": "plantLatch",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "valveClosed",
+                "port": "y"
+            },
+            "to": {
+                "node": "plantLatch",
+                "port": "clr"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "one",
+                "port": "y"
+            },
+            "to": {
+                "node": "req1",
+                "port": "u1"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "resetLatch",
+                "port": "y"
+            },
+            "to": {
+                "node": "req1",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "zero",
+                "port": "y"
+            },
+            "to": {
+                "node": "req1",
+                "port": "u3"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "two",
+                "port": "y"
+            },
+            "to": {
+                "node": "req2",
+                "port": "u1"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "high2Long",
+                "port": "y"
+            },
+            "to": {
+                "node": "req2",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "req1",
+                "port": "y"
+            },
+            "to": {
+                "node": "req2",
+                "port": "u3"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "three",
+                "port": "y"
+            },
+            "to": {
+                "node": "req3",
+                "port": "u1"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "high3Long",
+                "port": "y"
+            },
+            "to": {
+                "node": "req3",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "req2",
+                "port": "y"
+            },
+            "to": {
+                "node": "req3",
+                "port": "u3"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "req3",
+                "port": "y"
+            },
+            "to": {
+                "node": "yChiWatResReq"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "one",
+                "port": "y"
+            },
+            "to": {
+                "node": "plantReq",
+                "port": "u1"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "plantLatch",
+                "port": "y"
+            },
+            "to": {
+                "node": "plantReq",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "zero",
+                "port": "y"
+            },
+            "to": {
+                "node": "plantReq",
+                "port": "u3"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "plantReq",
+                "port": "y"
+            },
+            "to": {
+                "node": "yChiPlaReq"
+            },
+            "signal": "Integer"
+        }
+    ]
+}

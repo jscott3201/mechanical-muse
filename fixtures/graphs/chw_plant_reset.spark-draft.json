@@ -1,0 +1,1272 @@
+{
+    "name": "chw_plant_reset",
+    "inputs": [
+        {
+            "name": "nReqRes",
+            "signal": "Integer",
+            "description": "Number of chilled-water reset requests from the air handlers"
+        },
+        {
+            "name": "u1Ena",
+            "signal": "Boolean",
+            "description": "The chilled-water plant is enabled"
+        },
+        {
+            "name": "u1StaPro",
+            "signal": "Boolean",
+            "description": "A chiller staging change is in progress"
+        }
+    ],
+    "outputs": [
+        {
+            "name": "TSupSet",
+            "signal": "Real",
+            "description": "Chilled-water supply temperature setpoint"
+        },
+        {
+            "name": "dpSet",
+            "signal": "Real",
+            "description": "Chilled-water differential pressure setpoint"
+        }
+    ],
+    "blocks": [
+        {
+            "id": "sampleTrigger",
+            "class": "Logical.Sources.SampleTrigger",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "period",
+                    "value": 300.0
+                }
+            ]
+        },
+        {
+            "id": "enableTimer",
+            "class": "Logical.Timer",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                },
+                {
+                    "name": "passed",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "t",
+                    "value": 1200.0
+                }
+            ]
+        },
+        {
+            "id": "stageEdge",
+            "class": "Logical.Edge",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "pre_u_start",
+                    "value": false
+                }
+            ]
+        },
+        {
+            "id": "stageHold",
+            "class": "Logical.TrueFalseHold",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "falseHoldDuration",
+                    "value": 0.0
+                },
+                {
+                    "name": "trueHoldDuration",
+                    "value": 900.0
+                }
+            ]
+        },
+        {
+            "id": "freezeOr",
+            "class": "Logical.Or",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "notFrozen",
+            "class": "Logical.Not",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "enableReadyAnd",
+            "class": "Logical.And",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "intToReal",
+            "class": "Conversions.IntegerToReal",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Integer"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "constIgnored",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 2.0
+                }
+            ]
+        },
+        {
+            "id": "subtractExcess",
+            "class": "Reals.Subtract",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "multiplyRespond",
+            "class": "Reals.MultiplyByParameter",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 0.03
+                }
+            ]
+        },
+        {
+            "id": "constCap",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 0.07
+                }
+            ]
+        },
+        {
+            "id": "minCap",
+            "class": "Reals.Min",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "constZero",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 0.0
+                }
+            ]
+        },
+        {
+            "id": "greaterReq",
+            "class": "Integers.GreaterThreshold",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Integer"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Boolean"
+                }
+            ],
+            "params": [
+                {
+                    "name": "t",
+                    "value": 2.0
+                }
+            ]
+        },
+        {
+            "id": "switchRespond",
+            "class": "Reals.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "constTrim",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": -0.02
+                }
+            ]
+        },
+        {
+            "id": "addChange",
+            "class": "Reals.Add",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "addNew",
+            "class": "Reals.Add",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "limiter",
+            "class": "Reals.Limiter",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "uMax",
+                    "value": 1.0
+                },
+                {
+                    "name": "uMin",
+                    "value": 0.0
+                }
+            ]
+        },
+        {
+            "id": "switchFreeze",
+            "class": "Reals.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "constOne",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 1.0
+                }
+            ]
+        },
+        {
+            "id": "switchSamplerIn",
+            "class": "Reals.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "sampler",
+            "class": "Discrete.TriggeredSampler",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                },
+                {
+                    "name": "trigger",
+                    "signal": "Boolean"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "y_start",
+                    "value": 1.0
+                }
+            ]
+        },
+        {
+            "id": "resetDelay",
+            "class": "Discrete.UnitDelay",
+            "inputs": [
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "samplePeriod",
+                    "value": 300.0
+                },
+                {
+                    "name": "y_start",
+                    "value": 1.0
+                }
+            ]
+        },
+        {
+            "id": "switchOut",
+            "class": "Reals.Switch",
+            "inputs": [
+                {
+                    "name": "u1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u2",
+                    "signal": "Boolean"
+                },
+                {
+                    "name": "u3",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": []
+        },
+        {
+            "id": "constHalf",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 0.5
+                }
+            ]
+        },
+        {
+            "id": "constWarm",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 282.15
+                }
+            ]
+        },
+        {
+            "id": "constDesignT",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 278.71
+                }
+            ]
+        },
+        {
+            "id": "constLowP",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 95650.0
+                }
+            ]
+        },
+        {
+            "id": "constDesignP",
+            "class": "Reals.Sources.Constant",
+            "inputs": [],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "k",
+                    "value": 239125.0
+                }
+            ]
+        },
+        {
+            "id": "lineT",
+            "class": "Reals.Line",
+            "inputs": [
+                {
+                    "name": "x1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "f1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "x2",
+                    "signal": "Real"
+                },
+                {
+                    "name": "f2",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "limitAbove",
+                    "value": true
+                },
+                {
+                    "name": "limitBelow",
+                    "value": true
+                }
+            ]
+        },
+        {
+            "id": "lineP",
+            "class": "Reals.Line",
+            "inputs": [
+                {
+                    "name": "x1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "f1",
+                    "signal": "Real"
+                },
+                {
+                    "name": "x2",
+                    "signal": "Real"
+                },
+                {
+                    "name": "f2",
+                    "signal": "Real"
+                },
+                {
+                    "name": "u",
+                    "signal": "Real"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "y",
+                    "signal": "Real"
+                }
+            ],
+            "params": [
+                {
+                    "name": "limitAbove",
+                    "value": true
+                },
+                {
+                    "name": "limitBelow",
+                    "value": true
+                }
+            ]
+        }
+    ],
+    "connections": [
+        {
+            "from": {
+                "node": "u1Ena"
+            },
+            "to": {
+                "node": "enableTimer",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "u1Ena"
+            },
+            "to": {
+                "node": "enableReadyAnd",
+                "port": "u1"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "enableTimer",
+                "port": "passed"
+            },
+            "to": {
+                "node": "enableReadyAnd",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "u1StaPro"
+            },
+            "to": {
+                "node": "stageEdge",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "stageEdge",
+                "port": "y"
+            },
+            "to": {
+                "node": "stageHold",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "u1StaPro"
+            },
+            "to": {
+                "node": "freezeOr",
+                "port": "u1"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "stageHold",
+                "port": "y"
+            },
+            "to": {
+                "node": "freezeOr",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "freezeOr",
+                "port": "y"
+            },
+            "to": {
+                "node": "notFrozen",
+                "port": "u"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "nReqRes"
+            },
+            "to": {
+                "node": "intToReal",
+                "port": "u"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "nReqRes"
+            },
+            "to": {
+                "node": "greaterReq",
+                "port": "u"
+            },
+            "signal": "Integer"
+        },
+        {
+            "from": {
+                "node": "intToReal",
+                "port": "y"
+            },
+            "to": {
+                "node": "subtractExcess",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constIgnored",
+                "port": "y"
+            },
+            "to": {
+                "node": "subtractExcess",
+                "port": "u2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "subtractExcess",
+                "port": "y"
+            },
+            "to": {
+                "node": "multiplyRespond",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "multiplyRespond",
+                "port": "y"
+            },
+            "to": {
+                "node": "minCap",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constCap",
+                "port": "y"
+            },
+            "to": {
+                "node": "minCap",
+                "port": "u2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "minCap",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchRespond",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "greaterReq",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchRespond",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "constZero",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchRespond",
+                "port": "u3"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "switchRespond",
+                "port": "y"
+            },
+            "to": {
+                "node": "addChange",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constTrim",
+                "port": "y"
+            },
+            "to": {
+                "node": "addChange",
+                "port": "u2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "resetDelay",
+                "port": "y"
+            },
+            "to": {
+                "node": "addNew",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "addChange",
+                "port": "y"
+            },
+            "to": {
+                "node": "addNew",
+                "port": "u2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "addNew",
+                "port": "y"
+            },
+            "to": {
+                "node": "limiter",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "limiter",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchFreeze",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "notFrozen",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchFreeze",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "resetDelay",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchFreeze",
+                "port": "u3"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "switchFreeze",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchSamplerIn",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "enableReadyAnd",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchSamplerIn",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "constOne",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchSamplerIn",
+                "port": "u3"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "switchSamplerIn",
+                "port": "y"
+            },
+            "to": {
+                "node": "sampler",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "sampleTrigger",
+                "port": "y"
+            },
+            "to": {
+                "node": "sampler",
+                "port": "trigger"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "sampler",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchOut",
+                "port": "u1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "enableReadyAnd",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchOut",
+                "port": "u2"
+            },
+            "signal": "Boolean"
+        },
+        {
+            "from": {
+                "node": "constOne",
+                "port": "y"
+            },
+            "to": {
+                "node": "switchOut",
+                "port": "u3"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "switchOut",
+                "port": "y"
+            },
+            "to": {
+                "node": "resetDelay",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "switchOut",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineT",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "switchOut",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineP",
+                "port": "u"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constHalf",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineT",
+                "port": "x1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constWarm",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineT",
+                "port": "f1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constOne",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineT",
+                "port": "x2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constDesignT",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineT",
+                "port": "f2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constZero",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineP",
+                "port": "x1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constLowP",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineP",
+                "port": "f1"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constHalf",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineP",
+                "port": "x2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "constDesignP",
+                "port": "y"
+            },
+            "to": {
+                "node": "lineP",
+                "port": "f2"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "lineT",
+                "port": "y"
+            },
+            "to": {
+                "node": "TSupSet"
+            },
+            "signal": "Real"
+        },
+        {
+            "from": {
+                "node": "lineP",
+                "port": "y"
+            },
+            "to": {
+                "node": "dpSet"
+            },
+            "signal": "Real"
+        }
+    ]
+}
