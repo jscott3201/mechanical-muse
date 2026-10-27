@@ -100,6 +100,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "bacnet-client"
+version = "0.14.0"
+source = "git+https://github.com/jscott3201/rusty-bacnet?rev=1caf4db71ac488720b17e343b9c50d43c15f62fc#1caf4db71ac488720b17e343b9c50d43c15f62fc"
+dependencies = [
+ "bacnet-encoding",
+ "bacnet-endpoint-core",
+ "bacnet-network",
+ "bacnet-npdu",
+ "bacnet-router-core",
+ "bacnet-services",
+ "bacnet-transport",
+ "bacnet-types",
+ "bytes",
+ "futures-util",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "bacnet-encoding"
 version = "0.14.0"
 source = "git+https://github.com/jscott3201/rusty-bacnet?rev=1caf4db71ac488720b17e343b9c50d43c15f62fc#1caf4db71ac488720b17e343b9c50d43c15f62fc"
@@ -344,7 +363,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -794,9 +813,16 @@ dependencies = [
 name = "mm-bacnet"
 version = "0.1.0"
 dependencies = [
+ "bacnet-client",
+ "bacnet-encoding",
  "bacnet-objects",
  "bacnet-server",
+ "bacnet-transport",
  "bacnet-types",
+ "bytes",
+ "serde",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -856,6 +882,7 @@ dependencies = [
  "futures-util",
  "http-body-util",
  "mm-agent",
+ "mm-bacnet",
  "mm-bridge",
  "mm-graph",
  "mm-runtime",
@@ -1098,7 +1125,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1834,7 +1861,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
