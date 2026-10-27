@@ -39,14 +39,32 @@ What it shows:
   the start of occupied hours; the AHUs start early). Day 184, the case's peak cooling day, is
   a Sunday and stays unoccupied in the morning.
 
+Against the baseline (same window, no writes: `MM_LIVE_BASELINE=1`). BOPTEST is deterministic
+here: both runs match to the decimal until the reset's first trim, so the differences below come
+from the reset alone.
+
+| Over the 4 h window | Baseline | Plant reset | Change |
+| --- | --- | --- | --- |
+| BOPTEST `ener_tot` (kWh/m², whole building) | 0.2911 | 0.2754 | −5.4% |
+| BOPTEST `cost_tot` | 0.0171 | 0.0157 | −8% |
+| BOPTEST `emis_tot` | 0.0758 | 0.0706 | −7% |
+| BOPTEST `tdis_tot` (thermal discomfort, K·h/zone) | 0.6823 | 0.6812 | no worse |
+| BOPTEST `idis_tot` (CO2 discomfort) | 7.646 | 7.659 | +0.2% |
+| Chiller energy (kWh, from 120 s power samples) | 3,439 | 2,810 | −18% |
+| CHW pump energy (kWh, same method) | 1,091 | 1,101 | +1% |
+
+At 09:28 the baseline held 278.88 K and 239,495 Pa; the reset held 282.03 K and 136,239 Pa.
+
 What it does not show:
 
-- No energy or comfort claim. Chiller and pump power fell over the run, but this window is
-  also the morning pull-down, and there is no baseline-only run of the same window yet. The
-  KPI comparison needs that run (point map section 10, item 7).
-- With zero requests the reset can only trim. Responding to requests needs the AHU request
-  sequence wired as an upstream sequence.
+- One 4-hour summer morning, not a season. The saving comes from warmer supply water at the
+  chillers; the lower pressure setpoint did not reduce pump power here (pump power hardly moved
+  in either run), so the pressure half of the reset shows no benefit yet.
+- With zero requests the reset only trims, whatever the air handlers need. Comfort held over
+  this window, but a hotter afternoon could need the response half. That needs the AHU request
+  sequence wired as an upstream sequence, then the comparison repeated.
 
-Speed: initialize took 939 to 1,114 s with a 1-day warm-up. Steps on this summer morning took
+Speed: initialize took 939 to 1,239 s with a 1-day warm-up (over BOPTEST's default 20 min
+worker-reply timeout, hence the compose override). Steps on this summer morning took
 0.84 s each (101 s for 120 steps), against 9.4 s each in a January spike: step cost depends
 strongly on the period simulated, so time a demo window before relying on it.
