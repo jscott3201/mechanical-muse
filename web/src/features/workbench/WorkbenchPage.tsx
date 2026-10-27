@@ -1,5 +1,5 @@
 import { CircleAlert, FileUp, History, LoaderCircle, MessageCircleQuestion, RotateCcw, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -236,8 +236,13 @@ function ReviewStep({
     const units = new Map([...draft.inputs, ...draft.outputs].map((p) => [p.name, p.unit]));
     return (name: string) => units.get(name) ?? "";
   }, [draft]);
+  // Hands over once per accepted sequence: this page stays mounted while hidden, so a new
+  // `onAccepted` identity must not hand the same sequence over again.
+  const handedOver = useRef<unknown>(null);
   useEffect(() => {
-    if (accept.state.status === "done") onAccepted(accept.state.data.spec.summary.name);
+    if (accept.state.status !== "done" || handedOver.current === accept.state.data) return;
+    handedOver.current = accept.state.data;
+    onAccepted(accept.state.data.spec.summary.name);
   }, [accept.state, onAccepted]);
 
   return (

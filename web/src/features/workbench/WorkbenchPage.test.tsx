@@ -59,7 +59,7 @@ describe("WorkbenchPage", () => {
       }),
     );
     const opened = vi.fn();
-    render(<WorkbenchPage onOpenSpec={opened} />);
+    const { rerender } = render(<WorkbenchPage onOpenSpec={opened} />);
     // The journey bar marks the step in words, not only by colour.
     expect(screen.getByRole("link", { name: "Read (next)" })).toBeTruthy();
     expect(screen.getByText("Draft & verify")).toBeTruthy();
@@ -79,6 +79,13 @@ describe("WorkbenchPage", () => {
     fireEvent.click(screen.getByRole("switch", { name: "Keep cool" }));
     fireEvent.click(screen.getByRole("button", { name: /Accept 1 scenario and create the sequence/ }));
     await vi.waitFor(() => expect(opened).toHaveBeenCalledWith("fan_on_hot"));
+    // The page stays mounted while hidden: a parent re-render with a new callback must not hand
+    // the same sequence over again (that looped once, refetching the spec list forever).
+    const again = vi.fn();
+    rerender(<WorkbenchPage onOpenSpec={again} />);
+    rerender(<WorkbenchPage onOpenSpec={vi.fn()} />);
+    expect(opened).toHaveBeenCalledTimes(1);
+    expect(again).not.toHaveBeenCalled();
     const accept = calls.find((c) => c.url === "/api/workbench/accept")?.body as {
       key: string;
       draft: { scenarios: { name: string }[] };

@@ -187,7 +187,7 @@ describe("App routes", () => {
     const base = { ...own, name: "day185-noon-baseline", baseline: true, drafted: false, drafts: [], own: [], kpis: { ener_tot: 0.31 } };
     serve({ ...routes, "GET /api/replays": [own, base] });
     render(<App />);
-    const link = await screen.findByRole("link", { name: "Your sequence (Spark draft); plant reset hand-built" });
+    const link = await screen.findByRole("link", { name: "Your sequence ahu1_sat_stpt (Spark draft); plant reset hand-built" });
     expect(screen.queryByText(/Spark-drafted plant reset/)).toBeNull();
     // It points the record out on the Runs page; nothing starts by itself.
     expect(link.getAttribute("href")).toBe("#/runs?replay=day185-noon-your-sequence");

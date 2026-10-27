@@ -251,7 +251,7 @@ describe("RunsPage replays", () => {
     render(<RunsPage replay="day185-noon-your-sequence" />);
     const groups = await screen.findAllByRole("region");
     expect(groups.map((g) => g.getAttribute("aria-label"))).toEqual(["Day 143 morning", "Day 185 noon"]);
-    const item = screen.getByText("Your sequence (Spark draft); plant reset hand-built").closest("li");
+    const item = screen.getByText("Your sequence ahu1_sat_stpt (Spark draft); plant reset hand-built").closest("li");
     expect(item?.getAttribute("aria-current")).toBe("true");
     expect(item?.textContent).toContain("day185-noon-your-sequence");
     await new Promise((r) => setTimeout(r, 20));

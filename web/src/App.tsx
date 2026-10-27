@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -62,6 +62,13 @@ export function App() {
     // A spec's page names itself once its title is known (SpecDetail).
     if (page !== "sequences" || !spec) document.title = `${PAGE_TITLES[page]} · Mechanical Muse`;
   }, [page, spec]);
+  const openSpec = useCallback(
+    (name: string) => {
+      setListVersion((v) => v + 1);
+      go({ page: "sequences", spec: name });
+    },
+    [go],
+  );
   const tabRoute = (p: Page): Route => (p === "sequences" ? seqRoute : p === "runs" ? runsRoute : { page: p });
   return (
     <TooltipProvider>
@@ -107,12 +114,7 @@ export function App() {
             </main>
           </Pane>
           <Pane value="workbench" visited={visited}>
-            <WorkbenchPage
-              onOpenSpec={(name) => {
-                setListVersion((v) => v + 1);
-                go({ page: "sequences", spec: name });
-              }}
-            />
+            <WorkbenchPage onOpenSpec={openSpec} />
           </Pane>
           <Pane value="runs" visited={visited}>
             <RunsPage

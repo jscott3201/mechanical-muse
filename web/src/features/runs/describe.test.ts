@@ -22,13 +22,13 @@ suite("describe", () => {
     // day185-noon-your-sequence: drafted is true only because of the engineer's own draft.
     const r = replay({ drafted: true, drafts: ["ahu1_sat_stpt"], own: ["ahu1_sat_stpt"] });
     const text = describe(replayFacts(r));
-    expect(text).toBe("Your sequence (Spark draft); plant reset hand-built");
+    expect(text).toBe("Your sequence ahu1_sat_stpt (Spark draft); plant reset hand-built");
     expect(text).not.toContain("Spark-drafted plant reset");
   });
 
   it("says when the plant reset beside an engineer's sequence was drafted too", () => {
     const r = replay({ drafted: true, drafts: ["ahu1_sat_stpt", "chw_plant_reset"], own: ["ahu1_sat_stpt"], pressure: true });
-    expect(describe(replayFacts(r))).toBe("Your sequence (Spark draft); plant reset Spark-drafted, with static pressure");
+    expect(describe(replayFacts(r))).toBe("Your sequence ahu1_sat_stpt (Spark draft); plant reset Spark-drafted, with static pressure");
   });
 
   it("keeps the reference labels", () => {
@@ -42,7 +42,7 @@ suite("describe", () => {
     // An old record really can lack these fields; the type says they are always there.
     expect(describe(configFacts(cfg as never))).toBe("Hand-built sequences, chilled water");
     const own = { ...cfg, drafts: { sat: "cxf:1" }, bindings: { sat: { floors: [1], inputs: [], outputs: [], notes: [], units: {} } } };
-    expect(describe(configFacts(own))).toBe("Your sequence (Spark draft); plant reset hand-built");
+    expect(describe(configFacts(own))).toBe("Your sequence sat (Spark draft); plant reset hand-built");
   });
 });
 

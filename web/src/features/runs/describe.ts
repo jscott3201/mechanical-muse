@@ -39,7 +39,7 @@ export function describe(f: RunFacts): string {
   const plantDrafted = ours.includes(PLANT);
   if (f.own.length > 0) {
     const plant = plantDrafted ? "plant reset Spark-drafted" : "plant reset hand-built";
-    return `Your sequence (Spark draft); ${plant}${pressure ? ", with static pressure" : ""}`;
+    return `Your sequence ${f.own.join(", ")} (Spark draft); ${plant}${pressure ? ", with static pressure" : ""}`;
   }
   const graphs = ours.length === 0 ? "Hand-built sequences" : plantDrafted && ours.length === 1 ? "Spark-drafted plant reset" : "Spark-drafted graphs";
   return `${graphs}, chilled water${pressure}`;

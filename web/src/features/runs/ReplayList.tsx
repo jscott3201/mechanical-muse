@@ -45,7 +45,7 @@ function ReplayButton({
       <div className="flex items-center justify-between gap-2">
         <span className="min-w-0 text-sm">
           <span className="block">{describe(replayFacts(replay))}</span>
-          <span className="block truncate font-mono text-xs text-muted-foreground">{replay.name}</span>
+          <span className="block font-mono text-xs break-all text-muted-foreground">{replay.name}</span>
           <span className="text-xs text-muted-foreground">
             {replay.ticks} steps from {formatSimTime(replay.start_s)}
           </span>
