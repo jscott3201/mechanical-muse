@@ -35,11 +35,11 @@ const MIN_ZOOM = 0.8;
 const PORT_ROW = 22;
 const portTop = (i: number) => HEADER + i * PORT_ROW + PORT_ROW / 2;
 
-type BlockData = { block: BlockView; flagged: boolean };
+type BlockData = { block: BlockView; flagged: boolean; highlighted: boolean };
 type PointData = { kind: NodeKind; name: string; signal: Signal; flagged: boolean };
 
 const BlockNode = memo(function BlockNode({ data }: NodeProps<Node<BlockData>>) {
-  const { block, flagged } = data;
+  const { block, flagged, highlighted } = data;
   const short = block.class.split(".").at(-1) ?? block.class;
   return (
     <div
@@ -47,6 +47,7 @@ const BlockNode = memo(function BlockNode({ data }: NodeProps<Node<BlockData>>) 
       className={cn(
         "relative w-[200px] rounded-md border bg-card text-card-foreground shadow-sm",
         flagged && "ring-2 ring-destructive",
+        !flagged && highlighted && "ring-2 ring-primary",
       )}
       style={{ height: HEADER + Math.max(1, block.inputs.length, block.outputs.length) * PORT_ROW }}
       title={block.params.map((p) => `${p.name} = ${JSON.stringify(p.value)}`).join("\n") || undefined}
@@ -173,10 +174,13 @@ function ConnectionTable({ graph }: { graph: GraphView }) {
 export function GraphCanvas({
   graph,
   flagged = [],
+  highlighted = [],
   label,
 }: {
   graph: GraphView;
   flagged?: string[];
+  /** Blocks to outline without implying a problem (e.g. the part of an explanation in view). */
+  highlighted?: string[];
   label: string;
 }) {
   const [asTable, setAsTable] = useState(false);
@@ -187,12 +191,13 @@ export function GraphCanvas({
     const bottom = Math.max(0, ...laid.nodes.map((n) => n.y + n.height));
     const height = Math.min(640, Math.max(300, bottom * MIN_ZOOM + 96));
     const marks = new Set(flagged);
+    const lit = new Set(highlighted);
     const blocks = new Map(graph.blocks.map((b) => [b.id, b]));
     const points = new Map([...graph.inputs, ...graph.outputs].map((p) => [p.name, p]));
     const nodes: Node[] = laid.nodes.map((n) => {
       const block = n.kind === "block" ? blocks.get(n.name) : undefined;
       return block
-        ? { id: n.key, type: "block", position: { x: n.x, y: n.y }, data: { block, flagged: marks.has(n.name) } }
+        ? { id: n.key, type: "block", position: { x: n.x, y: n.y }, data: { block, flagged: marks.has(n.name), highlighted: lit.has(n.name) } }
         : {
             id: n.key,
             type: "point",
@@ -220,7 +225,7 @@ export function GraphCanvas({
     }));
     return { nodes, edges, height };
     // `flagged` is compared by content, so a new array with the same names keeps the layout.
-  }, [graph, flagged.join(",")]);
+  }, [graph, flagged.join(","), highlighted.join(",")]);
   return (
     <section aria-label={label} className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">

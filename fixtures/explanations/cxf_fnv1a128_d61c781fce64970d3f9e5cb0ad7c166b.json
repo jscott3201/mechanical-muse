@@ -1,0 +1,73 @@
+{
+  "spec": "chw_plant_reset",
+  "content_id": "cxf:fnv1a128:d61c781fce64970d3f9e5cb0ad7c166b",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "This sequence relaxes the chilled water plant when air handlers are satisfied and tightens it when they request more cooling. It keeps one reset value between 0 and 1 that drives both the supply water temperature setpoint and the differential pressure setpoint. At 1 the plant runs at design and lower values first let the water warm and then lower the pressure.",
+  "parts": [
+    {
+      "title": "Enable and update timing",
+      "text": "The plant enable signal goes through a true delay of 1200 seconds that starts as already delayed. A tick signal marks every 300 seconds counted from time 0. The delay output stays false for 1200 seconds after each re enable and then becomes true, and the tick defines when the reset value is allowed to change.",
+      "blocks": [
+        "startDelay",
+        "sampleTick"
+      ]
+    },
+    {
+      "title": "Compute change from requests",
+      "text": "The integer request count is converted to real and sampled every 300 seconds. The sampled count minus 2 gives the excess above the 2 ignored requests. If the excess is greater than 0 and the start delay has passed, the sequence is responding. The excess is multiplied by 0.03 and limited to a maximum of 0.07, then added to the trim of minus 0.02 to give trim plus limited respond. If not responding, the change is the trim of minus 0.02 after the start delay has passed and 0 before that. The request count used at an update is the count present at that update instant.",
+      "blocks": [
+        "reqReal",
+        "reqSampled",
+        "excess",
+        "anyExcess",
+        "responding",
+        "respGain",
+        "respCapValue",
+        "respCapped",
+        "trimAndResp",
+        "trimValue",
+        "zero",
+        "trimIfActive",
+        "change"
+      ]
+    },
+    {
+      "title": "Freeze during staging",
+      "text": "The staging in progress signal is held true for 900 seconds after it goes false, so the hold lasts at least 900 seconds or as long as staging lasts if that is longer. A latch is set at every 300 second tick and is cleared only at a tick when no hold is active. When the latch is true the held change is 0, otherwise it is the change from requests. An update at the very instant staging starts is already frozen, so with staging from 3000 seconds to 3600 seconds the updates at 3000, 3300 and 3600 seconds change nothing and the update at 3900 seconds applies normally.",
+      "blocks": [
+        "stagingHold",
+        "notHolding",
+        "clearAtTick",
+        "frozen",
+        "heldChange"
+      ]
+    },
+    {
+      "title": "Update the reset value",
+      "text": "The previous value starts at 1 and is a stored copy that only changes at 300 second updates from the enabled value. The proposed value is the previous value plus the held change, kept between 0 and 1. While the plant is disabled the enabled value is 1 effective immediately. After the plant is enabled the final reset value is forced to 1 until the 1200 second delay has passed. If the plant is enabled at 0 seconds the first change is applied by the update at 1200 seconds itself. The value carried to the next update is the value after clamping.",
+      "blocks": [
+        "previous",
+        "proposed",
+        "clamped",
+        "one",
+        "enabledValue",
+        "reset"
+      ]
+    },
+    {
+      "title": "Map reset to setpoints",
+      "text": "The final reset value between 0 and 1 drives two setpoints. The supply temperature is 282.15 Kelvin when the reset value is 0.5 or lower and moves linearly to 278.71 Kelvin at 1. The differential pressure is 95650 Pascal at 0 and moves linearly to 239125 Pascal at 0.5, staying there above 0.5. At 1 the plant runs at design with coldest water and highest pressure, lower values first let the water warm and then lower the pressure.",
+      "blocks": [
+        "half",
+        "tempLimit",
+        "tempDesign",
+        "dpLow",
+        "dpDesign",
+        "tempMap",
+        "dpMap"
+      ]
+    }
+  ],
+  "unknown_blocks": []
+}

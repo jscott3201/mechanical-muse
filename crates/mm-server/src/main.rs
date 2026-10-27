@@ -67,6 +67,9 @@ async fn main() -> anyhow::Result<()> {
         )),
         records: Some(records.clone()),
         drafts: Some(records.join("drafts")),
+        explanations: Some(PathBuf::from(
+            std::env::var("MM_EXPLANATIONS_DIR").unwrap_or_else(|_| "fixtures/explanations".into()),
+        )),
         ..AuthoringConfig::default()
     };
     let state = AppState::build(specs, palette, runs, authoring);

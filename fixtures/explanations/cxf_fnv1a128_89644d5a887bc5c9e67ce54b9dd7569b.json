@@ -1,0 +1,57 @@
+{
+  "spec": "zone_pressure_requests",
+  "content_id": "cxf:fnv1a128:89644d5a887bc5c9e67ce54b9dd7569b",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "This sequence lets one VAV zone ask its air handler for more duct pressure when it cannot get enough air. It watches whether the zone needs air, how far its measured airflow lags its setpoint, and whether its damper is almost fully open. It outputs a request level from 0 to 3, with higher numbers meaning a stronger need, for the air handler to add up across zones.",
+  "parts": [
+    {
+      "title": "See if the zone is served and if the damper is wide open",
+      "text": "The zone counts as served when its airflow setpoint rises above 0.01 cubic meters per second and it stays served until the setpoint falls to 0.005 cubic meters per second or less. The damper counts as open when its position rises above 0.95 and it stays open until the position falls to 0.85 or less. A damper exactly at 0.95 is not open and an open damper closes exactly at 0.85.",
+      "blocks": [
+        "damOpen",
+        "served"
+      ]
+    },
+    {
+      "title": "Check how far airflow lags its setpoint at three levels",
+      "text": "The airflow setpoint is multiplied by 0.9 and by 0.7 and by 0.5 to make three lower targets. Each target minus the measured airflow makes a gap in cubic meters per second. Each gap counts as short when it rises above 0 and it stays short until it falls to minus 0.01 or less. The 0.5 level is the most severe shortfall and the 0.9 level is the least severe.",
+      "blocks": [
+        "set1",
+        "gap1",
+        "short1",
+        "set2",
+        "gap2",
+        "short2",
+        "set3",
+        "gap3",
+        "short3"
+      ]
+    },
+    {
+      "title": "Require short airflow while served for two minutes",
+      "text": "Each short signal is combined with the served signal so the condition is true only when the zone is both short of air and served. Each combined condition must then stay true continuously for 120 seconds before it counts. If the condition turns off and on again the 120 second count restarts, and a condition already true when the controller starts still must last the full 120 seconds.",
+      "blocks": [
+        "need1",
+        "long1",
+        "need2",
+        "long2",
+        "need3",
+        "long3"
+      ]
+    },
+    {
+      "title": "Pick the highest request from 0 to 3",
+      "text": "The least severe persistent shortfall or an open damper makes a level 1 request, which is changed from true or false to 1 or 0. If the middle persistent shortfall is true the result becomes 2 instead of the level 1 value. If the most severe persistent shortfall is true the result becomes 3 instead of the lower value, otherwise a zone with no need outputs 0. This final number is the pressure request sent to the air handler.",
+      "blocks": [
+        "oneReq",
+        "oneInt",
+        "two",
+        "three",
+        "req2",
+        "req3"
+      ]
+    }
+  ],
+  "unknown_blocks": []
+}

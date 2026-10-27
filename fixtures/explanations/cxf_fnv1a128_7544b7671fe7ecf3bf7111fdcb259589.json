@@ -1,0 +1,60 @@
+{
+  "spec": "ahu_static_pressure_reset",
+  "content_id": "cxf:fnv1a128:7544b7671fe7ecf3bf7111fdcb259589",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "This sequence adjusts the supply duct static pressure setpoint for one air handler to let the supply fan slow down when zones are satisfied. When few zones need more air it steps the setpoint down a little at a time, and when many zones report starved airflow it steps it back up. The setpoint always stays between 50 Pa and 400 Pa and stays at 400 Pa when the fan is off or has just started.",
+  "parts": [
+    {
+      "title": "Wait after the fan starts",
+      "text": "The signal that tells if the supply fan is running goes through a 720 second on delay. This delayed signal stays false when the fan is off and only becomes true after the fan has run continuously for 720 seconds, and it goes false again as soon as the fan stops. The sequence uses this delayed signal to decide when trim and respond changes are allowed.",
+      "blocks": [
+        "startDelay"
+      ]
+    },
+    {
+      "title": "Check zone requests every two minutes",
+      "text": "The number of zone requests is changed to a real number and then sampled every 120 seconds. Only the value present at each 120 second update time is used, so a count that rises and falls between two updates is never used. Two requests are treated as normal and ignored, so 2 is subtracted from the sampled count and the result is checked to see if it is greater than zero.",
+      "blocks": [
+        "reqReal",
+        "reqSampled",
+        "excess",
+        "anyExcess"
+      ]
+    },
+    {
+      "title": "Decide how much to move the setpoint",
+      "text": "If the fan has been running long enough and the excess over the 2 ignored requests is greater than zero, the change is a trim of minus 12 Pa plus a respond amount. The respond amount is 15 Pa for each request above the 2 ignored requests, but it is limited to a maximum of 32 Pa. If there is no excess but the fan has been running long enough, the change is just the trim of minus 12 Pa. If the fan has not been running long enough, the change is 0 Pa.",
+      "blocks": [
+        "responding",
+        "respGain",
+        "respCapValue",
+        "respCapped",
+        "trimAndResp",
+        "trimValue",
+        "zero",
+        "trimIfActive",
+        "change"
+      ]
+    },
+    {
+      "title": "Add the change and stay in limits",
+      "text": "The sequence keeps a stored copy of the setpoint that starts at 400 Pa and only changes every 120 seconds. At each update the calculated change is added to the stored value from the previous update. The sum is then limited to stay between a lowest setpoint of 50 Pa and a highest setpoint of 400 Pa, and that limited value becomes the stored value for the next update.",
+      "blocks": [
+        "previous",
+        "proposed",
+        "clamped"
+      ]
+    },
+    {
+      "title": "Hold starting pressure when fan is off or just started",
+      "text": "The starting value is a constant 400 Pa. While the fan is off the output setpoint is 400 Pa right away, and the stored value is also driven back to 400 Pa at the update times so a restart begins from 400 Pa. While the fan is on but the 720 second delay has not yet passed, the output is still held at 400 Pa, and with a fan start at 0 seconds the first change appears at the 720 second update itself. The description also says the setpoint stays at the starting value until start delay plus one update period has passed, which would be longer than 720 seconds, but the blocks follow the 720 second ti",
+      "blocks": [
+        "initial",
+        "fanValue",
+        "reset"
+      ]
+    }
+  ],
+  "unknown_blocks": []
+}

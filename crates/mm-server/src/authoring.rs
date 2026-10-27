@@ -45,6 +45,8 @@ pub struct AuthoringConfig {
     pub records: Option<PathBuf>,
     /// Folder for verified drafts.
     pub drafts: Option<PathBuf>,
+    /// Folder of committed (recorded) graph explanations.
+    pub explanations: Option<PathBuf>,
 }
 
 impl Default for AuthoringConfig {
@@ -55,6 +57,7 @@ impl Default for AuthoringConfig {
             pace: Duration::from_secs(2),
             records: None,
             drafts: None,
+            explanations: None,
         }
     }
 }

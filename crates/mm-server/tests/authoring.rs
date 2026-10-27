@@ -52,6 +52,7 @@ fn state(drafts: Option<PathBuf>, pace: Duration) -> AppState {
             pace,
             records: None,
             drafts,
+            explanations: Some(repo("fixtures/explanations")),
         },
     )
 }
