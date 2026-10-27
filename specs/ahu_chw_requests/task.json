@@ -1,0 +1,88 @@
+{
+ "name": "ahu_chw_requests",
+ "description": "Chilled-water requests from one air handler. The temperature error is supply air temperature minus its setpoint. Output yChiWatResReq is 3 when the error has been above high3_error for persistence seconds, else 2 when it has been above high2_error for persistence seconds, else 1 while the valve latch is set, else 0. A temperature condition, once on, stays on while the error remains above its threshold minus temperature_band, and ends at once otherwise; when it ends, its persistence count restarts the next time it comes on. The valve latch sets when the valve position goes above valve_open and clears when it goes below valve_reset; in between it keeps its state. The valve-open condition, once on, stays on until the valve is no longer above valve_open minus valve_band; each clear condition, once on, stays on until the valve is no longer below its threshold plus valve_band. Output yChiPlaReq is 1 while a second latch is set: it sets like the valve latch but clears only when the valve goes below valve_closed. Timing at the edges: all thresholds are strict (an error of exactly 3 K is not above 3 K; a valve of exactly 0.95 does not set a latch; exactly 0.85 or 0.10 does not clear one). A temperature condition already met at the first frame counts as having lasted, so its requests appear at once. A latch changes only when its set or clear condition turns on, and then becomes 'set and not clear' using the current values: a valve jumping in one frame from below valve_reset to above valve_open sets the latch, and a valve above valve_open at the first frame starts with both latches set.",
+ "inputs": [
+  {
+   "name": "TAirSup",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Measured supply air temperature"
+  },
+  {
+   "name": "TAirSupSet",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Supply air temperature setpoint"
+  },
+  {
+   "name": "uCooCoi",
+   "type": "real",
+   "unit": "1",
+   "meaning": "Cooling coil valve position, 0 to 1"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "yChiWatResReq",
+   "type": "int",
+   "unit": "1",
+   "meaning": "Chilled-water reset requests, 0 to 3"
+  },
+  {
+   "name": "yChiPlaReq",
+   "type": "int",
+   "unit": "1",
+   "meaning": "Chiller plant request, 0 or 1"
+  }
+ ],
+ "params": [
+  {
+   "name": "high3_error",
+   "value": 3.0,
+   "unit": "K",
+   "meaning": "Error above which, held long enough, 3 requests are sent"
+  },
+  {
+   "name": "high2_error",
+   "value": 2.0,
+   "unit": "K",
+   "meaning": "Error above which, held long enough, 2 requests are sent"
+  },
+  {
+   "name": "temperature_band",
+   "value": 0.1,
+   "unit": "K",
+   "meaning": "Release band below each temperature threshold"
+  },
+  {
+   "name": "persistence",
+   "value": 120.0,
+   "unit": "s",
+   "meaning": "How long a temperature condition must last before it counts"
+  },
+  {
+   "name": "valve_open",
+   "value": 0.95,
+   "unit": "1",
+   "meaning": "Valve position above which both latches set"
+  },
+  {
+   "name": "valve_reset",
+   "value": 0.85,
+   "unit": "1",
+   "meaning": "Valve position below which the reset-request latch clears"
+  },
+  {
+   "name": "valve_closed",
+   "value": 0.1,
+   "unit": "1",
+   "meaning": "Valve position below which the plant-request latch clears"
+  },
+  {
+   "name": "valve_band",
+   "value": 0.05,
+   "unit": "1",
+   "meaning": "Release band of each valve condition"
+  }
+ ]
+}

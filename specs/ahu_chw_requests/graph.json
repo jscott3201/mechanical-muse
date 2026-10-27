@@ -1,0 +1,239 @@
+{
+ "name": "ahu_chw_requests",
+ "inputs": [
+  {
+   "name": "TAirSup",
+   "type": "real",
+   "unit": "K",
+   "description": "Measured supply air temperature"
+  },
+  {
+   "name": "TAirSupSet",
+   "type": "real",
+   "unit": "K",
+   "description": "Supply air temperature setpoint"
+  },
+  {
+   "name": "uCooCoi",
+   "type": "real",
+   "unit": "1",
+   "description": "Cooling coil valve position, 0 to 1"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "yChiWatResReq",
+   "type": "int",
+   "description": "Chilled-water reset requests (0 to 3)"
+  },
+  {
+   "name": "yChiPlaReq",
+   "type": "int",
+   "description": "Chiller plant request (0 or 1)"
+  }
+ ],
+ "blocks": [
+  {
+   "id": "tempErr",
+   "class": "Reals.Subtract",
+   "params": []
+  },
+  {
+   "id": "high3",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 3.0
+    },
+    {
+     "name": "h",
+     "value": 0.1
+    }
+   ]
+  },
+  {
+   "id": "high2",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 2.0
+    },
+    {
+     "name": "h",
+     "value": 0.1
+    }
+   ]
+  },
+  {
+   "id": "high3Long",
+   "class": "Logical.TrueDelay",
+   "params": [
+    {
+     "name": "delayTime",
+     "value": 120.0
+    },
+    {
+     "name": "delayOnInit",
+     "value": false
+    }
+   ]
+  },
+  {
+   "id": "high2Long",
+   "class": "Logical.TrueDelay",
+   "params": [
+    {
+     "name": "delayTime",
+     "value": 120.0
+    },
+    {
+     "name": "delayOnInit",
+     "value": false
+    }
+   ]
+  },
+  {
+   "id": "valveOpen",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.95
+    },
+    {
+     "name": "h",
+     "value": 0.05
+    }
+   ]
+  },
+  {
+   "id": "valveReset",
+   "class": "Reals.LessThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.85
+    },
+    {
+     "name": "h",
+     "value": 0.05
+    }
+   ]
+  },
+  {
+   "id": "valveClosed",
+   "class": "Reals.LessThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.1
+    },
+    {
+     "name": "h",
+     "value": 0.05
+    }
+   ]
+  },
+  {
+   "id": "resetLatch",
+   "class": "Logical.Latch",
+   "params": []
+  },
+  {
+   "id": "plantLatch",
+   "class": "Logical.Latch",
+   "params": []
+  },
+  {
+   "id": "three",
+   "class": "Integers.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": "two",
+   "class": "Integers.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "one",
+   "class": "Integers.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 1
+    }
+   ]
+  },
+  {
+   "id": "zero",
+   "class": "Integers.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 0
+    }
+   ]
+  },
+  {
+   "id": "req1",
+   "class": "Integers.Switch",
+   "params": []
+  },
+  {
+   "id": "req2",
+   "class": "Integers.Switch",
+   "params": []
+  },
+  {
+   "id": "req3",
+   "class": "Integers.Switch",
+   "params": []
+  },
+  {
+   "id": "plantReq",
+   "class": "Integers.Switch",
+   "params": []
+  }
+ ],
+ "connections": [
+  "TAirSup -> tempErr.u1",
+  "TAirSupSet -> tempErr.u2",
+  "tempErr.y -> high3.u",
+  "tempErr.y -> high2.u",
+  "high3.y -> high3Long.u",
+  "high2.y -> high2Long.u",
+  "uCooCoi -> valveOpen.u",
+  "uCooCoi -> valveReset.u",
+  "uCooCoi -> valveClosed.u",
+  "valveOpen.y -> resetLatch.u",
+  "valveReset.y -> resetLatch.clr",
+  "valveOpen.y -> plantLatch.u",
+  "valveClosed.y -> plantLatch.clr",
+  "one.y -> req1.u1",
+  "resetLatch.y -> req1.u2",
+  "zero.y -> req1.u3",
+  "two.y -> req2.u1",
+  "high2Long.y -> req2.u2",
+  "req1.y -> req2.u3",
+  "three.y -> req3.u1",
+  "high3Long.y -> req3.u2",
+  "req2.y -> req3.u3",
+  "req3.y -> yChiWatResReq",
+  "one.y -> plantReq.u1",
+  "plantLatch.y -> plantReq.u2",
+  "zero.y -> plantReq.u3",
+  "plantReq.y -> yChiPlaReq"
+ ]
+}
