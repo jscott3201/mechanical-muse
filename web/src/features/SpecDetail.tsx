@@ -37,7 +37,11 @@ function PointTable({
             <TableRow key={p.name}>
               <TableCell className="font-mono text-xs">{p.name}</TableCell>
               <TableCell>
-                {p.type ?? (p.value !== undefined ? formatWithUnit(p.value, p.unit) : "")}
+                {p.value !== undefined
+                  ? formatWithUnit(p.value, p.unit)
+                  : [p.type, p.unit !== "1" && p.unit !== "bool" ? p.unit : null]
+                      .filter(Boolean)
+                      .join(" · ")}
               </TableCell>
               <TableCell className="whitespace-normal">{p.meaning}</TableCell>
             </TableRow>
@@ -72,7 +76,7 @@ export function SpecDetail({ name }: { name: string }) {
           <CardTitle>Verification</CardTitle>
           <CardDescription>
             Replays all {scenarios.length} scenarios on the pinned engine against the reference
-            graph. Only a passing receipt lets a sequence run on the building.
+            graph. Only a passing receipt lets a sequence run on the emulated building (BOPTEST).
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -83,7 +87,9 @@ export function SpecDetail({ name }: { name: string }) {
             </Button>
           </div>
           {verify.state.status === "error" && <ErrorNote error={verify.state.error} />}
-          {verify.state.status === "done" && <Receipt receipt={verify.state.data} />}
+          {verify.state.status === "done" && verify.state.data.spec === name && (
+            <Receipt receipt={verify.state.data} />
+          )}
         </CardContent>
       </Card>
     </div>

@@ -81,6 +81,8 @@ function severity(e: SupervisorEvent): LogEntry["severity"] {
 
 export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamState {
   let next = state;
+  // One copy of the tick buffer per batch, not per event.
+  let ticks: TickPoint[] | null = null;
   for (const env of envs) {
     if (next.lastSeq !== null && env.seq <= next.lastSeq) continue;
     const gap = next.gap || (next.lastSeq === null ? env.seq !== 0 : env.seq !== next.lastSeq + 1);
@@ -120,8 +122,8 @@ export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamSta
           writes: pruneUndefined(env.writes),
           readings: pruneUndefined(env.readings),
         };
-        const ticks = [...base.ticks, point];
-        if (ticks.length > MAX_TICKS) ticks.splice(0, ticks.length - MAX_TICKS);
+        ticks ??= [...base.ticks];
+        ticks.push(point);
         const events = env.events.map((e) => ({ seq: env.seq, t, text: describe(e), severity: severity(e) }));
         next = { ...base, ticks, log: events.length ? [...base.log, ...events] : base.log };
         break;
@@ -152,10 +154,17 @@ export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamSta
       }
     }
   }
+  if (ticks !== null && ticks.length > MAX_TICKS) {
+    ticks.splice(0, ticks.length - MAX_TICKS);
+  }
   return next;
 }
 
-/** Generated map types allow absent keys; the server never sends them. */
+/**
+ * A non-finite reading or write arrives as JSON null (serde writes NaN that way), which the
+ * generated map type allows. Dropping it leaves the key absent, and an absent key is shown as
+ * "no data", never as 0.
+ */
 function pruneUndefined(m: { [key in string]?: number }): Record<string, number> {
   const out: Record<string, number> = {};
   for (const [k, v] of Object.entries(m)) if (typeof v === "number") out[k] = v;

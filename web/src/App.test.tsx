@@ -86,4 +86,39 @@ describe("App", () => {
     expect(await screen.findByText("server offline")).toBeTruthy();
     expect(await screen.findByText("network")).toBeTruthy();
   });
+
+  it("never shows one spec's receipt under another", async () => {
+    const other: SpecSummary = { ...summary, name: "chw_plant_reset", title: "Chilled-water plant reset" };
+    let releaseVerify: (r: Response) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const key = `${init?.method ?? "GET"} ${url}`;
+        if (key === "POST /api/specs/ahu_chw_requests/verify") {
+          return new Promise<Response>((resolve) => {
+            releaseVerify = resolve;
+          });
+        }
+        const table: Record<string, unknown> = {
+          ...routes,
+          "GET /api/specs": [summary, other],
+          "GET /api/specs/chw_plant_reset": { ...detail, summary: other },
+        };
+        const body = table[key];
+        return body === undefined
+          ? new Response('{"code":"not-found","message":"no such route"}', { status: 404 })
+          : new Response(JSON.stringify(body), { status: 200 });
+      }),
+    );
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: /Air handler chilled-water requests/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Verify/ }));
+    // Switch specs while the first verification is still running, then let it answer.
+    fireEvent.click(screen.getByRole("button", { name: /Chilled-water plant reset/ }));
+    await screen.findByRole("heading", { name: "Chilled-water plant reset" }).catch(() => undefined);
+    releaseVerify(new Response(JSON.stringify(receipt), { status: 200 }));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByText("Not verified")).toBeNull();
+    expect(screen.queryByText(/passes 1 of 2/)).toBeNull();
+  });
 });

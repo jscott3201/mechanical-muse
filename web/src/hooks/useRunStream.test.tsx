@@ -85,4 +85,39 @@ describe("useRunStream", () => {
     renderHook(() => useRunStream(null));
     expect(FakeSource.instances.length).toBe(before);
   });
+
+  it("reports closed when the server ends the stream (204 after the end)", () => {
+    const { result } = renderHook(() => useRunStream("run-3"));
+    const source = FakeSource.instances.at(-1);
+    act(() => {
+      source?.close();
+      source?.onerror?.();
+    });
+    expect(result.current.connection).toBe("closed");
+  });
+
+  it("reports reconnecting on a transient error", () => {
+    const { result } = renderHook(() => useRunStream("run-4"));
+    const source = FakeSource.instances.at(-1);
+    act(() => source?.onerror?.());
+    expect(result.current.connection).toBe("reconnecting");
+  });
+
+  it("switching runs closes the old stream and starts from a clean state", async () => {
+    const { result, rerender } = renderHook(({ id }: { id: string | null }) => useRunStream(id), {
+      initialProps: { id: "run-a" as string | null },
+    });
+    const first = FakeSource.instances.at(-1);
+    await act(async () => {
+      for (const line of lines.slice(0, 6)) first?.emit(line);
+      await vi.runAllTimersAsync();
+    });
+    expect(result.current.ticks).toHaveLength(1);
+    rerender({ id: "run-b" });
+    expect(first?.closed).toBe(true);
+    expect(FakeSource.instances.at(-1)?.url).toBe("/api/runs/run-b/events");
+    expect(result.current.ticks).toHaveLength(0);
+    rerender({ id: null });
+    expect(result.current.connection).toBe("idle");
+  });
 });

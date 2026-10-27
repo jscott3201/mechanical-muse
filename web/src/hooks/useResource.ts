@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiFailure, request } from "@/lib/api";
 
@@ -41,13 +41,24 @@ export type Action<T> =
 /** A POST the user triggers; one at a time. */
 export function useAction<T>(path: string | null, body?: unknown) {
   const [state, setState] = useState<Action<T>>({ status: "idle" });
-  useEffect(() => setState({ status: "idle" }), [path]);
+  // A reply only lands if it answers the latest request for the current path; a slow reply
+  // for an earlier path must never show under a later one.
+  const latest = useRef(0);
+  useEffect(() => {
+    latest.current += 1;
+    setState({ status: "idle" });
+  }, [path]);
   const run = useCallback(() => {
     if (path === null) return;
+    const ticket = ++latest.current;
     setState({ status: "running" });
     request<T>("POST", path, body)
-      .then((data) => setState({ status: "done", data }))
-      .catch((e: unknown) => setState({ status: "error", error: asFailure(e) }));
+      .then((data) => {
+        if (latest.current === ticket) setState({ status: "done", data });
+      })
+      .catch((e: unknown) => {
+        if (latest.current === ticket) setState({ status: "error", error: asFailure(e) });
+      });
   }, [path, body]);
   return { state, run };
 }

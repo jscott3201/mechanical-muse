@@ -16,7 +16,7 @@ export function formatWithUnit(value: number, unit: string): string {
         ? `${formatNumber(value, 2)} K (${formatNumber(value - 273.15, 2)} °C)`
         : `${formatNumber(value, 3)} K`;
     case "Pa":
-      return value >= 1000
+      return Math.abs(value) >= 1000
         ? `${formatNumber(value / 1000, 3)} kPa`
         : `${formatNumber(value, 1)} Pa`;
     case "s":
@@ -35,6 +35,8 @@ export function formatWire(
 ): string {
   if (typeof value === "number") return formatNumber(value, 6);
   if (typeof value === "boolean") return value ? "true" : "false";
+  // Engine values have no text type here: a string is a non-finite real ("NaN", "Infinity"),
+  // shown as the engine reported it so a receipt says exactly what was compared.
   if (typeof value === "string") return value;
   return `enum ${value.class}#${value.ordinal}`;
 }

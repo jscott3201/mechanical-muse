@@ -6,7 +6,7 @@ import { initialRunStream, reduceRun, type RunStreamState } from "./runStream";
 
 const KINDS = ["phase", "started", "tick", "kpi", "ended"] as const;
 
-type Connection = "connecting" | "open" | "reconnecting" | "closed";
+type Connection = "idle" | "connecting" | "open" | "reconnecting" | "closed";
 
 type Msg = { type: "reset" } | { type: "batch"; envs: Envelope[] };
 
@@ -26,10 +26,13 @@ const nextFrame: (cb: () => void) => void =
  */
 export function useRunStream(runId: string | null): RunStreamState & { connection: Connection } {
   const [state, dispatch] = useReducer(reducer, initialRunStream);
-  const [connection, setConnection] = useState<Connection>("connecting");
+  const [connection, setConnection] = useState<Connection>("idle");
   useEffect(() => {
     dispatch({ type: "reset" });
-    if (runId === null) return;
+    if (runId === null) {
+      setConnection("idle");
+      return;
+    }
     setConnection("connecting");
     const source = new EventSource(`/api/runs/${encodeURIComponent(runId)}/events`);
     let pending: Envelope[] = [];
