@@ -120,3 +120,35 @@ async fn select_without_a_testid_is_malformed() {
     let err = BoptestClient::select(&base, "case").await.unwrap_err();
     assert!(matches!(err, PlantError::Malformed { .. }), "{err:?}");
 }
+
+#[tokio::test]
+async fn select_waits_for_a_test_case_still_being_uploaded() {
+    let base = serve(vec![(404, "Not Found"), (404, "Not Found"), SELECTED]).await;
+    let client = BoptestClient::select_when_ready(&base, "case", 5, std::time::Duration::ZERO)
+        .await
+        .unwrap();
+    assert_eq!(client.testid(), "t1");
+}
+
+#[tokio::test]
+async fn select_gives_up_after_its_attempts_and_never_retries_other_errors() {
+    let base = serve(vec![(404, "Not Found"), (404, "Not Found")]).await;
+    let err = BoptestClient::select_when_ready(&base, "case", 2, std::time::Duration::ZERO)
+        .await
+        .err()
+        .unwrap();
+    assert!(
+        matches!(err, PlantError::Refused { status: 404, .. }),
+        "{err:?}"
+    );
+    // A 500 may already have created a test: one call only (the server has one reply).
+    let base = serve(vec![(500, "boom")]).await;
+    let err = BoptestClient::select_when_ready(&base, "case", 5, std::time::Duration::ZERO)
+        .await
+        .err()
+        .unwrap();
+    assert!(
+        matches!(err, PlantError::Refused { status: 500, .. }),
+        "{err:?}"
+    );
+}

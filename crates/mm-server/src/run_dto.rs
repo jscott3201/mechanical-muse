@@ -119,6 +119,10 @@ pub struct RunInfo {
     pub state: RunState,
     pub ticks: u32,
     pub events: u32,
+    /// BOPTEST's KPIs for the run, once it has reported them (at the end).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub kpis: Option<BTreeMap<String, f64>>,
 }
 
 /// Where a running sequence's graph came from.
@@ -242,6 +246,10 @@ pub struct ReplayInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub state: Option<RunState>,
+    /// BOPTEST's KPIs as recorded, if the record has them.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub kpis: Option<BTreeMap<String, f64>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, TS)]
