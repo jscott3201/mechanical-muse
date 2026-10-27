@@ -4,6 +4,47 @@ Live runs of verified sequences against BOPTEST. Each entry states the setup, wh
 what it does not show. Run records (JSON) stay local in the gitignored `runs/`; the numbers
 below are copied from them.
 
+## 2026-10-27 (night): duct static pressure reset on every floor
+
+**Setup.** The same window and settings as the runs below (day 185 from 12:00, 300 steps of
+120 s, one-day warm-up, BOPTEST v0.9.0 on Modal), with the `pressure` run option: on top of the
+air handler requests and the chilled-water plant reset, 15 zone request sequences
+(`specs/zone_pressure_requests/`) and a static pressure reset per floor
+(`specs/ahu_static_pressure_reset/`) writing `floorN_dpSet`. All hand-built reference graphs.
+BOPTEST's own controls hold every floor at 400 Pa.
+
+**Version 1 starved the zones.** With the zone requests as the library writes them (airflow
+requests only once a damper has been above 95 % for a minute), every floor trimmed to the 50 Pa
+floor and no zone ever asked. A direct probe of BOPTEST showed why: at 50 Pa zone airflow fell to
+55 % of setpoint within minutes, while the zone dampers opened from 0.57 to only 0.77 over three
+hours. So the reset saved a third of the building's energy by under-ventilating it.
+
+**Version 2** asks from the airflow shortfall itself (1, 2 or 3 requests once airflow has been
+below 90, 70 or 50 % of setpoint for 120 s, plus the damper request). The reset now trims until
+zones start to fall short, responds when all five zones on a floor ask, and settles slowly
+(400 Pa to about 165 to 215 Pa by 17:00) as BOPTEST's dampers catch up. No fail-safe event fired.
+Record: `fixtures/replays/day185-noon-pressure.jsonl`.
+
+| Over the 10 h window, vs BOPTEST's baseline | Chilled-water reset only | + static pressure v1 | + static pressure v2 |
+| --- | --- | --- | --- |
+| BOPTEST `ener_tot` (kWh/m², whole building) | −4.7% | −33.6% | −24.1% |
+| BOPTEST `cost_tot` | −6.2% | −34.1% | −24.2% |
+| BOPTEST `emis_tot` | −5.6% | −33.9% | −24.2% |
+| BOPTEST `tdis_tot` (thermal discomfort) | +2.0% | +8.9% | −42.1% |
+| BOPTEST `idis_tot` (CO2 discomfort) | no change | +51.4% | +17.4% |
+
+What it does not show:
+
+- One summer afternoon and evening, and a sequence tuned on this same window: the 90 % level was
+  chosen after seeing v1 fail here. A different season or a longer run may differ.
+- v2 still costs CO2 comfort: zones held near 90 % of their airflow setpoint bring in less
+  outdoor air. A higher first level (say 95 %) would trade some of the saving for ventilation;
+  not tried yet.
+- The thermal comfort gain is BOPTEST's KPI on this window; we have not traced which zones
+  improved or why.
+- Floors 1 and 3 behave identically in this test case (BOPTEST models them the same way), and
+  floor 2 stands for ten floors.
+
 ## 2026-10-27 (afternoon): a live Muse Spark session, then its draft on BOPTEST
 
 **Setup.** A live authoring session in `mm-server` (`muse-spark-1.3`, high effort, up to 5
