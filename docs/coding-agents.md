@@ -14,7 +14,7 @@ application makes goes to Meta's models: Muse Spark through the Model API, Glimm
 | Skills | `.agents/skills/<id>/SKILL.md` | The committed copy (`mm-*` only), read by Muse Code. General-purpose skills from before the event are kept locally and gitignored. Claude Code reads only `.claude/skills/`, which is local; keep it in sync with `.agents/skills/` (copy or symlink). Muse also scans `.claude/skills/` and may flag the same id in both places as a conflict. |
 | Verification | `.muse/hooks/stamp.sh`, `.muse/hooks/verify.sh` | Wired by `.muse/hooks.json` (Muse) and the local `.claude/settings.json` (Claude Code). Fmt, clippy, tests and web checks for files changed this turn; up to 8 rounds. |
 | Ledger | `ledger/HANDOFF.md`, `ledger/OPEN.md` | Local only (gitignored). Each session reads both at the start and appends a dated handoff entry at the end, so the next session, in either tool, picks up where the last stopped. |
-| MCP | `.mcp.json` | shadcn server (`npx shadcn@latest mcp`). Muse loads it after trust; Claude Code asks once, or uses `enabledMcpjsonServers` in `.claude/settings.json` once trusted. |
+| MCP | `.mcp.json` | shadcn server (`npx shadcn@latest mcp`) and `mechanical-muse` (`mm-mcp`: our spec, palette, validate, emit and verify tools, `docs/mcp.md`). Muse loads it after trust; Claude Code asks once, or uses `enabledMcpjsonServers` in `.claude/settings.json` once trusted. |
 
 Commit the shared pieces before spawning isolated workers in either tool: worktrees start from HEAD.
 Gitignored folders (`.claude/`, `ledger/`) are not in a worktree, so Claude Code workers there run

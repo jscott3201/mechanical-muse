@@ -1,6 +1,6 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml).
-.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live
+.PHONY: mcp web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live
 
 check: fmt-check clippy test
 
@@ -98,6 +98,11 @@ server-live:
 	@set -a; . ./.env; set +a; \
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
 	cargo run -p mm-server
+
+# The MCP server on stdin/stdout for coding agents (docs/mcp.md); .mcp.json starts the same
+# binary. Offline: no model calls, no network.
+mcp:
+	@cargo run -q --locked -p mm-mcp
 
 # Needs BOPTEST up and/or MODEL_API_KEY.
 test-live:

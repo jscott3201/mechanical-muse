@@ -861,6 +861,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "mm-mcp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "mm-agent",
+ "mm-bridge",
+ "mm-graph",
+ "mm-server",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "mm-runtime"
 version = "0.1.0"
 dependencies = [

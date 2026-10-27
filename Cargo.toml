@@ -41,6 +41,7 @@ mm-bridge = { path = "crates/mm-bridge" }
 mm-agent = { path = "crates/mm-agent" }
 mm-runtime = { path = "crates/mm-runtime" }
 mm-bacnet = { path = "crates/mm-bacnet" }
+mm-server = { path = "crates/mm-server" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

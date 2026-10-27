@@ -1,0 +1,23 @@
+[package]
+name = "mm-mcp"
+description = "MCP server (stdio) exposing our spec, palette, validator, emitter and vector replay tools to coding agents"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+mm-agent.workspace = true
+mm-bridge.workspace = true
+mm-graph.workspace = true
+mm-server.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[lints]
+workspace = true
