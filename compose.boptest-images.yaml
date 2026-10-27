@@ -1,6 +1,12 @@
-# Override merged into BOPTEST's compose file by compose.yaml: same minio releases, from quay.io.
+# Override merged into BOPTEST's compose file by compose.yaml.
 services:
+  # Same minio releases BOPTEST names, from quay.io.
   minio:
     image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
   mc:
     image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+  # The web service waits 20 min for a worker reply by default; under x86 emulation a 1-day
+  # warm-up can take longer, so allow an hour (the client's own initialize timeout).
+  web:
+    environment:
+      BOPTEST_MESSAGE_TIMEOUT: "3600000"
