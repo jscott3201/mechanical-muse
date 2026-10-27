@@ -201,13 +201,19 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
                     phase: Phase::Selecting,
                 },
             );
-            let client = BoptestClient::select(url, preset::CASE)
-                .await
-                .map_err(|e| {
-                    // An abandoned select can still create a test, which then holds the worker.
-                    tracing::error!(error = %e, "select failed; BOPTEST may hold an orphaned test");
-                    format!("selecting the test case: {e}")
-                })?;
+            // A fresh deployment may still be uploading the test case: wait up to a minute.
+            let client = BoptestClient::select_when_ready(
+                url,
+                preset::CASE,
+                7,
+                std::time::Duration::from_secs(10),
+            )
+            .await
+            .map_err(|e| {
+                // An abandoned select can still create a test, which then holds the worker.
+                tracing::error!(error = %e, "select failed; BOPTEST may hold an orphaned test");
+                format!("selecting the test case: {e}")
+            })?;
             handle.publish(
                 None,
                 RunEvent::Phase {
