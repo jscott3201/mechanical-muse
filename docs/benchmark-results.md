@@ -125,6 +125,19 @@ Every first draft still had an algebraic loop; with the new message each was fix
 attempt. Three sessions are a small sample: we report the count, not a rate. Tokens per verified
 session: 126k / 49k / 85k input and 56k / 34k / 69k output.
 
+Then a rule in the system prompt (rule 9 in `crates/mm-agent/src/prompt.rs`; a new prompt, so
+a new `prompt_hash` in benchmark records) names the two classes that break a loop, so the model
+need not learn it from a refusal:
+
+| Prompt | Repair message | Sessions | Verified | Drafts refused as loops | Attempts per session |
+| --- | --- | --- | --- | --- | --- |
+| loop rule | loop-aware | 3 | **3 of 3** | 0 of 9 | 1/10, 1/10, 8/10, 8/10, pass · 8/10, pass · 8/10, truncated reply, pass |
+
+No draft looped after the rule (every first draft did before it). The remaining misses are the
+timing scenarios, which the repair then fixed. The truncated reply hit `max_output_tokens` and
+was retried as a new attempt. Tokens per session: 161k / 30k / 33k input and 56k / 40k / 42k
+output. Same caveat: three sessions.
+
 ## Control sequence: air handler chilled-water requests (run of 2026-10-26)
 
 Our own spec (`specs/ahu_chw_requests/`): one air handler's chilled-water reset requests (0 to

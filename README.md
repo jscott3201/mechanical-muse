@@ -1,8 +1,8 @@
 # Mechanical Muse
 
-**The muse proposes. The engine proves.**
+**The muse proposes. The engine checks.**
 
-Mechanical Muse is an agent built on Meta's Muse Spark that writes building control logic from a written sequence of operations and proves it correct before it runs. A deterministic control engine checks every draft against test vectors, and only verified logic goes live on a simulated large office building.
+Mechanical Muse is an agent built on Meta's Muse Spark that writes building control logic from a written sequence of operations, and lets it run only once it passes its tests. A deterministic control engine checks every draft against test vectors, and only verified logic goes live on a simulated large office building.
 
 Built solo by Justin Scott for the Meta Global AI Developer Hackathon (Indie track), October 26 to November 4, 2026.
 
