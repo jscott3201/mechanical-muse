@@ -2,4 +2,9 @@
 import type { InputBind } from "./InputBind";
 import type { OutputBind } from "./OutputBind";
 
-export type Binding = { floors: Array<number>, inputs: Array<InputBind>, outputs: Array<OutputBind>, notes: Array<string>, };
+export type Binding = { floors: Array<number>, inputs: Array<InputBind>, outputs: Array<OutputBind>, notes: Array<string>, 
+/**
+ * Each bound point's unit from BOPTEST's point list (templates as written), filled in by
+ * the server, for display.
+ */
+units: { [key in string]: string }, };

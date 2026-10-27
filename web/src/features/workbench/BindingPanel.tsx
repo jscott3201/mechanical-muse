@@ -16,6 +16,15 @@ import { ErrorNote } from "../ErrorNote";
 
 const KINDS = ["measurement", "above", "constant"] as const;
 
+/** A constant as typed: true, false or a number; anything else keeps the old value. */
+function constant(text: string, fallback: number | boolean): number | boolean {
+  const t = text.trim().toLowerCase();
+  if (t === "true" || t === "on") return true;
+  if (t === "false" || t === "off") return false;
+  const n = Number(t);
+  return t !== "" && Number.isFinite(n) ? n : fallback;
+}
+
 function num(text: string, fallback: number): number {
   const n = Number(text);
   return text.trim() !== "" && Number.isFinite(n) ? n : fallback;
@@ -30,8 +39,28 @@ function BindingTable({ binding, onChange }: { binding: Binding; onChange?: (b: 
     onChange?.({ ...binding, outputs: binding.outputs.map((b, j) => (j === i ? { ...b, ...patch } : b)) });
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm">
-        Runs on floor{binding.floors.length === 1 ? "" : "s"} {binding.floors.join(", ")}.{" "}
+      <p className="flex flex-wrap items-center gap-2 text-sm">
+        Runs on floor{binding.floors.length === 1 ? "" : "s"}{" "}
+        {edit
+          ? [1, 2, 3].map((f) => (
+              <label key={f} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={binding.floors.includes(f)}
+                  onChange={(e) =>
+                    onChange?.({
+                      ...binding,
+                      floors: e.target.checked
+                        ? [...binding.floors, f].sort()
+                        : binding.floors.filter((x) => x !== f),
+                    })
+                  }
+                />
+                {f}
+              </label>
+            ))
+          : binding.floors.join(", ")}
+        .{" "}
         <span className="text-muted-foreground">
           <code>{"{floor}"}</code> in a point name stands for each floor's own point.
         </span>
@@ -82,7 +111,22 @@ function BindingTable({ binding, onChange }: { binding: Binding; onChange?: (b: 
                     ) : (
                       `true above ${b.threshold}`
                     ))}
-                  {b.kind === "constant" && String(b.value)}
+                  {b.kind === "constant" &&
+                    (edit ? (
+                      <Input
+                        aria-label={`Constant for ${b.input}`}
+                        defaultValue={String(b.value)}
+                        placeholder="true, false or a number"
+                        onBlur={(e) => {
+                          const v = constant(e.target.value, b.value as number | boolean);
+                          e.target.value = String(v);
+                          setInput(i, { value: v });
+                        }}
+                        className="h-7 w-28"
+                      />
+                    ) : (
+                      String(b.value)
+                    ))}
                 </TableCell>
               </TableRow>
             ))}

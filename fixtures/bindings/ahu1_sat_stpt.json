@@ -34,8 +34,8 @@
         "output": "datStpt",
         "point": "floor{floor}_TSupAirSet",
         "measured": "floor{floor}_reaAHU_TSup_y",
-        "min": 285.93,
-        "max": 291.48
+        "min": 285.9,
+        "max": 291.5
       },
       {
         "output": "dehumActive",
@@ -46,9 +46,17 @@
       }
     ],
     "notes": [
-      "AHU enable has no dedicated measurement so floor occupancy status is used as a stand-in with threshold 0.5.",
-      "Dehumidification active output has no corresponding building input and is for display only."
-    ]
+      "AHU enable uses occupancy status as a stand-in with threshold 0.5.",
+      "Dehumidification active output is for display only and is not written to the building.",
+      "Startup values before the first update and failed sensor behavior are undefined."
+    ],
+    "units": {
+      "floor{floor}_TSupAirSet_u": "K",
+      "floor{floor}_reaAHU_TSup_y": "K",
+      "floor{floor}_reaAHU_occ_y": "1",
+      "floor{floor}_reaAHU_phiAHURet_y": "1",
+      "weaSta_reaWeaTDryBul_y": "K"
+    }
   },
   "problems": [],
   "proposed_by": "live",

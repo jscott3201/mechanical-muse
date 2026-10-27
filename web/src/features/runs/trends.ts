@@ -127,21 +127,19 @@ const onFloor = (template: string, f: number) => template.replaceAll("{floor}", 
 /**
  * Charts for engineers' own sequences, from their confirmed bindings: each written output as
  * the setpoint sent (dashed) beside the measurement that shows its result, per floor; each
- * measured input as read. Kelvin readings (above 150) show in °C, as elsewhere.
+ * measured input as read. Points the binding lists in kelvin show in °C; others as recorded.
  */
 export function ownTrends(ticks: TickPoint[], bindings: Record<string, Binding>): OwnChart[] {
   const charts: OwnChart[] = [];
-  const kelvin = (points: string[], from: "writes" | "readings") =>
-    ticks.some((t) => points.some((p) => (t[from][p] ?? 0) > 150));
   for (const [spec, b] of Object.entries(bindings)) {
+    const unitOf = (template: string) => b.units?.[template] ?? "";
     for (const o of b.outputs.filter((o) => o.point !== "")) {
-      const sent = b.floors.map((f) => `${onFloor(o.point, f)}_u`);
-      const k = kelvin(sent, "writes");
+      const k = unitOf(`${o.point}_u`) === "K";
       const show = (v: number | null) => (v === null ? null : k ? v - 273.15 : v);
       charts.push({
         id: `${spec}-${o.output}`,
         title: `${o.output} (${spec})`,
-        unit: k ? "°C" : "",
+        unit: k ? "°C" : unitOf(`${o.point}_u`),
         series: b.floors.flatMap((f, i) => [
           series(`set${f}`, `floor ${f} sent`, `var(--viz-${i + 1})`, ticks, (t) => show(num(t.writes[`${onFloor(o.point, f)}_u`])), true),
           ...(o.measured
@@ -152,12 +150,11 @@ export function ownTrends(ticks: TickPoint[], bindings: Record<string, Binding>)
     }
     for (const input of b.inputs.filter((i) => i.kind !== "constant")) {
       const floors = input.point.includes("{floor}") ? b.floors : [b.floors[0] ?? 1];
-      const points = floors.map((f) => onFloor(input.point, f));
-      const k = kelvin(points, "readings");
+      const k = unitOf(input.point) === "K";
       charts.push({
         id: `${spec}-${input.input}`,
         title: `${input.input} (${spec}, read from ${input.point})`,
-        unit: k ? "°C" : "",
+        unit: k ? "°C" : unitOf(input.point),
         series: floors.map((f, i) =>
           series(`in${f}`, floors.length > 1 ? `floor ${f}` : "read", `var(--viz-${i + 1})`, ticks, (t) => {
             const v = num(t.readings[onFloor(input.point, f)]);

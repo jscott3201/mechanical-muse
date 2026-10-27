@@ -187,6 +187,10 @@ async fn supervisor(
             .spec(spec)
             .ok_or_else(|| format!("spec {spec} is not loaded"))?
             .task;
+        // The binding was checked when confirmed; check it again against the task now.
+        if let Some(p) = crate::bind::check(binding, &task).first() {
+            return Err(format!("the binding of {spec} no longer fits: {p}"));
+        }
         let mut instances = Vec::new();
         for floor in &binding.floors {
             let (inputs, writes) = crate::bind::on(binding, &task, spec, *floor);

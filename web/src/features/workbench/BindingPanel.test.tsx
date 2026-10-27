@@ -16,6 +16,7 @@ const proposal: BindingView = {
     inputs: [{ input: "ena", kind: "measurement", point: "floor{floor}_reaAHU_occ_y", threshold: 0, value: 0 }],
     outputs: [{ output: "sp", point: "floor{floor}_TSupAirSet", measured: "floor{floor}_reaAHU_TSup_y", min: 285, max: 300 }],
     notes: ["Occupancy stands in for the enable."],
+    units: {},
   },
 };
 

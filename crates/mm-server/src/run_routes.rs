@@ -51,8 +51,39 @@ async fn start_run(
         .map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string()))?;
     // An engineer's sequence runs with the binding confirmed for it, recorded in the run.
     for spec in config.drafts.keys() {
-        if let Some(binding) = state.binding(spec) {
+        let own = state.spec(spec).is_some_and(|s| !s.detail.reference);
+        if let Some(binding) = state.binding(spec).filter(|_| own) {
             config.bindings.insert(spec.clone(), binding);
+        }
+    }
+    // Our own sequences write these; a bound sequence may not write them too.
+    if !config.baseline {
+        let mut ours: Vec<String> = mm_runtime::preset::reset_outputs()
+            .into_iter()
+            .map(|(_, b)| b.point)
+            .collect();
+        if config.pressure {
+            ours.extend(
+                mm_runtime::preset::pressure_outputs()
+                    .into_iter()
+                    .map(|(_, b)| b.point),
+            );
+        }
+        for (spec, binding) in &config.bindings {
+            for f in &binding.floors {
+                for o in binding.outputs.iter().filter(|o| !o.point.is_empty()) {
+                    let point = o.point.replace("{floor}", &f.to_string());
+                    if ours.contains(&point) {
+                        return Err(Failure::new(
+                            StatusCode::BAD_REQUEST,
+                            "bad-request",
+                            format!(
+                                "{spec} would write {point}, which this run's own sequences write"
+                            ),
+                        ));
+                    }
+                }
+            }
         }
     }
     let handle = state.runs().register(config).map_err(|e| match e {

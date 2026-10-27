@@ -127,6 +127,44 @@ pub struct Binding {
     pub outputs: Vec<OutputBind>,
     #[serde(default)]
     pub notes: Vec<String>,
+    /// Each bound point's unit from BOPTEST's point list (templates as written), filled in by
+    /// the server, for display.
+    #[serde(default)]
+    pub units: BTreeMap<String, String>,
+}
+
+/// The binding with every point's unit from the point list, for display.
+pub fn with_units(mut binding: Binding) -> Binding {
+    let floor = binding.floors.first().copied().unwrap_or(1);
+    let mut units = BTreeMap::new();
+    let templates = binding.inputs.iter().map(|b| b.point.clone()).chain(
+        binding
+            .outputs
+            .iter()
+            .flat_map(|b| [format!("{}_u", b.point), b.measured.clone()]),
+    );
+    for t in templates.filter(|t| !t.is_empty() && t != "_u") {
+        if let Some(p) = POINTS.get(&on_floor(&t, floor)) {
+            units.insert(t, p.unit.clone());
+        }
+    }
+    binding.units = units;
+    binding
+}
+
+/// Units that mean the same thing ("1", "bool" and none are all dimensionless).
+fn same_unit(a: &str, b: &str) -> bool {
+    let norm = |u: &str| match u.trim() {
+        "" | "1" | "bool" | "-" => String::from("1"),
+        other => other.to_owned(),
+    };
+    norm(a) == norm(b)
+}
+
+/// Supervisory setpoints only (supply air temperature, duct and loop pressure, zone and plant
+/// temperature setpoints): never the actuator overrides (fan speeds, dampers, valves).
+fn supervisory(base: &str) -> bool {
+    base.ends_with("Set")
 }
 
 fn on_floor(template: &str, floor: u8) -> String {
@@ -143,9 +181,18 @@ fn measurement(template: &str, floor: u8) -> Option<&'static Point> {
 pub fn check(binding: &Binding, task: &TaskSpec) -> Vec<String> {
     let mut problems = Vec::new();
     let floors: BTreeSet<u8> = binding.floors.iter().copied().collect();
-    if floors.is_empty() || !floors.iter().all(|f| FLOORS.contains(f)) {
-        problems.push("choose one or more of floors 1, 2 and 3".into());
+    if floors.is_empty()
+        || !floors.iter().all(|f| FLOORS.contains(f))
+        || floors.len() != binding.floors.len()
+    {
+        problems.push("choose one or more of floors 1, 2 and 3, each once".into());
     }
+    let units: BTreeMap<&str, &str> = task
+        .inputs
+        .iter()
+        .chain(&task.outputs)
+        .map(|p| (p.name.as_str(), p.unit.as_str()))
+        .collect();
     let types: BTreeMap<&str, SignalType> = task
         .inputs
         .iter()
@@ -173,7 +220,18 @@ pub fn check(binding: &Binding, task: &TaskSpec) -> Vec<String> {
             }
         };
         match (b.kind.as_str(), ty) {
-            ("measurement", SignalType::Real) => unknown(&mut problems),
+            ("measurement", SignalType::Real) => {
+                unknown(&mut problems);
+                let want = units.get(b.input.as_str()).copied().unwrap_or_default();
+                if let Some(p) = floors.iter().find_map(|f| measurement(&b.point, *f))
+                    && !same_unit(&p.unit, want)
+                {
+                    problems.push(format!(
+                        "input `{}` is in {want} but `{}` reads in {}",
+                        b.input, p.name, p.unit
+                    ));
+                }
+            }
             ("above", SignalType::Bool) => {
                 unknown(&mut problems);
                 if !b.threshold.is_finite() {
@@ -231,6 +289,15 @@ pub fn check(binding: &Binding, task: &TaskSpec) -> Vec<String> {
                 b.output, b.point
             ));
         }
+        if !supervisory(&b.point) {
+            problems.push(format!(
+                "`{}` is not a supervisory setpoint: only points ending in `Set` (supply air \
+                 temperature, duct or loop pressure, zone or plant temperature setpoints) are \
+                 written, never fan, damper or valve overrides",
+                b.point
+            ));
+            continue;
+        }
         for f in &floors {
             let name = on_floor(&b.point, *f);
             if !written.insert(name.clone()) {
@@ -242,6 +309,13 @@ pub fn check(binding: &Binding, task: &TaskSpec) -> Vec<String> {
             {
                 None => problems.push(format!("`{name}` is not a BOPTEST setpoint")),
                 Some(p) => {
+                    let want = units.get(b.output.as_str()).copied().unwrap_or_default();
+                    if !same_unit(&p.unit, want) {
+                        problems.push(format!(
+                            "output `{}` is in {want} but `{name}` takes {}",
+                            b.output, p.unit
+                        ));
+                    }
                     let lo = p.min.unwrap_or(f64::NEG_INFINITY);
                     let hi = p.max.unwrap_or(f64::INFINITY);
                     if !(b.min.is_finite() && b.max.is_finite() && b.min < b.max)
@@ -349,84 +423,4 @@ pub fn watch(binding: &Binding) -> Vec<String> {
         }
     }
     points.into_iter().collect()
-}
-
-#[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::indexing_slicing)]
-mod tests {
-    use serde_json::json;
-
-    use super::*;
-
-    fn task() -> TaskSpec {
-        serde_json::from_value(json!({
-            "name": "sat", "description": "",
-            "inputs": [
-                {"name": "ena", "type": "bool", "unit": "1", "meaning": "AHU on"},
-                {"name": "oat", "type": "real", "unit": "K", "meaning": "Outdoor air"}
-            ],
-            "outputs": [
-                {"name": "sp", "type": "real", "unit": "K", "meaning": "Setpoint"},
-                {"name": "flag", "type": "bool", "unit": "1", "meaning": "Shown only"}
-            ]
-        }))
-        .unwrap()
-    }
-
-    fn binding() -> Binding {
-        serde_json::from_value(json!({
-            "floors": [1, 2, 3],
-            "inputs": [
-                {"input": "ena", "kind": "above", "point": "floor{floor}_reaAHU_occ_y", "threshold": 0.5, "value": 0},
-                {"input": "oat", "kind": "measurement", "point": "weaSta_reaWeaTDryBul_y", "threshold": 0, "value": 0}
-            ],
-            "outputs": [
-                {"output": "sp", "point": "floor{floor}_TSupAirSet", "measured": "floor{floor}_reaAHU_TSup_y", "min": 285.15, "max": 300.0},
-                {"output": "flag", "point": "", "measured": "", "min": 0, "max": 0}
-            ]
-        }))
-        .unwrap()
-    }
-
-    #[test]
-    fn the_point_list_parses_quoted_descriptions() {
-        let occ = &POINTS["floor1_reaAHU_occ_y"];
-        assert_eq!(occ.kind, "measurement");
-        assert!(occ.description.contains("1 occupied, 0 unoccupied"));
-        assert_eq!(POINTS["floor1_TSupAirSet_u"].min, Some(285.15));
-        assert!(!POINTS.contains_key("floor1_TSupAirSet_activate"));
-    }
-
-    #[test]
-    fn a_sound_binding_runs_on_each_floor() {
-        assert_eq!(check(&binding(), &task()), Vec::<String>::new());
-        let (inputs, outputs) = on(&binding(), &task(), "sat", 2);
-        assert_eq!(
-            inputs[0].source,
-            Source::MeasurementAbove {
-                point: "floor2_reaAHU_occ_y".into(),
-                threshold: 0.5
-            }
-        );
-        assert_eq!(outputs.len(), 1, "the display-only flag is not written");
-        assert_eq!(outputs[0].0, "sat_floor2");
-        assert_eq!(outputs[0].1.point, "floor2_TSupAirSet");
-        assert!(watch(&binding()).contains(&"floor3_reaAHU_TSup_y".to_owned()));
-    }
-
-    #[test]
-    fn bad_bindings_are_refused_with_reasons() {
-        let mut b = binding();
-        b.inputs[1].point = "floor{floor}_nope_y".into();
-        b.outputs[0].max = 400.0;
-        b.outputs[1].point = "floor{floor}_TSupAirSet".into();
-        b.inputs.pop();
-        let p = check(&b, &task()).join("\n");
-        for needle in ["`oat` is not bound", "range", "can only be shown"] {
-            assert!(p.contains(needle), "missing {needle} in\n{p}");
-        }
-        let mut shared = binding();
-        shared.outputs[0].point = "floor1_TSupAirSet".into();
-        assert!(check(&shared, &task()).join("\n").contains("every floor"));
-    }
 }

@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::author_dto::ModelSource;
-use crate::bind::{Binding, check, listing};
+use crate::bind::{Binding, check, listing, with_units};
 use crate::routes::{AppState, Failure};
 
 /// A binding and what the checks found; `source` says who wrote it.
@@ -103,10 +103,14 @@ async fn propose(
                         "no model key on this server, and no recorded binding for this sequence",
                     )
                 })?;
+            let binding = with_units(recorded.binding);
             return Ok(Json(BindingView {
+                spec: name,
+                problems: check(&binding, &task),
+                binding,
                 proposed_by: Some(ModelSource::Recorded),
                 confirmed: false,
-                ..recorded
+                task: digest,
             }));
         }
     };
@@ -154,7 +158,7 @@ async fn propose(
     let view = BindingView {
         spec: name.clone(),
         problems,
-        binding,
+        binding: with_units(binding),
         proposed_by: Some(ModelSource::Live),
         confirmed: false,
         task: digest,
@@ -189,7 +193,7 @@ async fn confirm(
     }
     let view = BindingView {
         spec: name.clone(),
-        binding: request.binding,
+        binding: with_units(request.binding),
         problems: Vec::new(),
         proposed_by: None,
         confirmed: true,
@@ -267,7 +271,7 @@ pub fn restore(state: &AppState) {
             continue;
         };
         match state.spec(&view.spec) {
-            Some(spec) if check(&view.binding, &spec.task).is_empty() => {
+            Some(spec) if !spec.detail.reference && check(&view.binding, &spec.task).is_empty() => {
                 state.set_binding(&view.spec, view.binding);
             }
             _ => tracing::warn!(path = %path.display(), "skipping a saved binding"),

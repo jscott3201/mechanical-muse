@@ -17,6 +17,12 @@ const binding: Binding = {
     { output: "flag", point: "", measured: "", min: 0, max: 1 },
   ],
   notes: [],
+  units: {
+    "floor{floor}_TSupAirSet_u": "K",
+    "floor{floor}_reaAHU_TSup_y": "K",
+    "floor{floor}_reaAHU_occ_y": "1",
+    weaSta_reaWeaTDryBul_y: "K",
+  },
 };
 
 const tick = (t: number): TickPoint => ({
@@ -39,6 +45,6 @@ describe("ownTrends", () => {
     const oat = charts[2];
     expect(oat?.series).toHaveLength(1);
     expect(oat?.series[0]?.points[0]?.y).toBeCloseTo(24, 6);
-    expect(charts[1]?.unit).toBe("");
+    expect(charts[1]?.unit).toBe("1");
   });
 });

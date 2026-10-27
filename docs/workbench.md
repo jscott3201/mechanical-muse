@@ -86,13 +86,24 @@ every step it sent 55 °F (12.78 °C), as the sheet says for each condition it m
   240 steps.
 - **Day 140.** A weekend: unoccupied, so the AHU counts as off.
 - **Day 143, from 06:00.** Occupied, and outdoor air passed through the band (14–25 °C). But
-  return humidity crossed 60 % early and then stayed at 57–59 %, above the 55 % release, so the
-  override latched all morning.
+  return humidity started at 64 % and stayed above 60 % for the first hour, which turned the
+  override on. It then held at 57–60 %, above the 55 % release, so the override stayed on all
+  morning (237 of 240 steps per floor; day 110 latched the same way).
 
 So the drafted logic does what the sheet says, and running it closed-loop shows that the sheet's
 humidity thresholds keep its reset from ever acting in this building. A reviewer would want to
 know that before deploying it. The day 185 and day 143 runs are replays in `fixtures/replays/`
 (labelled "with your sequence").
+
+These runs used Spark's first binding. Its lower limit of 285.93 K sat 0.002 K above 55 °F, so
+the replays log a `clamped` event on every write. The binding prompt now asks for limits that
+include every value the sequence sends. Three new live proposals all chose 285.9–291.5 K, and
+the recorded binding in `fixtures/bindings/` is one of them; the offline test requires zero
+clamps.
+
+Writing `floorN_TSupAirSet` also changes what our air handler requests sequence reads as the
+supply air setpoint, because BOPTEST reports the override back. That is intended: the requests
+compare the measured supply air with the setpoint actually in force.
 
 ## Without a key
 `fixtures/sequences/ahu-sat-reset-sample.{md,pdf,png}` is a one-page sheet we wrote for this demo

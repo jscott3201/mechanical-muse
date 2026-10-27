@@ -24,7 +24,7 @@ fn repo(path: &str) -> PathBuf {
         .join(path)
 }
 
-/// A warm afternoon: occupied, 24 °C outside, dry return air.
+/// A mild morning: occupied, 18 °C (64.4 °F) outside, dry return air.
 fn readings(time: f64) -> Measurements {
     let mut m: Measurements = [("time".to_owned(), time)].into_iter().collect();
     for f in 1..=3 {
@@ -34,7 +34,7 @@ fn readings(time: f64) -> Measurements {
         m.insert(format!("floor{f}_reaAHU_occ_y"), 1.0);
         m.insert(format!("floor{f}_reaAHU_phiAHURet_y"), 0.45);
     }
-    m.insert("weaSta_reaWeaTDryBul_y".into(), 297.15);
+    m.insert("weaSta_reaWeaTDryBul_y".into(), 291.15);
     m.insert("reaChiWatSys_TCHWSup_y".into(), 278.7);
     m
 }
@@ -184,6 +184,44 @@ async fn your_own_sequence_runs_on_every_floor_once_bound() {
     let (_, bound) = call(&state, "GET", "/api/workbench/bindings", None).await;
     assert!(bound[name.as_str()].is_object(), "{bound}");
 
+    // A binding that would write the chilled-water setpoint our own reset writes is refused at
+    // the start, not on the first tick.
+    let mut clash = proposal["binding"].clone();
+    clash["floors"] = json!([1]);
+    clash["outputs"][0]["point"] = json!("oveChiWatSys_TWSet");
+    clash["outputs"][0]["measured"] = json!("");
+    clash["outputs"][0]["min"] = json!(278.15);
+    clash["outputs"][0]["max"] = json!(288.15);
+    let (status, body) = call(
+        &state,
+        "POST",
+        &format!("/api/workbench/{name}/binding"),
+        Some(json!({"binding": clash})),
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "the clash is only visible with the run: {body}"
+    );
+    let (status, body) = call(&state, "POST", "/api/runs", Some(request.clone())).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    assert!(
+        body["message"]
+            .as_str()
+            .unwrap()
+            .contains("own sequences write"),
+        "{body}"
+    );
+    let (status, _) = call(
+        &state,
+        "POST",
+        &format!("/api/workbench/{name}/binding"),
+        Some(json!({"binding": proposal["binding"]})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
     let (status, run) = call(&state, "POST", "/api/runs", Some(request)).await;
     assert_eq!(status, StatusCode::CREATED, "{run}");
     let id = run["id"].as_str().unwrap().to_owned();
@@ -212,16 +250,38 @@ async fn your_own_sequence_runs_on_every_floor_once_bound() {
             .all(|s| s["origin"] == "drafted" && s["content_id"] == draft)
     );
 
-    // 24 °C outside is between the sheet's 60 °F and 70 °F, so after the 10-minute hold each
-    // floor's setpoint is on the reset line, inside the binding's limits.
+    // 64.4 °F outside is inside the sheet's 60–70 °F band: after the 10-minute hold each floor
+    // sends the reset line's value, 65 °F - 4.4 °F = 60.6 °F (289.039 K), exactly as computed and
+    // without a clamp.
     let ticks: Vec<&Value> = all.iter().filter(|e| e["kind"] == "tick").collect();
     let last = ticks.last().unwrap();
     for f in 1..=3 {
         let sent = last["writes"][format!("floor{f}_TSupAirSet_u")]
             .as_f64()
             .unwrap();
-        assert!((285.93..=291.48).contains(&sent), "floor {f} sent {sent}");
+        let computed = last["outputs"][format!("{name}_floor{f}")]["datStpt"]
+            .as_f64()
+            .unwrap();
+        assert!((sent - 289.039).abs() < 0.01, "floor {f} sent {sent}");
+        assert!(
+            (sent - computed).abs() < 1e-9,
+            "floor {f}: sent {sent}, computed {computed}"
+        );
         assert!(last["readings"][format!("floor{f}_reaAHU_phiAHURet_y")].is_number());
     }
+    let clamped = ticks
+        .iter()
+        .flat_map(|t| t["events"].as_array().unwrap())
+        .filter(|e| {
+            e["kind"] == "clamped"
+                && e["sequence"]
+                    .as_str()
+                    .is_some_and(|s| s.starts_with(name.as_str()))
+        })
+        .count();
+    assert_eq!(
+        clamped, 0,
+        "the recorded binding's limits include every value it sends"
+    );
     let _ = std::fs::remove_dir_all(&records);
 }
