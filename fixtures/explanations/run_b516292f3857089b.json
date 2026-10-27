@@ -1,0 +1,24 @@
+{
+  "key": "run:b516292f3857089b",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "The run replayed two hours of supervisory control with air handler requests enabled to test handling of a bad sensor. From 00:40 to 00:48 a planned invalid supply air temperature reading caused the air handler and chilled water sequences to pause and return chilled water controls to the building. The run then completed normally with no other issues.",
+  "items": [
+    {
+      "when": "day 186 00:40 to day 186 00:48",
+      "title": "Planned sensor fault test",
+      "text": "A test replaced the floor 1 supply air temperature reading [floor1_reaAHU_TSup_y] with an invalid value for five steps. This was a planned fault injection to check how the supervisory control responds to bad data."
+    },
+    {
+      "when": "day 186 00:40 to day 186 00:48",
+      "title": "Supervisory sequences paused",
+      "text": "Because the supply air temperature reading was not usable, the air handler sequence could not calculate its normal result. The chilled water sequence was then missing the request signal it expects from the air handler, so it also could not calculate new setpoints. As a safeguard both sequences wrote no new values during this period."
+    },
+    {
+      "when": "day 186 00:40 to day 186 00:48",
+      "title": "Chilled water controls returned to building",
+      "text": "While the sequences were paused, the chilled water temperature setpoint [oveChiWatSys_TWSet] and the chilled water pressure setpoint [oveChiWatSys_dpSet] were handed back to the building's own controllers. This safeguard keeps the building running on its local control until good data returns."
+    }
+  ],
+  "spans": 5
+}

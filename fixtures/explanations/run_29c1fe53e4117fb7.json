@@ -1,0 +1,8 @@
+{
+  "key": "run:29c1fe53e4117fb7",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "This was a replay of a recorded run starting midday on day 185 that ran supervisory control for 300 two-minute steps. It coordinated zone pressure requests, air handler chilled water requests, static pressure reset, and chilled water plant reset. It completed normally with no faults, missed writes, clamps, or handbacks in the log.",
+  "items": [],
+  "spans": 0
+}

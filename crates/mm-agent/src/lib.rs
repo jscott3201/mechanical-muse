@@ -16,7 +16,8 @@ mod responses;
 
 pub use client::{Effort, ModelClient, ModelError, ModelReply, ModelRequest, OutputSchema, Usage};
 pub use explain::{
-    Explained, ExplainedPart, Explanation, check_explanation, explain, explain_request,
+    Explained, ExplainedPart, Explanation, RunExplainedItem, RunExplanation, check_explanation,
+    check_run_explanation, explain, explain_request, explain_run, explain_run_request,
 };
 pub use prompt::{
     Exemplar, ParamHint, PointSpec, TaskSpec, palette_listing, system_instructions, task_message,

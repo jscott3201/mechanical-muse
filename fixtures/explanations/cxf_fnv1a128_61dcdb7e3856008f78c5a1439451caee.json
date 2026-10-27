@@ -1,0 +1,73 @@
+{
+  "spec": "chw_plant_reset",
+  "content_id": "cxf:fnv1a128:61dcdb7e3856008f78c5a1439451caee",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "This sequence saves chiller and pump energy by relaxing the chilled water plant when few air handlers need cooling. It keeps a single reset value between 0 and 1, where 1 means full design operation and lower values mean relaxed operation. That value then sets the chilled water supply temperature and the loop differential pressure, warming the water first and then lowering pressure as the value falls.",
+  "parts": [
+    {
+      "title": "When reset is allowed and how often it updates",
+      "text": "The plant enable signal controls whether reset is active. While the plant is disabled the reset output is forced to 1 for design operation immediately without waiting for a timer. After the plant is enabled the output stays at 1 until both the enable is true and 1200 seconds have passed on the enable timer. Once that condition is true the reset value is allowed to update only every 300 seconds at fixed update times counted from time zero. With these defaults if the plant is enabled at 0 seconds the first real change can be applied at the 1200 second update.",
+      "blocks": [
+        "sampleTrigger",
+        "enableTimer",
+        "enableReadyAnd"
+      ]
+    },
+    {
+      "title": "Freeze during chiller staging",
+      "text": "A staging in progress signal freezes the reset value so the plant does not reset while chillers are staging. A rising edge on that signal starts a 900 second hold with no hold when the signal is false. The freeze stays on while either the staging signal itself or the hold is true. This is inverted to a not frozen permission that is used later to decide whether to accept a new value. This means an update that lands exactly when staging starts is already frozen, and with the defaults staging from 3000 to 3600 seconds would block the updates at 3000, 3300 and 3600 seconds with normal operation re",
+      "blocks": [
+        "stageEdge",
+        "stageHold",
+        "freezeOr",
+        "notFrozen"
+      ]
+    },
+    {
+      "title": "Calculating the change from air handler requests",
+      "text": "The number of reset requests from the air handlers is evaluated at each update instant, including any change that happens at that same instant. The ignored count is 2, so 2 or fewer requests means the change for that update is just the trim of minus 0.02. If there are more than 2 requests the extra requests above 2 are multiplied by 0.03 each and that respond part is limited to a maximum of 0.07, then the trim of minus 0.02 is added.",
+      "blocks": [
+        "intToReal",
+        "constIgnored",
+        "subtractExcess",
+        "multiplyRespond",
+        "constCap",
+        "minCap",
+        "constZero",
+        "greaterReq",
+        "switchRespond",
+        "constTrim",
+        "addChange"
+      ]
+    },
+    {
+      "title": "Updating and holding the reset value",
+      "text": "The change is added to the previous reset value and the result is limited to stay between 0 and 1, where 1 is design and 0 is most relaxed. If frozen the logic keeps the previous value instead of the newly calculated value. If not yet ready after enable the input to the update is forced to 1, otherwise it uses the calculated or frozen value. That input is sampled every 300 seconds and starts at 1, and the final output also forces 1 immediately whenever not ready, otherwise it shows the sampled value. The sampled output is stored and fed back as the previous value for the next update, and that ",
+      "blocks": [
+        "addNew",
+        "limiter",
+        "switchFreeze",
+        "constOne",
+        "switchSamplerIn",
+        "sampler",
+        "resetDelay",
+        "switchOut"
+      ]
+    },
+    {
+      "title": "Converting reset to temperature and pressure setpoints",
+      "text": "The reset value drives two setpoints with staggered ranges. The supply temperature uses 282.15 Kelvin at 0.5 and below and moves in a straight line to 278.71 Kelvin at 1, so warming happens over the upper half of the reset range and it stays at the limits outside that range. The differential pressure uses 95650 Pascal at 0 and moves in a straight line to 239125 Pascal at 0.5 and then stays at 239125 Pascal above 0.5, so pressure is lowered only over the lower half of the reset range.",
+      "blocks": [
+        "constHalf",
+        "constWarm",
+        "constDesignT",
+        "constLowP",
+        "constDesignP",
+        "lineT",
+        "lineP"
+      ]
+    }
+  ],
+  "unknown_blocks": []
+}

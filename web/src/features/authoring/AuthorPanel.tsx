@@ -17,6 +17,7 @@ import type { ModelSource } from "@/types/generated/ModelSource";
 import type { Problem } from "@/types/generated/Problem";
 
 import { ErrorNote } from "../ErrorNote";
+import { ExplanationPanel } from "../graph/ExplanationPanel";
 import { GraphCanvas } from "../graph/GraphCanvas";
 import { Outcome } from "../Receipt";
 
@@ -156,9 +157,12 @@ function flaggedNodes(view: AttemptView): string[] {
   return [...new Set(problems.map((p) => p.node).filter((n): n is string => Boolean(n)))];
 }
 
-function AttemptRow({ attempt }: { attempt: AttemptEntry }) {
+function AttemptRow({ attempt, spec }: { attempt: AttemptEntry; spec: string }) {
   const [open, setOpen] = useState(false);
+  const [focus, setFocus] = useState<string[]>([]);
   const graph = attempt.view?.graph;
+  // Only a verified draft is stored, so only it can be explained by content id.
+  const verifiedId = attempt.view?.result === "passed" ? attempt.view.content_id : null;
   return (
     <li className="flex flex-col gap-2 rounded-md border p-3">
       <p className="text-xs text-muted-foreground">
@@ -179,9 +183,11 @@ function AttemptRow({ attempt }: { attempt: AttemptEntry }) {
                 <GraphCanvas
                   graph={graph}
                   flagged={flaggedNodes(attempt.view)}
+                  highlighted={focus}
                   label={`Graph drafted in attempt ${attempt.index}`}
                 />
               )}
+              {open && verifiedId && <ExplanationPanel spec={spec} draft={verifiedId} onFocusBlocks={setFocus} />}
             </div>
           )}
         </>
@@ -298,7 +304,7 @@ export function AuthorPanel({
         {stream.attempts.length > 0 && (
           <ol aria-label="Attempts" className="flex flex-col gap-2">
             {stream.attempts.map((a) => (
-              <AttemptRow key={a.index} attempt={a} />
+              <AttemptRow key={a.index} attempt={a} spec={spec} />
             ))}
           </ol>
         )}

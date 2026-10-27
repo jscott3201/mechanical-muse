@@ -20,6 +20,10 @@ fn repo(path: &str) -> PathBuf {
 }
 
 fn state(explanations: Option<PathBuf>) -> AppState {
+    with_replays(explanations, None)
+}
+
+fn with_replays(explanations: Option<PathBuf>, replays: Option<PathBuf>) -> AppState {
     let palette = Palette::pinned().unwrap();
     let specs = SpecStore::load(&repo("specs"), &palette).unwrap();
     AppState::build(
@@ -31,7 +35,7 @@ fn state(explanations: Option<PathBuf>) -> AppState {
                 pace: std::time::Duration::ZERO,
             },
             records: None,
-            replays: None,
+            replays,
             replay_pace: std::time::Duration::ZERO,
         },
         AuthoringConfig {
@@ -108,4 +112,59 @@ async fn an_unknown_draft_or_spec_is_not_found() {
     assert_eq!(body["code"], "unknown-draft");
     let (status, _) = explain(&state, "nope", json!({})).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+async fn call(
+    state: &AppState,
+    method: &str,
+    uri: &str,
+    body: Option<Value>,
+) -> (StatusCode, Value) {
+    let request = Request::builder()
+        .method(method)
+        .uri(uri)
+        .header("content-type", "application/json")
+        .body(body.map_or_else(Body::empty, |b| Body::from(b.to_string())))
+        .unwrap();
+    let response = app(state.clone()).oneshot(request).await.unwrap();
+    let status = response.status();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    (
+        status,
+        serde_json::from_slice(&bytes).unwrap_or(Value::Null),
+    )
+}
+
+/// The fault demo's events, replayed, have a committed explanation: without a key it is served,
+/// labelled recorded. This also pins the event context: if its format changes, the digest does
+/// too and this fails rather than the demo silently losing its explanation.
+#[tokio::test]
+async fn a_replayed_runs_events_have_a_recorded_explanation() {
+    let state = with_replays(
+        Some(repo("fixtures/explanations")),
+        Some(repo("fixtures/replays")),
+    );
+    let (status, run) = call(
+        &state,
+        "POST",
+        "/api/runs/replay",
+        Some(json!({"record": "day186-midnight-fault-demo"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{run}");
+    let id = run["id"].as_str().unwrap().to_owned();
+    for _ in 0..500 {
+        let (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
+        if info["state"] == "completed" {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    let (status, body) = call(&state, "POST", &format!("/api/runs/{id}/explain"), None).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["source"], "recorded");
+    assert_eq!(body["key"], "run:b516292f3857089b");
+    assert!(!body["items"].as_array().unwrap().is_empty());
+    let (status, body) = call(&state, "POST", "/api/runs/nope/explain", None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
 }

@@ -52,9 +52,25 @@ pub struct ExplanationView {
     pub unknown_blocks: Vec<String>,
 }
 
+/// A stored explanation: found by its key, and labelled when it comes from the recorded folder.
+pub(crate) trait Stored: Serialize + serde::de::DeserializeOwned + Clone {
+    fn key(&self) -> &str;
+    fn mark_recorded(&mut self);
+}
+
+impl Stored for ExplanationView {
+    fn key(&self) -> &str {
+        &self.content_id
+    }
+    fn mark_recorded(&mut self) {
+        self.source = "recorded".into();
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Explanations {
-    cache: Mutex<BTreeMap<String, ExplanationView>>,
+    pub(crate) graphs: Mutex<BTreeMap<String, ExplanationView>>,
+    pub(crate) runs: Mutex<BTreeMap<String, crate::run_explain::RunExplanationView>>,
     /// Where live explanations are written (`<records>/explanations`).
     pub store: Option<PathBuf>,
     /// Committed explanations, served as recorded.
@@ -72,52 +88,54 @@ fn stem(content_id: &str) -> Option<String> {
         .then_some(s)
 }
 
-fn read(dir: &Path, content_id: &str) -> Option<ExplanationView> {
-    let path = dir.join(format!("{}.json", stem(content_id)?));
+fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+fn read<T: Stored>(dir: &Path, key: &str) -> Option<T> {
+    let path = dir.join(format!("{}.json", stem(key)?));
     let text = std::fs::read_to_string(path).ok()?;
-    serde_json::from_str::<ExplanationView>(&text)
+    serde_json::from_str::<T>(&text)
         .ok()
-        .filter(|e| e.content_id == content_id)
+        .filter(|e| e.key() == key)
 }
 
 impl Explanations {
     pub fn new(store: Option<PathBuf>, recorded: Option<PathBuf>) -> Self {
         Self {
-            cache: Mutex::default(),
             store,
             recorded,
+            ..Self::default()
         }
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<'_, BTreeMap<String, ExplanationView>> {
-        self.cache
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-    }
-
-    /// A known explanation of `content_id`: this server's own first, then a recorded one.
-    fn known(&self, content_id: &str) -> Option<ExplanationView> {
-        if let Some(e) = self.lock().get(content_id) {
+    /// A known explanation under `key`: this server's own first, then a recorded one.
+    pub(crate) fn known<T: Stored>(
+        &self,
+        cache: &Mutex<BTreeMap<String, T>>,
+        key: &str,
+    ) -> Option<T> {
+        if let Some(e) = lock(cache).get(key) {
             return Some(e.clone());
         }
-        let own = self.store.as_deref().and_then(|d| read(d, content_id));
+        let own = self.store.as_deref().and_then(|d| read::<T>(d, key));
         let found = own.or_else(|| {
             self.recorded
                 .as_deref()
-                .and_then(|d| read(d, content_id))
+                .and_then(|d| read::<T>(d, key))
                 .map(|mut e| {
-                    e.source = "recorded".into();
+                    e.mark_recorded();
                     e
                 })
         })?;
-        self.lock().insert(content_id.to_owned(), found.clone());
+        lock(cache).insert(key.to_owned(), found.clone());
         Some(found)
     }
 
-    fn remember(&self, view: &ExplanationView) {
-        self.lock().insert(view.content_id.clone(), view.clone());
+    pub(crate) fn remember<T: Stored>(&self, cache: &Mutex<BTreeMap<String, T>>, view: &T) {
+        lock(cache).insert(view.key().to_owned(), view.clone());
         let Some(dir) = &self.store else { return };
-        let Some(name) = stem(&view.content_id) else {
+        let Some(name) = stem(view.key()) else {
             return;
         };
         let written = std::fs::create_dir_all(dir).and_then(|()| {
@@ -167,7 +185,8 @@ async fn explain(
         }
     };
     let content_id = content_id(&state, &graph).await?;
-    if let Some(found) = state.explanations().known(&content_id) {
+    let ex = state.explanations();
+    if let Some(found) = ex.known(&ex.graphs, &content_id) {
         return Ok(Json(found));
     }
     let client = state.authoring().config.spark.clone().ok_or_else(|| {
@@ -205,7 +224,9 @@ async fn explain(
             .collect(),
         unknown_blocks: explained.unknown_blocks,
     };
-    state.explanations().remember(&view);
+    state
+        .explanations()
+        .remember(&state.explanations().graphs, &view);
     Ok(Json(view))
 }
 
