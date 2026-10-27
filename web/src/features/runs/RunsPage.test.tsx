@@ -21,6 +21,11 @@ const gapped = readFileSync(
   .split("\n");
 const runId = (JSON.parse(lines[0] ?? "{}") as { run_id: string }).run_id;
 
+/** What the server answers when it was started without the BACnet mirror. */
+function bacnetOff() {
+  return new Response(JSON.stringify({ code: "bacnet-off", message: "off" }), { status: 404 });
+}
+
 class FakeSource {
   static last: FakeSource | null = null;
   static readonly CLOSED = 2;
@@ -58,7 +63,9 @@ beforeEach(() => {
   };
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (url: string) => new Response(JSON.stringify(url === "/api/runs" ? [info] : []), { status: 200 })),
+    vi.fn(async (url: string) =>
+      url === "/api/bacnet" ? bacnetOff() : new Response(JSON.stringify(url === "/api/runs" ? [info] : []), { status: 200 }),
+    ),
   );
 });
 
@@ -98,8 +105,10 @@ describe("RunsPage", () => {
 
   it("starting a run fetches the list a bounded number of times", async () => {
     const started = { ...JSON.parse(JSON.stringify({})), id: "run-new" };
-    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) =>
-      init?.method === "POST"
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) =>
+      url === "/api/bacnet"
+        ? bacnetOff()
+        : init?.method === "POST"
         ? new Response(JSON.stringify({ ...started, config: { baseline: false, requests: true, start_s: 0, warmup_s: 0, steps: 1, step_s: 120, case: "c" }, state: "starting", ticks: 0, events: 0 }), { status: 201 })
         : new Response("[]", { status: 200 }),
     );
@@ -136,6 +145,7 @@ describe("RunsPage with drafts", () => {
       events: 0,
     };
     const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/bacnet") return bacnetOff();
       if (url === "/api/drafts") return new Response(JSON.stringify([draft]), { status: 200 });
       if (init?.method === "POST") return new Response(JSON.stringify(started), { status: 201 });
       return new Response("[]", { status: 200 });
@@ -169,6 +179,7 @@ describe("RunsPage replays", () => {
     const replay = { name: "day185-noon-requests", recorded_run: "run-1", ticks: 300, baseline: false, start_s: 16027200, drafted: false, state: "completed" };
     const config = { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 300, step_s: 120, case: "c", drafts: {}, replay: { record: replay.name, recorded_run: "run-1" } };
     const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/bacnet") return bacnetOff();
       if (url === "/api/replays") return new Response(JSON.stringify([replay]), { status: 200 });
       if (url === "/api/runs/replay" && init?.method === "POST")
         return new Response(JSON.stringify({ id: "run-77", config, state: "starting", ticks: 0, events: 0 }), { status: 201 });
@@ -193,5 +204,32 @@ describe("RunsPage replays", () => {
     expect(screen.getByText(/not recomputed by this replay/)).toBeTruthy();
     expect(screen.queryByText(/Computed by BOPTEST for this run/)).toBeNull();
     expect(screen.getByText(/Nothing runs\s+against BOPTEST now/)).toBeTruthy();
+  });
+});
+
+describe("RunsPage BACnet note", () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("says live runs are mirrored read-only when the mirror is on", async () => {
+    const info = { device_instance: 599, port: 47808, points: [{ name: "chw.TSupSet", source: "derived", object_type: "analog-value", instance: 1, unit: "K" }] };
+    vi.stubGlobal("EventSource", FakeSource);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => new Response(JSON.stringify(url === "/api/bacnet" ? info : []), { status: 200 })),
+    );
+    render(<RunsPage />);
+    expect(await screen.findByText(/mirrored read-only over BACnet\/IP: device 599, 1 objects, UDP port 47808/)).toBeTruthy();
+  });
+
+  it("says nothing when the mirror is off", async () => {
+    vi.stubGlobal("EventSource", FakeSource);
+    const fetch = vi.fn(async (url: string) => (url === "/api/bacnet" ? bacnetOff() : new Response("[]", { status: 200 })));
+    vi.stubGlobal("fetch", fetch);
+    render(<RunsPage />);
+    await vi.waitFor(() => expect(fetch.mock.calls.some(([u]) => u === "/api/bacnet")).toBe(true));
+    expect(screen.queryByText(/BACnet/)).toBeNull();
   });
 });

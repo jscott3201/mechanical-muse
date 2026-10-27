@@ -6,6 +6,7 @@
 pub mod author_dto;
 mod author_routes;
 pub mod authoring;
+pub mod bacnet;
 pub mod drafts;
 pub mod dto;
 mod journal;

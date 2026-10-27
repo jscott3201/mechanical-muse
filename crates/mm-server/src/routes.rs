@@ -34,6 +34,7 @@ struct Inner {
     runs: Runs,
     authoring: Authoring,
     shutdown: tokio::sync::watch::Sender<bool>,
+    bacnet: std::sync::OnceLock<Arc<crate::bacnet::BacnetMirror>>,
 }
 
 impl AppState {
@@ -72,6 +73,7 @@ impl AppState {
                 runs: Runs::new(runs),
                 authoring: Authoring::new(authoring),
                 shutdown: tokio::sync::watch::channel(false).0,
+                bacnet: std::sync::OnceLock::new(),
             }),
         }
     }
@@ -92,6 +94,15 @@ impl AppState {
         &self.inner.runs
     }
 
+    /// Attaches the BACnet mirror that live runs update. Only the first call takes effect.
+    pub fn set_bacnet(&self, mirror: crate::bacnet::BacnetMirror) {
+        let _ = self.inner.bacnet.set(Arc::new(mirror));
+    }
+
+    pub fn bacnet(&self) -> Option<&Arc<crate::bacnet::BacnetMirror>> {
+        self.inner.bacnet.get()
+    }
+
     /// Ends every open event stream and asks the active run to stop at its next step.
     pub fn shutdown(&self) {
         // Stored even with no open stream, so a stream opened afterwards ends at once.
@@ -109,6 +120,7 @@ impl AppState {
 pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/api/health", get(health))
+        .route("/api/bacnet", get(bacnet_info))
         .route("/api/specs", get(list_specs))
         .route("/api/specs/{name}", get(spec_detail))
         .route("/api/specs/{name}/graph", get(spec_graph))
@@ -153,6 +165,18 @@ impl IntoResponse for Failure {
 
 async fn not_found() -> Failure {
     Failure::new(StatusCode::NOT_FOUND, "not-found", "no such route")
+}
+
+async fn bacnet_info(
+    State(state): State<AppState>,
+) -> Result<Json<crate::bacnet::BacnetInfo>, Failure> {
+    state.bacnet().map(|b| Json(b.info.clone())).ok_or_else(|| {
+        Failure::new(
+            StatusCode::NOT_FOUND,
+            "bacnet-off",
+            "the BACnet mirror is not running (set MM_BACNET_ADDR)",
+        )
+    })
 }
 
 async fn health(State(state): State<AppState>) -> Json<Health> {
