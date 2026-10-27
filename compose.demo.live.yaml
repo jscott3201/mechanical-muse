@@ -1,0 +1,13 @@
+# Overlay for compose.demo.yaml: live Muse Spark authoring and explanations.
+#
+#   docker compose -f compose.demo.yaml -f compose.demo.live.yaml up --build
+#
+# Put your own Meta Model API key in an env file as MODEL_API_KEY=... (default ./.env, gitignored;
+# set MM_ENV_FILE to use another path). Compose passes it to the container at run time only; it is
+# never built into the image, sent to the browser, or logged. Live calls are billed to that key.
+# Note that `docker compose config` and `docker inspect` show container environment values.
+services:
+  muse:
+    env_file:
+      - path: ${MM_ENV_FILE:-.env}
+        required: true

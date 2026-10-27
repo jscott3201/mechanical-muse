@@ -14,7 +14,17 @@ Quickest: `make demo`, then open http://127.0.0.1:8080. It builds the web app an
 the API on one address. With no model key and no BOPTEST it still verifies every spec, plays back
 a recorded Muse Spark session, recorded BOPTEST runs and recorded explanations, all labelled as
 recorded. `make demo-live` adds live Muse Spark from a key in `.env`; set `MM_BOPTEST_URL` for
-live runs and `MM_BACNET_ADDR` for the BACnet mirror. The full setup:
+live runs and `MM_BACNET_ADDR` for the BACnet mirror.
+
+### Run it without toolchains
+
+With only Docker: `docker compose -f compose.demo.yaml up --build` (or `make docker-demo`), then
+open http://localhost:8080. Same recorded mode as `make demo`, no key and no BOPTEST needed; the
+first build takes several minutes. Add `-f compose.demo.live.yaml` for live Muse Spark from your
+own `MODEL_API_KEY` in `.env`. On Modal: `modal serve deploy/modal/mm_demo.py`. Details, live
+mode and troubleshooting: [docs/packaging.md](docs/packaging.md).
+
+### Full setup
 
 You need Rust (see `rust-toolchain.toml`), Node (`web/.nvmrc`) and a BOPTEST v0.9.0 checkout
 (`git clone --branch v0.9.0 --depth 1 https://github.com/ibpsa/project1-boptest`).
@@ -64,6 +74,7 @@ These are public, open-source projects used unmodified, each pinned to one commi
 | [MinIO](https://github.com/minio/minio) and [mc](https://github.com/minio/mc) | MinIO, Inc. | AGPL-3.0 | `f19c534` and `1e78af4` (the releases BOPTEST v0.9.0 names) | BOPTEST's object store, built from source by `deploy/minio` and `deploy/modal` because those releases are no longer published as images; not redistributed |
 | [shadcn/ui](https://github.com/shadcn-ui/ui) components | shadcn | MIT | CLI 4.21.4, style radix-nova | UI primitives copied into `web/src/components/ui` by the shadcn CLI, used unmodified except that they import our own `cn` helper |
 | [React Flow](https://github.com/xyflow/xyflow) (`@xyflow/react`) | xyflow | MIT | 12.12.0 | Draws block graphs (pan, zoom, typed port handles); the layered layout is our own (`web/src/features/graph/layout.ts`) |
+| Node.js, Rust and Debian official container images | OpenJS Foundation, Rust project, Debian (Docker Official Images) | MIT, MIT OR Apache-2.0, DFSG licenses | `node:26.12.1-trixie-slim`, `rust:1.97.1-slim-trixie`, `debian:trixie-slim`, each pinned by digest in `Dockerfile` | Build and runtime base images for the packaged app (`Dockerfile`, [docs/packaging.md](docs/packaging.md)); unmodified |
 
 Ordinary crates.io libraries (such as serde, reqwest, tokio and thiserror) and npm packages (such as React, Vite, Tailwind CSS and Radix UI) are used unmodified under their own licenses; `Cargo.lock` and `web/package-lock.json` pin every version. The Geist font (`@fontsource-variable/geist`) is under the SIL Open Font License 1.1.
 
