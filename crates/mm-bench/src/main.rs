@@ -7,6 +7,7 @@
 //!   [--feedback validator-only|with-vectors] [--exemplars 0..8] [--concurrency 4] \
 //!   [--out runs/<name>.json] [--dry-run] [--show <ID>]
 //! mm-bench --spec specs/<name> [--task task.json] [--model muse-spark-1.3] [--effort ...] ...
+//! mm-bench --rescore runs/<record>.json (--library <checkout> | --spec specs/<name> [--task ...])
 //! ```
 //! `--spec` runs one of our own validated specs. It is unpublished work, so it defaults to the
 //! standard model and refuses the contributor tier (which may train on inputs).
@@ -116,6 +117,9 @@ async fn main() -> Result<(), Error> {
         other => bail!("unknown tier {other}"),
     };
     let palette = Palette::pinned()?;
+    if let Some(record) = args.0.get("rescore") {
+        return rescore_record(&args, record, &palette);
+    }
     let mut rules = Vec::new();
     let mut tasks = Vec::new();
     let mut skipped = Vec::new();
@@ -296,4 +300,76 @@ async fn main() -> Result<(), Error> {
     std::fs::write(&out, serde_json::to_vec_pretty(&record)?)?;
     println!("wrote {}", out.display());
     Ok(())
+}
+
+/// `--rescore`: re-checks a run record's stored replies on this build's engine (no model call).
+fn rescore_record(args: &Args, record: &str, palette: &Palette) -> Result<(), Error> {
+    let record: serde_json::Value = serde_json::from_slice(&std::fs::read(record)?)?;
+    let mut inputs = BTreeMap::new();
+    if let Some(spec) = args.0.get("spec") {
+        let dir = PathBuf::from(spec);
+        let task: mm_agent::TaskSpec =
+            serde_json::from_slice(&std::fs::read(dir.join(args.get("task", "task.json")))?)?;
+        let vectors: mm_bridge::VectorFile =
+            serde_json::from_slice(&std::fs::read(dir.join("vectors.json"))?)?;
+        inputs.insert(task.name.clone(), (task, vectors));
+    } else {
+        let library = PathBuf::from(args.required("library")?);
+        let commit = record
+            .pointer("/config/library_commit")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("124427b");
+        check_commit_or_export(&library, commit)?;
+        let tier = match record
+            .pointer("/config/tier")
+            .and_then(serde_json::Value::as_str)
+        {
+            Some("b") => Tier::B,
+            _ => Tier::A,
+        };
+        for id in record
+            .get("rules")
+            .and_then(serde_json::Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            let id = id.as_str().unwrap_or_default();
+            let rule = load_rule(&library, id)?;
+            let task = rule.scrubbed(palette, tier)?.task;
+            inputs.insert(id.to_owned(), (task, rule.vectors));
+        }
+    }
+    let report = mm_bench::rescore(&record, &inputs, palette)?;
+    println!(
+        "engine {}: {} rule-runs, {} replies re-checked",
+        &ENGINE_REV[..8],
+        report.rule_runs,
+        report.replies
+    );
+    println!(
+        "first try: {} then, {} now; verified by any attempt: {} then, {} now",
+        report.first_try_then, report.first_try_now, report.verified_then, report.verified_now
+    );
+    println!("verdicts changed: {}", report.changed.len());
+    for c in &report.changed {
+        println!(
+            "  {} run {} attempt {}: {} -> {}",
+            c.rule, c.run, c.attempt, c.recorded, c.now
+        );
+    }
+    Ok(())
+}
+
+/// A library checkout at `commit`, or an exported tree of it (no `.git`), which cannot be
+/// checked here: the caller vouches for it.
+fn check_commit_or_export(library: &std::path::Path, commit: &str) -> Result<(), Error> {
+    if library.join(".git").exists() {
+        check_commit(library, commit)
+    } else {
+        eprintln!(
+            "note: {} has no .git; assuming it is an export of {commit}",
+            library.display()
+        );
+        Ok(())
+    }
 }
