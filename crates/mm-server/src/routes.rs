@@ -78,7 +78,8 @@ impl AppState {
 
     /// Ends every open event stream and asks the active run to stop at its next step.
     pub fn shutdown(&self) {
-        let _ = self.inner.shutdown.send(true);
+        // Stored even with no open stream, so a stream opened afterwards ends at once.
+        self.inner.shutdown.send_replace(true);
         if let Some(run) = self.inner.runs.active() {
             run.request_stop();
         }
