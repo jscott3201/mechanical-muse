@@ -9,7 +9,8 @@ use crate::plant::{Measurements, Plant, PlantError, Writes};
 
 /// Per request; a hung advance should fail in minutes, not hours.
 const STEP_TIMEOUT: Duration = Duration::from_secs(300);
-/// Initialization runs the whole warm-up inside one request.
+/// Initialization runs the whole warm-up inside one request, and select waits for a free worker
+/// (an abandoned select still creates a test, which then holds that worker).
 const INIT_TIMEOUT: Duration = Duration::from_secs(3600);
 
 /// A selected BOPTEST test, ready to initialize and advance.
@@ -85,7 +86,10 @@ impl BoptestClient {
             .build()
             .map_err(transport)?;
         let base = base.trim_end_matches('/').to_owned();
-        let body = send_raw(http.post(format!("{base}/testcases/{testcase}/select"))).await?;
+        let select = http
+            .post(format!("{base}/testcases/{testcase}/select"))
+            .timeout(INIT_TIMEOUT);
+        let body = send_raw(select).await?;
         let testid = body
             .get("testid")
             .and_then(Value::as_str)
