@@ -157,6 +157,7 @@ impl Authoring {
     pub fn create(
         &self,
         spec: &str,
+        task: Option<&mm_agent::TaskSpec>,
         request: &AuthorRequest,
     ) -> Result<Arc<AuthorSession>, StartError> {
         let source = request.source.unwrap_or(if self.config.spark.is_some() {
@@ -194,7 +195,7 @@ impl Authoring {
             ModelSource::Recorded => {
                 // A playback replays what the model said then: the effort it ran at is part of
                 // the recording, and there are only as many attempts as recorded replies.
-                let recording = self.recording(spec)?;
+                let recording = self.recording(spec, task)?;
                 let replies = u32::try_from(recording.replies.len()).unwrap_or(u32::MAX);
                 (
                     recording.model.clone(),
@@ -237,10 +238,30 @@ impl Authoring {
         Ok(session)
     }
 
-    fn recording(&self, spec: &str) -> Result<Recording, StartError> {
+    fn recording(
+        &self,
+        spec: &str,
+        task: Option<&mm_agent::TaskSpec>,
+    ) -> Result<Recording, StartError> {
         let missing = || StartError::Invalid(format!("no recorded run for {spec}"));
         let dir = self.config.recordings.as_ref().ok_or_else(missing)?;
-        let bytes = std::fs::read(dir.join(format!("{spec}.json"))).map_err(|_| missing())?;
+        let Ok(bytes) = std::fs::read(dir.join(format!("{spec}.json"))) else {
+            // The same task accepted under another name: a recording whose task matches.
+            let key = task.map(crate::specs::task_key).ok_or_else(missing)?;
+            let mut paths: Vec<_> = std::fs::read_dir(dir)
+                .map_err(|_| missing())?
+                .flatten()
+                .map(|e| e.path())
+                .collect();
+            paths.sort();
+            return paths
+                .into_iter()
+                .find_map(|p| {
+                    let r: Recording = serde_json::from_slice(&std::fs::read(p).ok()?).ok()?;
+                    (r.task_digest.as_deref() == Some(key.as_str())).then_some(r)
+                })
+                .ok_or_else(missing);
+        };
         let recording: Recording = serde_json::from_slice(&bytes)
             .map_err(|e| StartError::Invalid(format!("the recorded run for {spec} is bad: {e}")))?;
         if recording.task != spec {
@@ -349,7 +370,12 @@ async fn author(session: &AuthorSession, state: &AppState) -> Result<Done, Strin
     )
     .await;
     if session.recording.is_none() {
-        crate::recording::save(authoring.config.records.as_deref(), &session.id, &trace);
+        crate::recording::save(
+            authoring.config.records.as_deref(),
+            &session.id,
+            &trace,
+            &spec.task,
+        );
     }
     let usage = tokens(trace.usage);
     if let Some(error) = trace.setup_error {

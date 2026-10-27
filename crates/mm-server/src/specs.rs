@@ -284,6 +284,22 @@ fn load_one(name: &str, dir: &Path, palette: &Palette) -> Result<Spec, SpecError
     })
 }
 
+/// A task's content as a key, without its name (`task:<hex>`, FNV-1a 64 over its JSON): the
+/// same task accepted under another name has the same key.
+pub fn task_key(task: &mm_agent::TaskSpec) -> String {
+    let unnamed = mm_agent::TaskSpec {
+        name: String::new(),
+        ..task.clone()
+    };
+    let text = serde_json::to_string(&unnamed).unwrap_or_default();
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in text.bytes() {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(0x0100_0000_01b3);
+    }
+    format!("task:{hash:016x}")
+}
+
 fn signal(kind: PortKind) -> Signal {
     match kind {
         PortKind::Real => Signal::Real,
