@@ -47,7 +47,15 @@ async fn start_run(
     let Json(request) =
         request.map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.body_text()))?;
     check_drafts(&state, &request)?;
-    let handle = state.runs().create(&request).map_err(|e| match e {
+    let mut config = crate::runs::resolve(&request)
+        .map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string()))?;
+    // An engineer's sequence runs with the binding confirmed for it, recorded in the run.
+    for spec in config.drafts.keys() {
+        if let Some(binding) = state.binding(spec) {
+            config.bindings.insert(spec.clone(), binding);
+        }
+    }
+    let handle = state.runs().register(config).map_err(|e| match e {
         StartError::Active(_) => Failure::new(StatusCode::CONFLICT, "run-active", e.to_string()),
         StartError::Invalid(_) => {
             Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string())
@@ -64,7 +72,13 @@ fn check_drafts(state: &AppState, request: &RunRequest) -> Result<(), Failure> {
     let bad = |m: String| Failure::new(StatusCode::BAD_REQUEST, "bad-request", m);
     let requests = request.requests.unwrap_or(true);
     for (spec, id) in request.drafts.iter().flatten() {
-        let used = spec == RESET_SPEC || (spec == REQUESTS_SPEC && requests);
+        let own = state.spec(spec).is_some_and(|s| !s.detail.reference);
+        if own && state.binding(spec).is_none() {
+            return Err(bad(format!(
+                "{spec} is not bound to BOPTEST yet; confirm a binding first"
+            )));
+        }
+        let used = own || spec == RESET_SPEC || (spec == REQUESTS_SPEC && requests);
         if !used {
             return Err(bad(format!("this run does not use {spec}")));
         }

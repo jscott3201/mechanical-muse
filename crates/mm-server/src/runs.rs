@@ -225,7 +225,7 @@ impl Runs {
     }
 }
 
-fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
+pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
     let start_s = r.start_s.unwrap_or(185.0 * 86_400.0 + 12.0 * 3_600.0);
     let warmup_s = r.warmup_s.unwrap_or(86_400.0);
     let steps = r.steps.unwrap_or(300);
@@ -295,6 +295,7 @@ fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
         case: mm_runtime::preset::CASE.into(),
         drafts: r.drafts.clone().unwrap_or_default(),
         fault: r.fault.clone(),
+        bindings: BTreeMap::new(),
         replay: None,
     })
 }

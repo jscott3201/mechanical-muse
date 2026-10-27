@@ -1,0 +1,57 @@
+{
+  "spec": "ahu1_sat_stpt",
+  "binding": {
+    "floors": [
+      1,
+      2,
+      3
+    ],
+    "inputs": [
+      {
+        "input": "ahuEnable",
+        "kind": "above",
+        "point": "floor{floor}_reaAHU_occ_y",
+        "threshold": 0.5,
+        "value": 0
+      },
+      {
+        "input": "oat",
+        "kind": "measurement",
+        "point": "weaSta_reaWeaTDryBul_y",
+        "threshold": 0.0,
+        "value": 0
+      },
+      {
+        "input": "retHum",
+        "kind": "measurement",
+        "point": "floor{floor}_reaAHU_phiAHURet_y",
+        "threshold": 0.0,
+        "value": 0
+      }
+    ],
+    "outputs": [
+      {
+        "output": "datStpt",
+        "point": "floor{floor}_TSupAirSet",
+        "measured": "floor{floor}_reaAHU_TSup_y",
+        "min": 285.93,
+        "max": 291.48
+      },
+      {
+        "output": "dehumActive",
+        "point": "",
+        "measured": "",
+        "min": 0.0,
+        "max": 1.0
+      }
+    ],
+    "notes": [
+      "AHU enable has no dedicated measurement so floor occupancy status is used as a stand-in with threshold 0.5.",
+      "Dehumidification active output has no corresponding building input and is for display only."
+    ]
+  },
+  "problems": [],
+  "proposed_by": "live",
+  "confirmed": false,
+  "task": "task:ba013432958d1b8b"
+}

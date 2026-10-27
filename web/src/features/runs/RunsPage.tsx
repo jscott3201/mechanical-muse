@@ -12,12 +12,14 @@ import { useAction, useResource } from "@/hooks/useResource";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { BacnetInfo } from "@/types/generated/BacnetInfo";
+import type { Binding } from "@/types/generated/Binding";
 import type { DraftInfo } from "@/types/generated/DraftInfo";
 import type { ReplayInfo } from "@/types/generated/ReplayInfo";
 import type { ReplayRequest } from "@/types/generated/ReplayRequest";
 import type { RunInfo } from "@/types/generated/RunInfo";
 import type { RunRequest } from "@/types/generated/RunRequest";
 import type { RunState } from "@/types/generated/RunState";
+import type { SpecSummary } from "@/types/generated/SpecSummary";
 
 import { ErrorNote } from "../ErrorNote";
 import { RunView } from "./RunView";
@@ -71,12 +73,15 @@ function GraphChoice({
   value,
   onChange,
   disabled,
+  noneLabel = "Hand-built",
 }: {
   label: string;
   drafts: DraftInfo[];
   value: string | null;
   onChange: (contentId: string | null) => void;
   disabled: boolean;
+  /** What "no draft" means: our hand-built graph, or (for an engineer's sequence) not running it. */
+  noneLabel?: string;
 }) {
   // The newest drafts first in view; a chosen older one stays visible.
   const [showAll, setShowAll] = useState(() => value !== null && drafts.findIndex((d) => d.content_id === value) < drafts.length - SHOWN_DRAFTS);
@@ -92,7 +97,7 @@ function GraphChoice({
           onClick={() => onChange(null)}
           className="justify-start"
         >
-          Hand-built
+          {noneLabel}
         </Button>
         {(showAll ? drafts : drafts.slice(-SHOWN_DRAFTS)).map((d) => (
           <Button
@@ -148,6 +153,10 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
   const [hour, setHour] = useState(DEFAULTS.hour);
   const [steps, setSteps] = useState(DEFAULTS.steps);
   const stored = useResource<DraftInfo[]>("/api/drafts");
+  // Engineers' own sequences that are bound to the building, with their titles.
+  const bound = useResource<Record<string, Binding>>("/api/workbench/bindings");
+  const ownSpecs = useResource<SpecSummary[]>("/api/workbench");
+  const own = bound.status === "ready" ? Object.keys(bound.data) : [];
   const bacnet = useResource<BacnetInfo>("/api/bacnet");
   const [fault, setFault] = useState(false);
   const [faultStep, setFaultStep] = useState(30);
@@ -160,6 +169,10 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
       const id = chosen[spec];
       if (id && uses(spec, requests, pressure) && !baseline) drafts[spec] = id;
     }
+    for (const spec of own) {
+      const id = chosen[spec];
+      if (id && !baseline) drafts[spec] = id;
+    }
     return {
       baseline,
       requests,
@@ -169,7 +182,7 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
       ...(Object.keys(drafts).length > 0 ? { drafts } : {}),
       ...(fault && !baseline && requests ? { fault: { point: FAULT_POINT, from_step: faultStep, steps: FAULT_STEPS } } : {}),
     };
-  }, [baseline, requests, pressure, steps, day, hour, chosen, fault, faultStep]);
+  }, [baseline, requests, pressure, steps, day, hour, chosen, fault, faultStep, bound]);
   const start = useAction<RunInfo>("/api/runs", body);
   // Each started run is reported exactly once, however often this component re-renders.
   const reported = useRef<string | null>(null);
@@ -235,6 +248,30 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
                   value={chosen[spec] ?? null}
                   onChange={(id) => setChosen((c) => ({ ...c, [spec]: id }))}
                   disabled={baseline || !uses(spec, requests, pressure)}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {stored.status === "ready" && own.some((spec) => stored.data.some((d) => d.spec === spec)) && (
+          <div className="flex flex-col gap-3">
+            <span className="text-xs font-medium text-muted-foreground">
+              Your sequences (bound to the building; runs a verified draft on every bound floor)
+            </span>
+            {own.map((spec) => {
+              const drafts = stored.data.filter((d) => d.spec === spec);
+              if (drafts.length === 0) return null;
+              const title = ownSpecs.status === "ready" ? ownSpecs.data.find((s) => s.name === spec)?.title : undefined;
+              return (
+                <GraphChoice
+                  key={spec}
+                  label={title ?? spec}
+                  drafts={drafts}
+                  value={chosen[spec] ?? null}
+                  onChange={(id) => setChosen((c) => ({ ...c, [spec]: id }))}
+                  disabled={baseline}
+                  noneLabel="Off"
                 />
               );
             })}
@@ -324,7 +361,7 @@ function ReplayButton({ replay, onStarted }: { replay: ReplayInfo; onStarted: (r
         <span className="min-w-0 text-sm">
           <span className="block truncate font-mono text-xs">{replay.name}</span>
           <span className="text-xs text-muted-foreground">
-            {replay.baseline ? "BOPTEST baseline" : `${replay.drafted ? "Spark-drafted" : "hand-built"}${replay.pressure ? ", with static pressure" : ""}`} ·{" "}
+            {replay.baseline ? "BOPTEST baseline" : `${replay.drafted ? "Spark-drafted" : "hand-built"}${replay.pressure ? ", with static pressure" : ""}${replay.own.length > 0 ? `, with your sequence ${replay.own.join(", ")}` : ""}`} ·{" "}
             {replay.ticks} steps from {formatSimTime(replay.start_s)}
           </span>
         </span>

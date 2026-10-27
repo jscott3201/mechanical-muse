@@ -36,6 +36,8 @@ struct Inner {
     workbench: std::sync::RwLock<std::collections::BTreeMap<String, Arc<crate::specs::Spec>>>,
     /// One model reading at a time.
     workbench_slot: tokio::sync::Mutex<()>,
+    /// Confirmed BOPTEST bindings of engineers' sequences, by spec name.
+    bindings: std::sync::RwLock<std::collections::BTreeMap<String, crate::bind::Binding>>,
     palette: Palette,
     verify_slots: Arc<Semaphore>,
     runs: Runs,
@@ -79,6 +81,7 @@ impl AppState {
                 specs,
                 workbench: std::sync::RwLock::default(),
                 workbench_slot: tokio::sync::Mutex::new(()),
+                bindings: std::sync::RwLock::default(),
                 palette,
                 verify_slots: Arc::new(Semaphore::new(VERIFY_SLOTS)),
                 runs: Runs::new(runs),
@@ -146,6 +149,33 @@ impl AppState {
         Ok(())
     }
 
+    /// An engineer's sequence's confirmed binding to BOPTEST.
+    pub fn binding(&self, spec: &str) -> Option<crate::bind::Binding> {
+        self.inner
+            .bindings
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(spec)
+            .cloned()
+    }
+
+    /// Every confirmed binding, by spec name.
+    pub fn bindings(&self) -> std::collections::BTreeMap<String, crate::bind::Binding> {
+        self.inner
+            .bindings
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+    }
+
+    pub(crate) fn set_binding(&self, spec: &str, binding: crate::bind::Binding) {
+        self.inner
+            .bindings
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(spec.to_owned(), binding);
+    }
+
     pub(crate) fn workbench_slot(&self) -> &tokio::sync::Mutex<()> {
         &self.inner.workbench_slot
     }
@@ -210,6 +240,7 @@ pub fn app(state: AppState) -> Router {
         .merge(crate::explain::routes())
         .merge(crate::run_explain::routes())
         .merge(crate::workbench::routes())
+        .merge(crate::bind_routes::routes())
         .fallback(fallback)
         .with_state(state)
 }

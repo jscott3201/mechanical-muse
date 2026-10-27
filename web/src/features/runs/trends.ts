@@ -4,6 +4,7 @@
  */
 import type { Series } from "@/components/viz/LineChart";
 import type { TickPoint } from "@/hooks/runStream";
+import type { Binding } from "@/types/generated/Binding";
 
 export const POINTS = {
   tsupSet: "oveChiWatSys_TWSet_u",
@@ -111,4 +112,60 @@ export function formatSimTime(s: number): string {
   const hh = String(Math.floor((total % 1440) / 60)).padStart(2, "0");
   const mm = String(total % 60).padStart(2, "0");
   return `day ${day} ${hh}:${mm}`;
+}
+
+/** A chart of an engineer's own sequence: one bound output or measured input across floors. */
+export interface OwnChart {
+  id: string;
+  title: string;
+  unit: string;
+  series: Series[];
+}
+
+const onFloor = (template: string, f: number) => template.replaceAll("{floor}", String(f));
+
+/**
+ * Charts for engineers' own sequences, from their confirmed bindings: each written output as
+ * the setpoint sent (dashed) beside the measurement that shows its result, per floor; each
+ * measured input as read. Kelvin readings (above 150) show in °C, as elsewhere.
+ */
+export function ownTrends(ticks: TickPoint[], bindings: Record<string, Binding>): OwnChart[] {
+  const charts: OwnChart[] = [];
+  const kelvin = (points: string[], from: "writes" | "readings") =>
+    ticks.some((t) => points.some((p) => (t[from][p] ?? 0) > 150));
+  for (const [spec, b] of Object.entries(bindings)) {
+    for (const o of b.outputs.filter((o) => o.point !== "")) {
+      const sent = b.floors.map((f) => `${onFloor(o.point, f)}_u`);
+      const k = kelvin(sent, "writes");
+      const show = (v: number | null) => (v === null ? null : k ? v - 273.15 : v);
+      charts.push({
+        id: `${spec}-${o.output}`,
+        title: `${o.output} (${spec})`,
+        unit: k ? "°C" : "",
+        series: b.floors.flatMap((f, i) => [
+          series(`set${f}`, `floor ${f} sent`, `var(--viz-${i + 1})`, ticks, (t) => show(num(t.writes[`${onFloor(o.point, f)}_u`])), true),
+          ...(o.measured
+            ? [series(`meas${f}`, `floor ${f} measured`, `var(--viz-${i + 1})`, ticks, (t) => show(num(t.readings[onFloor(o.measured, f)])))]
+            : []),
+        ]),
+      });
+    }
+    for (const input of b.inputs.filter((i) => i.kind !== "constant")) {
+      const floors = input.point.includes("{floor}") ? b.floors : [b.floors[0] ?? 1];
+      const points = floors.map((f) => onFloor(input.point, f));
+      const k = kelvin(points, "readings");
+      charts.push({
+        id: `${spec}-${input.input}`,
+        title: `${input.input} (${spec}, read from ${input.point})`,
+        unit: k ? "°C" : "",
+        series: floors.map((f, i) =>
+          series(`in${f}`, floors.length > 1 ? `floor ${f}` : "read", `var(--viz-${i + 1})`, ticks, (t) => {
+            const v = num(t.readings[onFloor(input.point, f)]);
+            return v === null ? null : k ? v - 273.15 : v;
+          }),
+        ),
+      });
+    }
+  }
+  return charts;
 }

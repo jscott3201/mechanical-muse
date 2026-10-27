@@ -39,8 +39,60 @@ told to avoid checking instants the document does not settle.
   authoring, explanations and drafts. Asking for their graph gives 404 `no-reference-graph`.
 - `GET /api/drafts/{content_id}/cxf` returns a verified draft's CXF, emitted again from its graph.
 
-Running an accepted sequence on BOPTEST needs a binding from its points to BOPTEST's. That is not
-built yet, so the UI does not offer a run for these sequences.
+## Running it on the building
+An accepted sequence runs on BOPTEST once it is bound to the building. Binding decides:
+- which reading feeds each input:
+  - a measurement, for a real input;
+  - a measurement above a threshold, for a boolean input;
+  - or a constant;
+- which setpoint each output writes, and within what limits. An output can also be display-only.
+
+Points that exist on every floor are written with `{floor}`, and the binding names the floors it
+runs on.
+
+Muse Spark proposes the binding from BOPTEST's point list (`docs/boptest-points.csv`), with notes
+on stand-ins such as occupancy used as an AHU enable. `crate::bind::check` then checks it:
+- every point exists and is the right kind (a measurement, or a `_u` setpoint);
+- every input is bound once, with a feed that fits its type;
+- only real outputs are written;
+- limits are finite, ordered and inside the setpoint's own range;
+- no point is written twice.
+
+When the checks refuse the proposal, Spark gets one retry with the findings listed. The engineer
+edits the binding and confirms it on the sequence's Building tab.
+
+A run can then include a verified draft of the sequence (the run form's "Your sequences"). The
+run records the binding it used. As for every sequence, the draft's scenarios are replayed again
+before it loads (AGENTS.md hard rule 5), and the runtime's fail-safe applies. It loads one
+instance per floor (`<spec>_floor<N>`). The run view charts each output sent beside the
+measurement that shows its result, and each measured input.
+
+- `POST /api/workbench/{name}/binding/propose`: Spark's proposal (`live`, or `recorded` from
+  `fixtures/bindings/` when the task matches and there is no key), with the checks' findings.
+- `POST /api/workbench/{name}/binding` `{binding}`: confirm (422 with the findings if refused).
+  It is saved under `runs/workbench/bindings/` and restored at start-up.
+- `GET /api/workbench/{name}/binding`, `GET /api/workbench/bindings`.
+- `POST /api/runs` with `drafts: {<name>: <content id>}` runs it; it is refused while the
+  sequence is unbound.
+
+### First runs on BOPTEST (2026-10-27)
+The sample sequence ran on all three floors, beside our chilled-water reset and air handler
+requests, in four windows on BOPTEST on Modal. Every run completed with no fail-safe event, and
+every step it sent 55 °F (12.78 °C), as the sheet says for each condition it met:
+- **Day 185, noon to 22:00.** Outdoor air was 27–33 °C, above the reset band. 55 °F is 0.1 K
+  colder than BOPTEST's own 12.88 °C, so against our sequences alone energy savings fell from
+  4.7 % to 2.3 % and thermal discomfort rose (+13.4 % vs +2.0 % against the baseline).
+- **Day 110.** Return humidity was 62–64 %, so the dehumidification override was on for 237 of
+  240 steps.
+- **Day 140.** A weekend: unoccupied, so the AHU counts as off.
+- **Day 143, from 06:00.** Occupied, and outdoor air passed through the band (14–25 °C). But
+  return humidity crossed 60 % early and then stayed at 57–59 %, above the 55 % release, so the
+  override latched all morning.
+
+So the drafted logic does what the sheet says, and running it closed-loop shows that the sheet's
+humidity thresholds keep its reset from ever acting in this building. A reviewer would want to
+know that before deploying it. The day 185 and day 143 runs are replays in `fixtures/replays/`
+(labelled "with your sequence").
 
 ## Without a key
 `fixtures/sequences/ahu-sat-reset-sample.{md,pdf,png}` is a one-page sheet we wrote for this demo

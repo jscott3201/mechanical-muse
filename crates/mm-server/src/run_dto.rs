@@ -81,6 +81,10 @@ pub struct RunConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub fault: Option<Fault>,
+    /// Engineers' own sequences in this run (spec name to the binding confirmed for it), each
+    /// run from the verified draft named in `drafts`.
+    #[serde(default)]
+    pub bindings: BTreeMap<String, crate::bind::Binding>,
     /// Set when this run plays back a recorded run instead of driving a plant.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -253,6 +257,9 @@ pub struct ReplayInfo {
     /// True when the recorded run ran the duct static pressure resets.
     #[serde(default)]
     pub pressure: bool,
+    /// Engineers' own sequences the recorded run ran (bound to the building).
+    #[serde(default)]
+    pub own: Vec<String>,
     /// How the recorded run ended, if the record has its end.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]

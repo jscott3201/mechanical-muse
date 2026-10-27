@@ -45,6 +45,7 @@ fn server(records: &std::path::Path) -> AppState {
             drafts: Some(records.join("drafts")),
             explanations: None,
             readings: Some(repo("fixtures/readings")),
+            bindings: Some(repo("fixtures/bindings")),
         },
     )
 }

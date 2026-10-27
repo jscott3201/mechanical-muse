@@ -181,6 +181,20 @@ async fn supervisor(
         sequences.extend(load(state, config, preset::PRESSURE_SPEC, floors, &mut info).await?);
         outputs.extend(preset::pressure_outputs());
     }
+    // Engineers' own sequences, one instance per bound floor, from their verified drafts.
+    for (spec, binding) in &config.bindings {
+        let task = state
+            .spec(spec)
+            .ok_or_else(|| format!("spec {spec} is not loaded"))?
+            .task;
+        let mut instances = Vec::new();
+        for floor in &binding.floors {
+            let (inputs, writes) = crate::bind::on(binding, &task, spec, *floor);
+            instances.push((crate::bind::instance(spec, *floor), inputs));
+            outputs.extend(writes);
+        }
+        sequences.extend(load(state, config, spec, instances, &mut info).await?);
+    }
     let sup = Supervisor::new(sequences, outputs, FailSafe::Release).map_err(|e| e.to_string())?;
     Ok((sup, info))
 }
@@ -298,6 +312,13 @@ async fn steps(
     let mut watch = preset::watch_points();
     if handle.config.pressure {
         watch.extend(preset::pressure_watch_points());
+    }
+    for binding in handle.config.bindings.values() {
+        for point in crate::bind::watch(binding) {
+            if !watch.contains(&point) {
+                watch.push(point);
+            }
+        }
     }
     handle.set_state(RunState::Running);
     handle.publish(

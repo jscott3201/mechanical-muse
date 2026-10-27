@@ -1,4 +1,4 @@
-import { FileText, ListChecks, ShieldCheck, Sparkles, Waypoints } from "lucide-react";
+import { Building2, FileText, ListChecks, ShieldCheck, Sparkles, Waypoints } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAction, useResource } from "@/hooks/useResource";
 import { formatWithUnit } from "@/lib/format";
+import type { BindingView } from "@/types/generated/BindingView";
 import type { GraphView } from "@/types/generated/GraphView";
 import type { Receipt as ReceiptDto } from "@/types/generated/Receipt";
 import type { SpecDetail as SpecDetailDto } from "@/types/generated/SpecDetail";
@@ -19,6 +20,7 @@ import { ErrorNote } from "./ErrorNote";
 import { ExplanationPanel } from "./graph/ExplanationPanel";
 import { GraphCanvas } from "./graph/GraphCanvas";
 import { Receipt } from "./Receipt";
+import { BindingPanel } from "./workbench/BindingPanel";
 
 function PointTable({
   title,
@@ -95,7 +97,7 @@ function plain(text: string): string {
 
 const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
 
-type Section = "interface" | "graph" | "spark" | "scenarios" | "task";
+type Section = "interface" | "graph" | "spark" | "building" | "scenarios" | "task";
 
 export function SpecDetail({
   name,
@@ -107,6 +109,10 @@ export function SpecDetail({
   const spec = useResource<SpecDetailDto>(`/api/specs/${encodeURIComponent(name)}`);
   const verify = useAction<ReceiptDto>(`/api/specs/${encodeURIComponent(name)}/verify`);
   const [chosen, setSection] = useState<Section | null>(null);
+  // An engineer's sequence can run on BOPTEST once its binding is confirmed.
+  const binding = useResource<BindingView>(
+    spec.status === "ready" && !spec.data.reference ? `/api/workbench/${encodeURIComponent(name)}/binding` : null,
+  );
   if (spec.status === "loading") return <Skeleton className="h-64 w-full" />;
   if (spec.status === "error") return <ErrorNote error={spec.error} onRetry={spec.reload} />;
   const { summary, about, description, params, scenarios, reference } = spec.data;
@@ -162,6 +168,11 @@ export function SpecDetail({
           <TabsTrigger value="spark">
             <Sparkles aria-hidden="true" /> Muse Spark
           </TabsTrigger>
+          {!reference && (
+            <TabsTrigger value="building">
+              <Building2 aria-hidden="true" /> Building
+            </TabsTrigger>
+          )}
           <TabsTrigger value="scenarios">
             <ListChecks aria-hidden="true" /> Test scenarios
           </TabsTrigger>
@@ -198,9 +209,23 @@ export function SpecDetail({
           )}
         </TabsContent>
         <TabsContent value="spark">
-          {/* Only our own specs are bound to BOPTEST points; an engineer's sequence is not (yet). */}
-          <AuthorPanel spec={name} scenarios={scenarios.length} onRunDraft={reference ? onRunDraft : undefined} />
+          {/* Our specs have their own wiring; an engineer's runs once its binding is confirmed. */}
+          <AuthorPanel
+            spec={name}
+            scenarios={scenarios.length}
+            onRunDraft={reference || binding.status === "ready" ? onRunDraft : undefined}
+          />
+          {!reference && binding.status !== "ready" && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              To run a verified draft on BOPTEST, bind the sequence to the building first (Building tab).
+            </p>
+          )}
         </TabsContent>
+        {!reference && (
+          <TabsContent value="building">
+            <BindingPanel spec={name} onBound={binding.reload} />
+          </TabsContent>
+        )}
         <TabsContent value="scenarios">
           <Card>
             <CardHeader>
