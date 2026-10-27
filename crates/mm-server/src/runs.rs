@@ -137,7 +137,9 @@ impl RunHandle {
     }
 
     pub fn request_stop(&self) {
-        let _ = self.stop.send(true);
+        // send() is a no-op while nobody holds a receiver (the run task only subscribes at
+        // certain points, e.g. not while verifying); send_replace always stores the value.
+        self.stop.send_replace(true);
     }
 
     pub(crate) fn stop_signal(&self) -> watch::Receiver<bool> {

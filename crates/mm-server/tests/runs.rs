@@ -348,3 +348,36 @@ async fn shutdown_ends_open_streams_and_stops_the_run() {
     let (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
     assert_eq!(info["state"], "stopped");
 }
+
+/// A stop sent before the run task holds a stop receiver (here: before it has even started,
+/// since the test runtime is single-threaded) must still be seen. With watch::send it was
+/// dropped and the run completed.
+#[tokio::test]
+async fn a_stop_before_the_run_task_starts_is_not_lost() {
+    let state = state(None);
+    let (_, info) = call(&state, "POST", "/api/runs", Some(json!({"steps": 30}))).await;
+    let id = info["id"].as_str().unwrap().to_owned();
+    let (status, _) = call(&state, "POST", &format!("/api/runs/{id}/stop"), None).await;
+    assert_eq!(status, StatusCode::ACCEPTED);
+    let all = events(&state, &id, None).await;
+    assert_eq!(all.last().unwrap().2["state"], "stopped");
+    assert_eq!(all.iter().filter(|(_, k, _)| k == "tick").count(), 0);
+}
+
+/// Shutdown before any stream or run task is listening still takes effect.
+#[tokio::test]
+async fn shutdown_before_anyone_listens_still_stops_the_run() {
+    let state = state(None);
+    let (_, info) = call(&state, "POST", "/api/runs", Some(json!({"steps": 30}))).await;
+    let id = info["id"].as_str().unwrap().to_owned();
+    state.shutdown();
+    tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        while state.runs().active().is_some() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("run still active after shutdown");
+    let (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
+    assert_eq!(info["state"], "stopped");
+}
