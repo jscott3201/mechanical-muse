@@ -1,0 +1,209 @@
+{
+ "name": "zone_pressure_requests",
+ "inputs": [
+  {
+   "name": "uDam",
+   "type": "real",
+   "unit": "1",
+   "description": "Zone damper position, 0 to 1"
+  },
+  {
+   "name": "VDis_flow",
+   "type": "real",
+   "unit": "m3/s",
+   "description": "Zone airflow"
+  },
+  {
+   "name": "VSet_flow",
+   "type": "real",
+   "unit": "m3/s",
+   "description": "Zone airflow setpoint"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "yPreReq",
+   "type": "int",
+   "description": "Static pressure reset requests, 0 to 3"
+  }
+ ],
+ "blocks": [
+  {
+   "id": "damOpen",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.95
+    },
+    {
+     "name": "h",
+     "value": 0.1
+    }
+   ]
+  },
+  {
+   "id": "openLong",
+   "class": "Logical.TrueDelay",
+   "params": [
+    {
+     "name": "delayTime",
+     "value": 60.0
+    },
+    {
+     "name": "delayOnInit",
+     "value": true
+    }
+   ]
+  },
+  {
+   "id": "served",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.01
+    },
+    {
+     "name": "h",
+     "value": 0.005
+    }
+   ]
+  },
+  {
+   "id": "halfSet",
+   "class": "Reals.MultiplyByParameter",
+   "params": [
+    {
+     "name": "k",
+     "value": 0.5
+    }
+   ]
+  },
+  {
+   "id": "seventySet",
+   "class": "Reals.MultiplyByParameter",
+   "params": [
+    {
+     "name": "k",
+     "value": 0.7
+    }
+   ]
+  },
+  {
+   "id": "short3",
+   "class": "Reals.Subtract",
+   "params": []
+  },
+  {
+   "id": "short2",
+   "class": "Reals.Subtract",
+   "params": []
+  },
+  {
+   "id": "starved3",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.0
+    },
+    {
+     "name": "h",
+     "value": 0.01
+    }
+   ]
+  },
+  {
+   "id": "starved2",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.0
+    },
+    {
+     "name": "h",
+     "value": 0.01
+    }
+   ]
+  },
+  {
+   "id": "counts",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "want3",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "want2",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "openInt",
+   "class": "Conversions.BooleanToInteger",
+   "params": []
+  },
+  {
+   "id": "three",
+   "class": "Integers.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": "two",
+   "class": "Integers.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 2
+    }
+   ]
+  },
+  {
+   "id": "req2",
+   "class": "Integers.Switch",
+   "params": []
+  },
+  {
+   "id": "req3",
+   "class": "Integers.Switch",
+   "params": []
+  }
+ ],
+ "connections": [
+  "uDam -> damOpen.u",
+  "damOpen.y -> openLong.u",
+  "VSet_flow -> served.u",
+  "VSet_flow -> halfSet.u",
+  "VSet_flow -> seventySet.u",
+  "halfSet.y -> short3.u1",
+  "VDis_flow -> short3.u2",
+  "short3.y -> starved3.u",
+  "seventySet.y -> short2.u1",
+  "VDis_flow -> short2.u2",
+  "short2.y -> starved2.u",
+  "openLong.y -> counts.u1",
+  "served.y -> counts.u2",
+  "counts.y -> want3.u1",
+  "starved3.y -> want3.u2",
+  "counts.y -> want2.u1",
+  "starved2.y -> want2.u2",
+  "damOpen.y -> openInt.u",
+  "two.y -> req2.u1",
+  "want2.y -> req2.u2",
+  "openInt.y -> req2.u3",
+  "three.y -> req3.u1",
+  "want3.y -> req3.u2",
+  "req2.y -> req3.u3",
+  "req3.y -> yPreReq"
+ ]
+}

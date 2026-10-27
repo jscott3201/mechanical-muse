@@ -133,3 +133,66 @@ fn ahu_static_pressure_reset_vectors_catch_common_mistakes() {
     ];
     assert_caught("ahu_static_pressure_reset", mutations);
 }
+
+#[test]
+fn zone_pressure_requests_reference_passes() {
+    let (graph, vectors) = load("zone_pressure_requests");
+    let failures = failing(&graph, &vectors);
+    assert!(failures.is_empty(), "{failures:#?}");
+}
+
+#[test]
+fn zone_pressure_requests_vectors_catch_common_mistakes() {
+    let n = ParamValue::Number;
+    let b = ParamValue::Bool;
+    let mutations: Vec<Mutation> = vec![
+        (
+            "damper request without its release band",
+            Box::new(move |g| set_param(g, "damOpen", "h", n(0.0))),
+        ),
+        (
+            "damper open above 90 % instead of 95 %",
+            Box::new(move |g| set_param(g, "damOpen", "t", n(0.9))),
+        ),
+        // A damper already open at the first frame must still stay open for the full delay.
+        (
+            "open-time delay passes a first-frame open at once",
+            Box::new(move |g| set_param(g, "openLong", "delayOnInit", b(false))),
+        ),
+        (
+            "open for 120 s instead of 60 s",
+            Box::new(move |g| set_param(g, "openLong", "delayTime", n(120.0))),
+        ),
+        (
+            "airflow requests without the open-time requirement",
+            Box::new(|g| rewire(g, "openLong.y -> counts.u1", "damOpen.y -> counts.u1")),
+        ),
+        (
+            "airflow requests without the served check",
+            Box::new(|g| rewire(g, "served.y -> counts.u2", "openLong.y -> counts.u2")),
+        ),
+        (
+            "3 and 2 request fractions swapped",
+            Box::new(move |g| {
+                set_param(g, "halfSet", "k", n(0.7));
+                set_param(g, "seventySet", "k", n(0.5));
+            }),
+        ),
+        (
+            "airflow comparisons without a release band",
+            Box::new(move |g| {
+                set_param(g, "starved3", "h", n(0.0));
+                set_param(g, "starved2", "h", n(0.0));
+            }),
+        ),
+        (
+            "one request only after the open time",
+            Box::new(|g| rewire(g, "damOpen.y -> openInt.u", "openLong.y -> openInt.u")),
+        ),
+        (
+            "airflow compared with the whole setpoint",
+            Box::new(|g| rewire(g, "halfSet.y -> short3.u1", "VSet_flow -> short3.u1")),
+        ),
+    ];
+    assert_caught("zone_pressure_requests", mutations);
+}
