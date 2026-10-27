@@ -13,9 +13,11 @@ mm-agent.workspace = true
 mm-bridge.workspace = true
 mm-graph.workspace = true
 mm-server.workspace = true
+rmcp.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+tokio = { workspace = true, features = ["macros", "rt", "io-std"] }
 tracing.workspace = true
 tracing-subscriber.workspace = true
 

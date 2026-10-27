@@ -30,20 +30,26 @@ Claude Code, `/mcp` shows the server's status; in Muse Code, the MCP list after 
 
 ## Protocol
 
-Hand-rolled JSON-RPC 2.0, one message per line (about 250 lines in `src/rpc.rs`). We chose that
-over an SDK because the server needs only tools on stdio, and a hand-rolled server adds no
-dependency (no new licence or `cargo deny` review, no `Cargo.lock` churn) during the event.
+The protocol side is the official MCP Rust SDK, [`rmcp`](https://github.com/modelcontextprotocol/rust-sdk)
+3.5.1 (pinned exactly; features `server` and `transport-io` only). Our code is the
+`ServerHandler` in `src/handler.rs`: server identity and instructions, the tool list, and
+`tools/call` routed to our tools (run on the blocking pool, since a replay is CPU-bound). The
+SDK owns JSON-RPC framing, version negotiation, `initialize`, `server/discover`, `ping` and the
+error replies.
 
-It serves both protocol eras:
+What rmcp 3.5.1 does, as observed in our tests (`tests/stdio.rs`):
 
-- **Handshake revisions** (`2025-11-25`, `2025-06-18`, `2025-03-26`, `2024-11-05`): `initialize`
-  answers with the client's revision when it is one of these, else `2025-11-25`;
-  `notifications/initialized` is accepted silently.
-- **Per-request revision** (`2026-07-28`): `server/discover` lists every supported version; a
-  request whose `_meta` names a version we do not serve gets error `-32022` with the
-  supported list. Results carry `resultType: "complete"`.
-- `ping`, `tools/list`, `tools/call`. Unknown methods get `-32601`, unknown tools `-32602`,
-  unparseable lines `-32700`. Notifications get no reply.
+- **Revisions:** `2024-11-05`, `2025-03-26`, `2025-06-18`, `2025-11-25` and `2026-07-28`, the set
+  the SDK knows (`ProtocolVersion::KNOWN_VERSIONS`); we do not narrow it.
+- **Handshake clients** (`2025-11-25` and earlier): `initialize` answers with the client's
+  revision when it has a handshake, else `2025-11-25`. Replies to these clients carry no
+  `resultType`.
+- **Per-request clients** (`2026-07-28`): no handshake is needed. `server/discover` lists the
+  supported versions; a request whose `_meta` names another version gets `-32022` with the list.
+  Results carry `resultType: "complete"`.
+- An unknown tool gets `-32602`, an unknown method `-32601`. A line that is not JSON gets no
+  reply and the session continues. Methods we do not implement but the SDK defaults (for example
+  `resources/list`) return empty lists.
 
 ## Tools
 
@@ -77,7 +83,7 @@ Driven by hand (`make mcp` and JSON lines on stdin; replies trimmed):
 
 ```text
 -> {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"by-hand","version":"0"}}}
-<- {"id":1,"jsonrpc":"2.0","result":{"protocolVersion":"2025-11-25","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"mm-mcp",...},"instructions":"..."}}
+<- {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25","capabilities":{"tools":{}},"serverInfo":{"name":"mm-mcp","title":"Mechanical Muse","version":"0.1.0"},"instructions":"..."}}
 -> {"jsonrpc":"2.0","method":"notifications/initialized"}
 -> {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_specs","arguments":{}}}
 <- specs: ahu_chw_requests (15 scenarios), ahu_static_pressure_reset (6), chw_plant_reset (10), zone_pressure_requests (9)
@@ -92,8 +98,12 @@ Driven by hand (`make mcp` and JSON lines on stdin; replies trimmed):
 
 ## Tests
 
-`crates/mm-mcp/tests/stdio.rs` starts the binary on pipes and runs a session (initialize,
-tools/list, `verify_graph` on a reference graph that passes every scenario, on a mistimed graph
-that fails replay, and on a graph with an undriven output), and drives the server in process for
-the edges: an unknown class (`unknown-class`), deterministic emission, the modern-era discover
-and version error, and protocol errors.
+`crates/mm-mcp/tests/stdio.rs` starts the real binary on pipes, one process per test. It covers:
+
+- a session: initialize, tools/list, then `verify_graph` on a reference graph that passes every
+  scenario, on a mistimed graph that fails replay, and on a graph with an undriven output;
+- an unknown class (`unknown-class` from `validate_graph`, a tool error from `emit_cxf`);
+- emission that is byte-identical across two processes and matches `verify_graph`'s content id;
+- spec and palette listing, `unknown-spec` and `not-a-graph`;
+- a `2026-07-28` client with no handshake (discover, the `-32022` version error, a verify);
+- protocol errors that leave the session running.

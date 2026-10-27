@@ -1,5 +1,5 @@
-//! Drives `mm-mcp` the way an MCP client does: the real binary over stdio pipes for a full
-//! session, and the in-process server for the protocol edges. Offline; no model calls.
+//! Drives `mm-mcp` the way an MCP client does: the real binary over stdio pipes, one process
+//! per test. Offline; no model calls.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
@@ -8,9 +8,6 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-use mm_graph::Palette;
-use mm_mcp::{Server, Tools};
-use mm_server::SpecStore;
 use serde_json::{Value, json};
 
 fn specs_dir() -> PathBuf {
@@ -175,69 +172,81 @@ fn a_client_session_over_stdio() {
     assert_eq!(invalid["code"], "undriven");
     assert!(invalid["feedback"].as_str().unwrap().contains("undriven"));
 
-    assert_eq!(replies[&6]["result"]["resultType"], "complete");
+    // Handshake-era replies carry no resultType; the SDK strips it for those revisions.
+    assert_eq!(replies[&6]["result"], json!({}));
 }
 
-fn server() -> Server {
-    let palette = Palette::pinned().unwrap();
-    let specs = SpecStore::load(&specs_dir(), &palette).unwrap();
-    Server::new(Tools::new(palette, specs))
-}
-
-fn reply(server: &Server, line: &str) -> Value {
-    serde_json::from_str(&server.handle_line(line).expect("a reply")).unwrap()
+/// A handshake-era session: `initialize` and `initialized`, then `lines` (ids from 10 up).
+fn legacy(lines: &[String]) -> BTreeMap<u64, Value> {
+    let mut all = vec![
+        request(
+            1,
+            "initialize",
+            json!({"protocolVersion": "2025-11-25", "capabilities": {},
+                   "clientInfo": {"name": "test", "version": "0"}}),
+        ),
+        json!({"jsonrpc": "2.0", "method": "notifications/initialized"}).to_string(),
+    ];
+    all.extend_from_slice(lines);
+    session(&all)
 }
 
 #[test]
 fn an_unknown_class_is_a_typed_finding() {
-    let server = server();
     let mut graph = reference_graph("chw_plant_reset");
     graph["blocks"][0]["class"] = json!("Logical.MadeUpBlock");
-    let r = reply(
-        &server,
-        &call(
-            1,
+    let replies = legacy(&[
+        call(
+            10,
             "validate_graph",
             json!({"graph": graph, "spec": "chw_plant_reset"}),
         ),
-    );
-    let body = structured(&r);
+        call(11, "emit_cxf", json!({"graph": graph})),
+    ]);
+    let body = structured(&replies[&10]);
     assert_eq!(body["ok"], false);
     assert_eq!(body["code"], "unknown-class");
     assert_eq!(body["findings"][0]["code"], "unknown-class");
     assert_eq!(body["findings"][0]["subject"], graph["blocks"][0]["id"]);
 
     // emit_cxf refuses the same graph as a tool error carrying the same code.
-    let r = reply(&server, &call(2, "emit_cxf", json!({"graph": graph})));
-    assert_eq!(r["result"]["isError"], true);
-    assert_eq!(structured(&r)["code"], "unknown-class");
+    assert_eq!(replies[&11]["result"]["isError"], true);
+    assert_eq!(structured(&replies[&11])["code"], "unknown-class");
 }
 
 #[test]
 fn emitting_is_deterministic_and_matches_verify() {
-    let server = server();
     let graph = reference_graph("ahu_chw_requests");
     let args = json!({"graph": graph, "spec": "ahu_chw_requests"});
-    let a = reply(&server, &call(1, "emit_cxf", args.clone()));
-    let b = reply(&server, &call(1, "emit_cxf", args.clone()));
-    assert_eq!(a, b);
-    let v = reply(&server, &call(2, "verify_graph", args));
-    assert_eq!(structured(&a)["content_id"], structured(&v)["content_id"]);
-    assert!(structured(&a)["cxf"].as_str().unwrap().contains("@context"));
+    let first = legacy(&[
+        call(10, "emit_cxf", args.clone()),
+        call(11, "verify_graph", args.clone()),
+    ]);
+    // A second process: the same graph gives the same bytes and content id.
+    let second = legacy(&[call(10, "emit_cxf", args)]);
+    assert_eq!(first[&10], second[&10]);
+    let emitted = structured(&first[&10]);
+    assert_eq!(emitted["content_id"], structured(&first[&11])["content_id"]);
+    assert!(emitted["cxf"].as_str().unwrap().contains("@context"));
 }
 
 #[test]
 fn specs_and_palette_are_listed() {
-    let server = server();
-    let r = reply(&server, &call(1, "list_specs", json!({})));
-    let specs = structured(&r)["specs"].as_array().unwrap().clone();
+    let replies = legacy(&[
+        call(10, "list_specs", json!({})),
+        call(11, "get_spec", json!({"spec": "chw_plant_reset"})),
+        call(12, "palette", json!({"query": "TRUEDELAY"})),
+        call(13, "get_spec", json!({"spec": "nope"})),
+        call(
+            14,
+            "verify_graph",
+            json!({"spec": "chw_plant_reset", "graph": 3}),
+        ),
+    ]);
+    let specs = structured(&replies[&10])["specs"].as_array().unwrap();
     assert!(specs.iter().any(|s| s["name"] == "chw_plant_reset"));
 
-    let r = reply(
-        &server,
-        &call(2, "get_spec", json!({"spec": "chw_plant_reset"})),
-    );
-    let spec = structured(&r);
+    let spec = structured(&replies[&11]);
     assert!(
         spec["task"]
             .as_str()
@@ -249,50 +258,67 @@ fn specs_and_palette_are_listed() {
     assert!(spec["scenarios"][0]["name"].is_string());
     assert!(spec["scenarios"][0].get("expect").is_none());
 
-    let r = reply(&server, &call(3, "palette", json!({"query": "TRUEDELAY"})));
-    assert_eq!(structured(&r)["count"], 1);
+    assert_eq!(structured(&replies[&12])["count"], 1);
 
-    let r = reply(&server, &call(4, "get_spec", json!({"spec": "nope"})));
-    assert_eq!(r["result"]["isError"], true);
-    assert_eq!(structured(&r)["code"], "unknown-spec");
+    assert_eq!(replies[&13]["result"]["isError"], true);
+    assert_eq!(structured(&replies[&13])["code"], "unknown-spec");
 
-    let r = reply(
-        &server,
-        &call(
-            5,
-            "verify_graph",
-            json!({"spec": "chw_plant_reset", "graph": 3}),
-        ),
-    );
-    assert_eq!(structured(&r)["code"], "not-a-graph");
+    assert_eq!(replies[&14]["result"]["isError"], true);
+    assert_eq!(structured(&replies[&14])["code"], "not-a-graph");
+}
+
+/// Per-request metadata for the 2026-07-28 revision, which has no handshake.
+fn modern_meta(version: &str) -> Value {
+    json!({"_meta": {
+        "io.modelcontextprotocol/protocolVersion": version,
+        "io.modelcontextprotocol/clientInfo": {"name": "test", "version": "0"},
+        "io.modelcontextprotocol/clientCapabilities": {}
+    }})
 }
 
 #[test]
-fn modern_clients_and_protocol_errors() {
-    let server = server();
-    let meta = |v: &str| json!({"_meta": {"io.modelcontextprotocol/protocolVersion": v}});
-    let r = reply(&server, &request(1, "server/discover", meta("2026-07-28")));
-    assert_eq!(r["result"]["supportedVersions"][0], "2026-07-28");
-    assert_eq!(r["result"]["resultType"], "complete");
+fn a_modern_client_needs_no_handshake() {
+    let mut verify = modern_meta("2026-07-28");
+    verify["name"] = json!("verify_graph");
+    verify["arguments"] =
+        json!({"spec": "chw_plant_reset", "graph": reference_graph("chw_plant_reset")});
+    let replies = session(&[
+        request(1, "server/discover", modern_meta("2026-07-28")),
+        request(2, "tools/list", modern_meta("1900-01-01")),
+        request(3, "tools/call", verify),
+    ]);
+    let discover = &replies[&1]["result"];
+    let versions = discover["supportedVersions"].as_array().unwrap();
+    assert!(versions.contains(&json!("2026-07-28")));
+    assert!(versions.contains(&json!("2025-11-25")));
+    assert_eq!(discover["resultType"], "complete");
 
-    let r = reply(&server, &request(2, "tools/list", meta("1900-01-01")));
-    assert_eq!(r["error"]["code"], -32022);
-    assert_eq!(r["error"]["data"]["requested"], "1900-01-01");
+    assert_eq!(replies[&2]["error"]["code"], -32022);
+    assert_eq!(replies[&2]["error"]["data"]["requested"], "1900-01-01");
 
-    let r = reply(&server, &call(3, "no_such_tool", json!({})));
-    assert_eq!(r["error"]["code"], -32602);
+    assert_eq!(replies[&3]["result"]["resultType"], "complete");
+    assert_eq!(structured(&replies[&3])["passed"], true);
+}
 
-    let r = reply(&server, &request(4, "resources/list", json!({})));
-    assert_eq!(r["error"]["code"], -32601);
+#[test]
+fn protocol_errors_keep_the_session_alive() {
+    let replies = legacy(&[
+        call(10, "no_such_tool", json!({})),
+        request(11, "bogus/method", json!({})),
+        // A line that is not JSON gets no reply and does not end the session.
+        "{not json".to_owned(),
+        request(12, "ping", json!({})),
+    ]);
+    assert_eq!(replies[&10]["error"]["code"], -32602);
+    assert_eq!(replies[&11]["error"]["code"], -32601);
+    assert_eq!(replies[&12]["result"], json!({}));
 
-    let r = reply(&server, "{not json");
-    assert_eq!(r["error"]["code"], -32700);
-    assert_eq!(r["id"], Value::Null);
-
-    // An unknown legacy revision is answered with ours.
-    let r = reply(
-        &server,
-        &request(5, "initialize", json!({"protocolVersion": "2020-01-01"})),
-    );
-    assert_eq!(r["result"]["protocolVersion"], "2025-11-25");
+    // An unknown handshake revision is answered with the newest one that has a handshake.
+    let replies = session(&[request(
+        1,
+        "initialize",
+        json!({"protocolVersion": "2020-01-01", "capabilities": {},
+               "clientInfo": {"name": "test", "version": "0"}}),
+    )]);
+    assert_eq!(replies[&1]["result"]["protocolVersion"], "2025-11-25");
 }

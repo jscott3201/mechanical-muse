@@ -99,7 +99,7 @@ Engine facts every change must respect (details: `docs/engine-api.md`):
 | `crates/mm-runtime` | BOPTEST REST client, supervisory loop, frame builder, fail-safe, KPIs. |
 | `crates/mm-bacnet` | rusty-bacnet server, point map generated from `engine.point_list(None)`. |
 | `crates/mm-server` | Axum binary: HTTP API, event stream, config, wiring. |
-| `crates/mm-mcp` | MCP server (stdio) for coding agents: specs, palette, validate, emit, verify as tools over `mm-agent`/`mm-graph`/`mm-bridge`. No model calls; logs on stderr (`docs/mcp.md`). |
+| `crates/mm-mcp` | MCP server (stdio, official `rmcp` SDK) for coding agents: specs, palette, validate, emit, verify as tools over `mm-agent`/`mm-graph`/`mm-bridge`. No model calls; logs on stderr (`docs/mcp.md`). |
 | `web/` | Vite + React + TypeScript + shadcn/ui front end. |
 | `specs/` | Our own sequence specs, vectors, and expected graphs, one folder per sequence. |
 | `fixtures/` | Recorded (scrubbed) model transcripts and CXF/CSV test data. |
