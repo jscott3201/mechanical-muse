@@ -10,6 +10,8 @@ BOPTEST simulation time; Spark is `muse-spark-1.3` unless stated.
 
 | When | Kind | What | Result | Where |
 | --- | --- | --- | --- | --- |
+| 2026-10-27 | Correction | The rows dated 2026-10-28 below were recorded on 2026-10-27 (US Eastern); dates from here on are Eastern | — | — |
+| 2026-10-27 | Spark | Library benchmark refresh: all 137 rules, tier A, 3 runs, `-contributor`, medium, validator-only, engine `fa5cb19` + loop-rule prompt | first try 122/125/124, after repair 132/130/131 of 137; scenarios 1,747/1,737/1,743 of 1,760 (constant-false 720); no change beyond run-to-run spread; 0 loop refusals before or after | benchmark-results |
 | 2026-10-28 | Spark | Workbench: Spark reads the sample sequence sheet (pasted text; PNG through the server) and proposes scenarios | 6 and 7 scenarios, 8 open questions each, no check problems; °F converted; vs our hand-written reference (fixtures/sequences/ahu-sat-reset-reference.py; each reading of the sheet's open points on its own) 138/138 (text, not committed) and 118/118 (PNG, committed) checked instants agree; drafts verified first try both times | `docs/workbench.md` |
 | 2026-10-28 | Feature | Bring your own sequence: read text/PDF/photo → review and accept scenarios → draft, verify, download CXF | works live and recorded (`make demo`) | `docs/workbench.md` |
 | 2026-10-28 | Feature | Muse Spark explains a run's events and its own verified drafts | fault demo: 5 event spans → 3 items, accurate; recorded copies committed | `fixtures/explanations/` |

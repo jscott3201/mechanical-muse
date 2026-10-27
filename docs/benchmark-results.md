@@ -6,7 +6,61 @@ rules: `docs/benchmark-split.md` and `.agents/skills/mm-benchmark-hygiene/SKILL.
 `crates/mm-bench`. Before scoring, all 1,760 library scenarios were replayed on the judge engine
 and all pass (`docs/upstream-gaps.md`), so every rule is in the denominator.
 
-## Where it fails (run of 2026-10-26, all 137 rules, tier A, 3 runs)
+## Where it fails, current engine and prompt (run of 2026-10-27, all 137 rules, tier A, 3 runs)
+
+The same run as the section below, repeated on the current product: engine `fa5cb19` (was
+`4063202`) and the system prompt with the loop rule (rule 9; prompt hash
+`fnv1a64:df6004cacf3aa986`, was `fnv1a64:4916127a304439fb`). Everything else is unchanged:
+`muse-spark-1.3-contributor` (the library is public), medium effort, up to 3 attempts,
+validator-only repair feedback (blind: no vector results reach the model), zero-shot, tier A,
+library `124427b`. Record: `runs/all137-tiera-r3-fa5cb19.json`.
+
+| Group | Rule-runs | First try | After repair |
+| --- | --- | --- | --- |
+| Statistical rules (CUSUM, baselines, rolling statistics) | 69 | **71%** | 87% |
+| Plain threshold/timing rules | 339 | 94% | 97% |
+| 17+ blocks | 24 | **75%** | **75%** |
+| 10-16 blocks | 90 | **74%** | 91% |
+| 5-9 blocks | 222 | 95% | 98% |
+| 4 or fewer blocks | 75 | 100% | 100% |
+| Rules using `Discrete.Sampler` | 21 | **48%** | 71% |
+
+Overall: first try 122, 125 and 124 of 137 rules; after repair 132, 130 and 131. Scenarios
+passed by the best attempt: 1,747, 1,737 and 1,743 of 1,760. Recomputed on `fa5cb19`, the
+baselines are unchanged: constant-false passes 0 rules and 720 of 1,760 scenarios;
+constant-true passes 0 rules and 30 scenarios.
+
+| Run | Engine | Prompt | First try (of 137) | After repair (of 137) | Scenarios (of 1,760) |
+| --- | --- | --- | --- | --- | --- |
+| 2026-10-26 | `4063202` | before the loop rule | 125, 121, 124 | 131, 132, 133 | 1,750, 1,744, 1,749 |
+| 2026-10-27 | `fa5cb19` | with the loop rule | 122, 125, 124 | 132, 130, 131 | 1,747, 1,737, 1,743 |
+
+- **No measurable change.** The spread between runs (3 to 4 rules) is as large as the
+  difference between the two batches. Re-checking the earlier run's 475 stored replies on
+  `fa5cb19` (`mm-bench --rescore`) changes no verdict, so the engine move alone changes nothing;
+  what differs is the prompt and sampling.
+- **The loop rule has nothing to fix here.** No library draft was refused as an algebraic loop
+  in either batch (0 of 475 attempts before, 0 of 481 now). The rule matters for our own
+  feedback sequences (see the plant reset below), not for these fault rules.
+- Every first-try failure but three was a behavior mismatch found by replay; the three were
+  validator findings (an edge from an input port, such as `absDiff.u`, used as a source). No
+  draft failed the interface lock or engine load. No model call failed (no content filter, no
+  rate limit).
+- Rules that failed the first try in at least 2 of 3 runs: AHU-0029, CHW-0001, FPB-0004,
+  FPB-0006, HP-0006, HW-0006, HW-0008, RTU-0002, RTU-0011, SYS-0009, VFD-0002, VFD-0003.
+- Rules still failing after repair in at least 2 of 3 runs: AHU-0029, HP-0006, HW-0006,
+  HW-0008, VFD-0002. HP-0006 (19 blocks, the largest test rule) failed every attempt of every
+  run, passing 15 of 16 scenarios each time; AHU-0029 passed 9 or 10 of 11 each time.
+- The same rules are hard in both batches (statistical baselines, evaluation gating, sampled
+  signals); which of them slip past repair in a given run varies.
+- Tokens per run: 710k, 659k and 696k input (407k to 498k cached); 614k, 528k and 571k output,
+  of which 434k to 513k reasoning. About 9% more than the earlier batch.
+
+## Where it fails, earlier engine and prompt (run of 2026-10-26, all 137 rules, tier A, 3 runs)
+
+Engine `4063202`, the system prompt before the loop rule (prompt hash
+`fnv1a64:4916127a304439fb`); otherwise the same settings as above. Record:
+`runs/all137-tiera-r3.json`.
 
 With no examples in the prompt, the train/test split matters only for twins, so the whole library
 is a fair stress test of shapes the small test set lacks (statistical rules, 10+ blocks).
