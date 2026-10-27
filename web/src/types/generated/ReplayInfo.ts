@@ -16,4 +16,8 @@ drafted: boolean,
 /**
  * How the recorded run ended, if the record has its end.
  */
-state?: RunState, };
+state?: RunState, 
+/**
+ * BOPTEST's KPIs as recorded, if the record has them.
+ */
+kpis?: { [key in string]: number }, };

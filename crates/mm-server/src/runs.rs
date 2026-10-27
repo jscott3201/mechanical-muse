@@ -78,6 +78,7 @@ pub struct RunHandle {
     journal: Arc<Journal<Envelope>>,
     stop: watch::Sender<bool>,
     ticks: AtomicU32,
+    kpis: Mutex<Option<BTreeMap<String, f64>>>,
 }
 
 impl RunHandle {
@@ -88,6 +89,7 @@ impl RunHandle {
             state: *lock(&self.state),
             ticks: self.ticks.load(Ordering::Relaxed),
             events: u32::try_from(self.journal.len()).unwrap_or(u32::MAX),
+            kpis: lock(&self.kpis).clone(),
         }
     }
 
@@ -105,6 +107,9 @@ impl RunHandle {
 
     /// Appends an event to the log, the record and the live channel, in that order.
     pub(crate) fn publish(&self, sim_time_s: Option<f64>, event: RunEvent) {
+        if let RunEvent::Kpi { values } = &event {
+            *lock(&self.kpis) = Some(values.clone());
+        }
         self.journal.append(|seq| Envelope {
             run_id: self.id.clone(),
             seq,
@@ -199,6 +204,7 @@ impl Runs {
             journal,
             stop,
             ticks: AtomicU32::new(0),
+            kpis: Mutex::new(None),
         });
         reg.runs.insert(id, Arc::clone(&handle));
         Ok(handle)

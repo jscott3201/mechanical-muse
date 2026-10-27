@@ -104,6 +104,10 @@ fn info(name: &str, events: &[Envelope]) -> ReplayInfo {
         start_s: config.as_ref().map_or(0.0, |c| c.start_s),
         drafted: config.as_ref().is_some_and(|c| !c.drafts.is_empty()),
         state: ended,
+        kpis: events.iter().rev().find_map(|e| match &e.event {
+            RunEvent::Kpi { values } => Some(values.clone()),
+            _ => None,
+        }),
     }
 }
 
