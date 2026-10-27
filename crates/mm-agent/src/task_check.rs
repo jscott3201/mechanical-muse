@@ -3,7 +3,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use mm_bridge::{InputSpec, Scalar, Step, VectorFile};
+use mm_bridge::{InputSpec, ReplayLimits, Scalar, Step, VectorFile, check_vectors};
 use mm_graph::SignalType;
 
 use crate::prompt::TaskSpec;
@@ -44,6 +44,8 @@ pub(crate) fn snake(s: &str) -> String {
         .collect::<String>();
     if out.is_empty() {
         "my_sequence".into()
+    } else if out.starts_with(|c: char| c.is_ascii_digit()) {
+        format!("seq_{out}")
     } else {
         out
     }
@@ -56,8 +58,9 @@ pub(crate) fn on_grid(t: f64, step: f64) -> bool {
 
 pub(crate) fn fits(ty: SignalType, v: Scalar) -> bool {
     match (ty, v) {
-        (SignalType::Bool, Scalar::Bool(_)) | (SignalType::Real, Scalar::Number(_)) => true,
-        (SignalType::Int, Scalar::Number(n)) => n.fract() == 0.0,
+        (SignalType::Bool, Scalar::Bool(_)) => true,
+        (SignalType::Real, Scalar::Number(n)) => n.is_finite(),
+        (SignalType::Int, Scalar::Number(n)) => n.fract() == 0.0 && n.abs() <= f64::from(i32::MAX),
         _ => false,
     }
 }
@@ -68,7 +71,7 @@ pub(crate) fn fits(ty: SignalType, v: Scalar) -> bool {
 /// cannot tell whether an expected value is right; the engineer decides that.
 pub fn check_task(task: &TaskSpec, vectors: &VectorFile) -> Vec<String> {
     let mut problems = Vec::new();
-    if !is_identifier(&task.name) {
+    if !is_identifier(&task.name) || task.name.chars().any(|c| c.is_ascii_uppercase()) {
         problems.push(format!(
             "the sequence name `{}` is not an identifier",
             task.name
@@ -193,6 +196,134 @@ pub fn check_task(task: &TaskSpec, vectors: &VectorFile) -> Vec<String> {
                 ));
             }
         }
+        // Two checks of one output that overlap in time must agree, or no graph can pass.
+        for (i, a) in s.expect.iter().enumerate() {
+            for b in s.expect.iter().skip(i + 1) {
+                let overlap = a.from_s <= b.to_s && b.from_s <= a.to_s;
+                let tol = a.tolerance.unwrap_or(0.0).max(b.tolerance.unwrap_or(0.0));
+                let differ = match (a.equals, b.equals) {
+                    (Scalar::Number(x), Scalar::Number(y)) => (x - y).abs() > tol,
+                    (x, y) => x != y,
+                };
+                if a.output == b.output && overlap && differ {
+                    problems.push(format!(
+                        "scenario `{name}`: two checks of `{}` overlap ({}–{} s and {}–{} s) but expect different values",
+                        a.output, a.from_s, a.to_s, b.from_s, b.to_s
+                    ));
+                }
+            }
+        }
+    }
+    // What the replay itself refuses (a window with no tick in it, too many samples).
+    if problems.is_empty()
+        && let Err(e) = check_vectors(vectors, &ReplayLimits::default())
+    {
+        problems.push(format!(
+            "the engine replay would refuse these scenarios: {e}"
+        ));
     }
     problems
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::indexing_slicing)]
+mod tests {
+    use mm_bridge::{Clock, Expectation, Scenario};
+    use mm_graph::SignalType;
+
+    use super::*;
+    use crate::prompt::PointSpec;
+
+    fn point(name: &str, ty: SignalType) -> PointSpec {
+        PointSpec {
+            name: name.into(),
+            ty,
+            unit: String::new(),
+            meaning: String::new(),
+        }
+    }
+
+    fn task() -> TaskSpec {
+        TaskSpec {
+            name: "fan".into(),
+            description: String::new(),
+            inputs: vec![point("u", SignalType::Real), point("n", SignalType::Int)],
+            outputs: vec![point("y", SignalType::Bool)],
+            params: vec![],
+            logic: None,
+        }
+    }
+
+    fn check(expect: Vec<(f64, f64, bool)>, n: f64) -> Vec<String> {
+        let scenario = Scenario {
+            name: "s".into(),
+            description: String::new(),
+            inputs: [
+                ("u".to_owned(), InputSpec::Constant(Scalar::Number(1.0))),
+                ("n".to_owned(), InputSpec::Constant(Scalar::Number(n))),
+            ]
+            .into(),
+            defaults: Default::default(),
+            expect: expect
+                .into_iter()
+                .map(|(from_s, to_s, v)| Expectation {
+                    output: "y".into(),
+                    from_s,
+                    to_s,
+                    equals: Scalar::Bool(v),
+                    tolerance: None,
+                })
+                .collect(),
+        };
+        let vectors = VectorFile {
+            schema: "mechanical-muse/vectors/v1".into(),
+            clock: Clock {
+                step_s: 60.0,
+                horizon_s: 1200.0,
+            },
+            scenarios: vec![scenario],
+        };
+        check_task(&task(), &vectors)
+    }
+
+    #[test]
+    fn a_fair_gate_has_no_problems() {
+        assert_eq!(
+            check(vec![(0.0, 540.0, false), (660.0, 1200.0, true)], 3.0),
+            Vec::<String>::new()
+        );
+    }
+
+    #[test]
+    fn a_window_with_no_tick_is_refused_as_the_replay_would() {
+        let p = check(vec![(610.0, 650.0, true)], 3.0);
+        assert!(p.iter().any(|m| m.contains("replay would refuse")), "{p:?}");
+    }
+
+    #[test]
+    fn overlapping_checks_that_disagree_are_refused() {
+        let p = check(vec![(0.0, 600.0, false), (540.0, 1200.0, true)], 3.0);
+        assert!(p.iter().any(|m| m.contains("overlap")), "{p:?}");
+        assert!(check(vec![(0.0, 600.0, true), (540.0, 1200.0, true)], 3.0).is_empty());
+    }
+
+    #[test]
+    fn integers_must_be_whole_and_in_range() {
+        assert!(
+            check(vec![(0.0, 60.0, true)], 2.5)
+                .iter()
+                .any(|m| m.contains("wrong type"))
+        );
+        assert!(
+            check(vec![(0.0, 60.0, true)], 1e20)
+                .iter()
+                .any(|m| m.contains("wrong type"))
+        );
+    }
+
+    #[test]
+    fn names_never_start_with_a_digit() {
+        assert_eq!(snake("1st floor AHU"), "seq_1st_floor_ahu");
+        assert!(is_identifier(&snake("1st floor AHU")));
+    }
 }

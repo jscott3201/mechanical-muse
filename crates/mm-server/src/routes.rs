@@ -22,6 +22,9 @@ pub const ENGINE_REV: &str = "fa5cb19d4b2b8831fb6a2979bc1d1099f69f3693";
 /// Verifications allowed to run at once.
 const VERIFY_SLOTS: usize = 2;
 
+/// Accepted engineer sequences one server keeps.
+const MAX_WORKBENCH_SPECS: usize = 50;
+
 #[derive(Clone)]
 pub struct AppState {
     inner: Arc<Inner>,
@@ -117,16 +120,29 @@ impl AppState {
     }
 
     /// Adds or replaces an engineer's sequence. Never shadows one of ours.
+    /// Adds an engineer's sequence. Never shadows one of ours, and never replaces an accepted
+    /// one: drafts verified against its scenarios would then claim a gate they never passed.
     pub fn add_workbench_spec(&self, spec: crate::specs::Spec) -> Result<(), String> {
         let name = spec.detail.summary.name.clone();
         if self.inner.specs.get(&name).is_some() {
             return Err(format!("`{name}` is the name of a built-in sequence"));
         }
-        self.inner
+        let mut wb = self
+            .inner
             .workbench
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .insert(name, Arc::new(spec));
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if wb.contains_key(&name) {
+            return Err(format!(
+                "a sequence named `{name}` was already accepted; give this one another name"
+            ));
+        }
+        if wb.len() >= MAX_WORKBENCH_SPECS {
+            return Err(format!(
+                "at most {MAX_WORKBENCH_SPECS} accepted sequences per server"
+            ));
+        }
+        wb.insert(name, Arc::new(spec));
         Ok(())
     }
 

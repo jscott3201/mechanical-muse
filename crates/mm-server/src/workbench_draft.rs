@@ -25,7 +25,7 @@ pub struct PointDraft {
 #[ts(export)]
 pub struct ParamDraft {
     pub name: String,
-    #[ts(type = "number | boolean")]
+    #[ts(type = "number | boolean | string | null")]
     pub value: Value,
     pub unit: String,
     pub meaning: String,
@@ -241,6 +241,12 @@ pub fn from_draft(draft: &SequenceDraft) -> Result<(TaskSpec, VectorFile), Vec<S
     for s in &draft.scenarios {
         let mut given = BTreeMap::new();
         for input in &s.inputs {
+            if given.contains_key(&input.point) {
+                problems.push(format!(
+                    "scenario `{}` gives input `{}` twice",
+                    s.name, input.point
+                ));
+            }
             let mut steps = Vec::new();
             for st in &input.steps {
                 match scalar(&st.value) {

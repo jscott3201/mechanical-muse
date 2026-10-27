@@ -33,6 +33,7 @@ pub use crate::workbench_draft::{
 const MAX_BODY: usize = 20 * 1024 * 1024;
 const MAX_ATTACHMENTS: usize = 4;
 const MAX_TEXT: usize = 40_000;
+const MAX_TITLE: usize = 120;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -120,14 +121,10 @@ fn load_reading(dir: &Path, key: &str) -> Option<ReadView> {
         .filter(|r| r.key == key)
 }
 
-fn save_json<T: Serialize>(dir: &Path, name: &str, value: &T) {
-    let written = std::fs::create_dir_all(dir).and_then(|()| {
-        let text = serde_json::to_string_pretty(value).map_err(std::io::Error::other)?;
-        std::fs::write(dir.join(name), text)
-    });
-    if let Err(e) = written {
-        tracing::warn!(error = %e, "could not save workbench data");
-    }
+fn save_json<T: Serialize>(dir: &Path, name: &str, value: &T) -> std::io::Result<()> {
+    std::fs::create_dir_all(dir)?;
+    let text = serde_json::to_string_pretty(value).map_err(std::io::Error::other)?;
+    std::fs::write(dir.join(name), text)
 }
 
 fn attachment(a: &WorkbenchAttachment) -> Result<Attachment, String> {
@@ -229,8 +226,10 @@ async fn read(
         draft: to_draft(&out.read),
         problems: out.read.problems,
     };
-    if let Some(dir) = &own {
-        save_json(dir, &file_name(&key), &view);
+    if let Some(dir) = &own
+        && let Err(e) = save_json(dir, &file_name(&key), &view)
+    {
+        tracing::warn!(error = %e, "could not save the reading");
     }
     Ok(Json(view))
 }
@@ -240,6 +239,13 @@ async fn accept(
     request: Result<Json<AcceptRequest>, JsonRejection>,
 ) -> Result<(StatusCode, Json<AcceptView>), Failure> {
     let Json(request) = request.map_err(|e| bad(e.body_text()))?;
+    if request.draft.title.chars().count() > MAX_TITLE
+        || request.draft.description.chars().count() > MAX_TEXT
+    {
+        return Err(bad(format!(
+            "the title is limited to {MAX_TITLE} characters and the task to {MAX_TEXT}"
+        )));
+    }
     let spec = register(&state, &request.draft).map_err(|problems| {
         Failure::new(
             StatusCode::UNPROCESSABLE_ENTITY,
@@ -247,15 +253,20 @@ async fn accept(
             problems.join("\n"),
         )
     })?;
+    // The name passed check_task (an identifier), so it is a plain file name.
     if let Some(dir) = workbench_dir(&state) {
-        save_json(
-            &dir,
-            &format!("{}.json", request.draft.name),
-            &Saved {
-                key: request.key,
-                draft: request.draft,
-            },
-        );
+        let saved = Saved {
+            key: request.key,
+            draft: request.draft,
+        };
+        if let Err(e) = save_json(&dir, &format!("{}.json", saved.draft.name), &saved) {
+            tracing::warn!(error = %e, "could not save the accepted sequence");
+            return Err(Failure::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "not-saved",
+                "accepted, but it could not be saved and will be gone after a restart",
+            ));
+        }
     }
     Ok((StatusCode::CREATED, Json(AcceptView { spec: spec.detail })))
 }
@@ -293,7 +304,10 @@ pub fn restore(state: &AppState) {
     let Ok(entries) = std::fs::read_dir(&dir) else {
         return;
     };
-    let mut paths: Vec<PathBuf> = entries.filter_map(|e| e.ok().map(|e| e.path())).collect();
+    let mut paths: Vec<PathBuf> = entries
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| p.extension().is_some_and(|x| x == "json"))
+        .collect();
     paths.sort();
     for path in paths {
         let saved = std::fs::read_to_string(&path)

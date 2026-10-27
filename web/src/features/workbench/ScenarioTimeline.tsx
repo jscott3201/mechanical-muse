@@ -28,7 +28,7 @@ export function ScenarioTimeline({
   outputs: PointDraft[];
   horizon: number;
 }) {
-  const end = scenarioEnd(scenario, horizon);
+  const end = Math.max(scenarioEnd(scenario, horizon), 1);
   const x = (t: number) => LABEL + ((W - LABEL - PAD) * Math.min(t, end)) / end;
   const checked = outputs.filter((o) => scenario.expect.some((e) => e.output === o.name));
   const rows = inputs.length + checked.length;

@@ -240,15 +240,33 @@ fn check(reply: Reply) -> ReadSequence {
         .iter()
         .map(|p| (p.name.clone(), p.ty))
         .collect();
+    let mut taken = std::collections::BTreeSet::new();
+    let mut doubled = Vec::new();
     let scenarios = reply
         .scenarios
         .into_iter()
         .map(|s| {
-            let name = if is_identifier(&s.name) {
+            let base = if is_identifier(&s.name) {
                 s.name
             } else {
                 snake(&s.name)
             };
+            // Names must be unique for the engineer to keep or drop each one.
+            let mut name = base.clone();
+            let mut n = 2;
+            while !taken.insert(name.clone()) {
+                name = format!("{base}_{n}");
+                n += 1;
+            }
+            let mut seen = std::collections::BTreeSet::new();
+            for input in &s.inputs {
+                if !seen.insert(input.point.clone()) {
+                    doubled.push(format!(
+                        "scenario `{name}` gives input `{}` twice",
+                        input.point
+                    ));
+                }
+            }
             let inputs = s
                 .inputs
                 .into_iter()
@@ -319,7 +337,8 @@ fn check(reply: Reply) -> ReadSequence {
         clock: reply.clock,
         scenarios,
     };
-    let problems = check_task(&task, &vectors);
+    let mut problems = doubled;
+    problems.extend(check_task(&task, &vectors));
     ReadSequence {
         title: reply.title.trim().chars().take(120).collect(),
         task,

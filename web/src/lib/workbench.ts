@@ -5,7 +5,8 @@ import type { SequenceDraft } from "@/types/generated/SequenceDraft";
 import type { WorkbenchAttachment } from "@/types/generated/WorkbenchAttachment";
 
 export const ACCEPTED_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/gif", "image/webp"];
-export const MAX_FILE_BYTES = 12 * 1024 * 1024;
+/** The server takes 20 MB per request; base64 adds a third, so about 14 MB of files in all. */
+export const MAX_TOTAL_BYTES = 14 * 1024 * 1024;
 
 /** Base64 of bytes, without a data-URL prefix. Chunked so large files do not overflow the stack. */
 export function toBase64(bytes: Uint8Array): string {
@@ -25,8 +26,14 @@ export async function fileToAttachment(file: Blob, name: string): Promise<Workbe
 /** Why a file cannot be attached, or null when it can. */
 export function fileProblem(file: { type: string; size: number; name: string }): string | null {
   if (!ACCEPTED_TYPES.includes(file.type)) return `${file.name}: attach a PDF or an image (PNG, JPEG, GIF, WebP)`;
-  if (file.size > MAX_FILE_BYTES) return `${file.name}: larger than 12 MB`;
+  if (file.size > MAX_TOTAL_BYTES) return `${file.name}: larger than 14 MB`;
   return null;
+}
+
+/** Why adding a file of `size` bytes to `attached` would make the request too large. */
+export function totalProblem(attached: WorkbenchAttachment[], size: number): string | null {
+  const bytes = attached.reduce((n, a) => n + Math.floor((a.data_base64.length * 3) / 4), 0) + size;
+  return bytes > MAX_TOTAL_BYTES ? "Attachments are limited to 14 MB in all" : null;
 }
 
 /** The draft with only the kept scenarios, ready to accept. */

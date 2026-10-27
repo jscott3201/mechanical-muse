@@ -11,7 +11,15 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAcceptSequence, useReadSequence } from "@/hooks/useWorkbench";
 import { formatWithUnit } from "@/lib/format";
-import { ACCEPTED_TYPES, acceptedDraft, clock, fileProblem, fileToAttachment, withExpected } from "@/lib/workbench";
+import {
+  ACCEPTED_TYPES,
+  acceptedDraft,
+  clock,
+  fileProblem,
+  fileToAttachment,
+  totalProblem,
+  withExpected,
+} from "@/lib/workbench";
 import type { PointDraft } from "@/types/generated/PointDraft";
 import type { ReadView } from "@/types/generated/ReadView";
 import type { SequenceDraft } from "@/types/generated/SequenceDraft";
@@ -42,7 +50,7 @@ function SourceStep({ onRead }: { onRead: (text: string, files: WorkbenchAttachm
     setProblem(null);
     const next: WorkbenchAttachment[] = [];
     for (const f of Array.from(list)) {
-      const p = fileProblem(f);
+      const p = fileProblem(f) ?? totalProblem([...files, ...next], f.size);
       if (p) {
         setProblem(p);
         continue;
@@ -89,7 +97,7 @@ function SourceStep({ onRead }: { onRead: (text: string, files: WorkbenchAttachm
           className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground hover:bg-muted/50"
         >
           <FileUp aria-hidden="true" className="size-5" />
-          <span>Drop a PDF or image here, or choose files (up to 4, 12 MB each)</span>
+          <span>Drop a PDF or image here, or choose files (up to 4, 14 MB in all)</span>
           <input
             type="file"
             multiple
@@ -191,8 +199,11 @@ function ExpectedInput({
         step="any"
         defaultValue={value}
         onBlur={(e) => {
-          const n = Number(e.target.value);
-          if (Number.isFinite(n)) onChange(n);
+          const text = e.target.value.trim();
+          const n = Number(text);
+          // An emptied or unreadable field goes back to the value it had, never to 0.
+          if (text !== "" && Number.isFinite(n)) onChange(n);
+          else e.target.value = String(value);
         }}
         className="h-7 w-32"
       />

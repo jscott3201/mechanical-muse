@@ -147,6 +147,22 @@ async fn the_sample_sheet_becomes_a_sequence_spark_drafts_and_the_engine_verifie
     .await;
     assert_eq!(status, StatusCode::CREATED, "{accepted}");
     assert_eq!(accepted["spec"]["reference"], false);
+    // The same name again would silently swap the gate under its verified drafts: refused.
+    let (status, body) = call(
+        &state,
+        "POST",
+        "/api/workbench/accept",
+        Some(json!({"draft": draft})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+    assert!(
+        body["message"]
+            .as_str()
+            .unwrap()
+            .contains("already accepted"),
+        "{body}"
+    );
     let (_, list) = call(&state, "GET", "/api/workbench", None).await;
     assert_eq!(list[0]["name"], name.as_str());
     let (status, _) = call(&state, "GET", &format!("/api/specs/{name}/graph"), None).await;
@@ -211,5 +227,77 @@ async fn the_sample_sheet_becomes_a_sequence_spark_drafts_and_the_engine_verifie
     mm_server::workbench::restore(&again);
     let (status, detail) = call(&again, "GET", &format!("/api/specs/{name}"), None).await;
     assert_eq!(status, StatusCode::OK, "{detail}");
+    let names = |v: &Value| -> Vec<String> {
+        v.as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["name"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let accepted: Vec<String> = draft["scenarios"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| s["name"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(
+        names(&detail["scenarios"]),
+        accepted,
+        "the restored gate is the accepted one"
+    );
+    let _ = std::fs::remove_dir_all(&records);
+}
+
+async fn author_recorded(state: &AppState, name: &str) -> Value {
+    let (status, session) = call(
+        state,
+        "POST",
+        &format!("/api/specs/{name}/author"),
+        Some(json!({"source": "recorded"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{session}");
+    let id = session["id"].as_str().unwrap().to_owned();
+    let mut info = Value::Null;
+    for _ in 0..500 {
+        (_, info) = call(state, "GET", &format!("/api/authoring/{id}"), None).await;
+        if info["state"] != "running" {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    info
+}
+
+/// The accepted scenarios, as edited, are what the draft is checked against: change one expected
+/// value and the same recorded draft is no longer verified.
+#[tokio::test]
+async fn an_edited_expected_value_is_what_the_draft_must_meet() {
+    let records = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("workbench-edit-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&records);
+    let state = server(&records);
+    let (_, view) = call(&state, "POST", "/api/workbench/read", Some(sample())).await;
+    let mut draft = view["draft"].clone();
+    let name = draft["name"].as_str().unwrap().to_owned();
+    // The first real-valued check, nudged by 1 K.
+    let check = draft["scenarios"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .flat_map(|s| s["expect"].as_array_mut().unwrap().iter_mut())
+        .find(|e| e["equals"].is_f64())
+        .unwrap();
+    check["equals"] = json!(check["equals"].as_f64().unwrap() + 1.0);
+    let (status, body) = call(
+        &state,
+        "POST",
+        "/api/workbench/accept",
+        Some(json!({"draft": draft})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    let info = author_recorded(&state, &name).await;
+    assert_ne!(info["state"], "verified", "{info}");
     let _ = std::fs::remove_dir_all(&records);
 }

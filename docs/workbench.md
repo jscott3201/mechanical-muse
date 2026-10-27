@@ -53,8 +53,13 @@ back, labelled recorded, and every check still runs.
 - **Pasted text** (`make live-read`): one model call; 5 points, 11 parameters, 8 open questions
   and 6 scenarios. The °F values were converted to K correctly. The checks found no problems.
 - **PNG of the sheet** (through the server): read in 47 s; 7 scenarios and 8 open questions.
-- **Graded against an independent reference model** (written by hand from the sheet; tried under
-  each reading of the open questions): every checked instant agrees, 138 of 138 (text) and 118 of
-  118 (PNG).
+- **Graded against our own reference**, `fixtures/sequences/ahu-sat-reset-reference.py`. We wrote
+  it by hand from the sheet, not from model output; it is independent of Spark, but its authors
+  also wrote the sheet. Where the sheet is silent it is run once per reading: a strict or an
+  inclusive 60 % threshold, and whether the dehumidification flag can be on while the AHU is off.
+  Under each reading on its own, every instant Spark checks agrees:
+  - 118 of 118 for the PNG reading, which is committed as `fixtures/readings/` (rerun it with
+    `python3 fixtures/sequences/ahu-sat-reset-reference.py fixtures/readings/read_*.json`);
+  - 138 of 138 for the text reading, kept in `runs/` and not committed.
 - **Drafts:** Spark's draft against its own accepted scenarios was verified on the first attempt
   both times.
