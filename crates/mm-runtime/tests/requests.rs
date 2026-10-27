@@ -141,4 +141,15 @@ fn preset_wiring_loads_and_steps() {
     for p in preset::watch_points() {
         assert!(p.ends_with("_y") || p.ends_with("_u"), "{p}");
     }
+    // Energy points are BOPTEST measurements in W, none already watched.
+    let csv = include_str!("../../../docs/boptest-points.csv");
+    let watched = preset::watch_points();
+    for p in preset::energy_points() {
+        assert!(!watched.contains(&p), "{p}");
+        let row = csv
+            .lines()
+            .find(|l| l.split(',').next() == Some(p.as_str()))
+            .unwrap_or_else(|| panic!("{p} is not a BOPTEST point"));
+        assert!(row.contains(",measurement,W,"), "{row}");
+    }
 }

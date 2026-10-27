@@ -314,6 +314,7 @@ async fn steps(
 ) -> Result<RunState, String> {
     let stop = handle.stop_signal();
     let mut watch = preset::watch_points();
+    watch.extend(preset::energy_points());
     if handle.config.pressure {
         watch.extend(preset::pressure_watch_points());
     }
