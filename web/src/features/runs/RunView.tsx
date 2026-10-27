@@ -22,6 +22,7 @@ const KPI_LABELS: Record<string, string> = {
   pgas_tot: "Peak gas demand (kW/m²)",
   tdis_tot: "Thermal discomfort (K·h per zone)",
   idis_tot: "CO₂ discomfort (ppm·h per zone)",
+  pdih_tot: "Peak district heating demand (kW/m²)",
   time_rat: "Computation time ratio",
 };
 
@@ -29,24 +30,40 @@ const STALE_MS = 60_000;
 const MAX_RESUBSCRIBE = 3;
 
 /** One run: status, the sequences and receipts it loaded, live trends, KPIs and the event log. */
-export function RunView({ runId }: { runId: string }) {
+export function RunView({ runId, onEnded }: { runId: string; onEnded?: () => void }) {
   // A gap in the stream (missed events) re-subscribes from the start: the server replays it all.
   const [epoch, setEpoch] = useState(0);
-  const onGap = useCallback(() => setEpoch((e) => (e < MAX_RESUBSCRIBE ? e + 1 : e)), []);
+  const [stillGapped, setStillGapped] = useState(false);
+  const onGap = useCallback(
+    () =>
+      setEpoch((e) => {
+        if (e >= MAX_RESUBSCRIBE) setStillGapped(true);
+        return e < MAX_RESUBSCRIBE ? e + 1 : e;
+      }),
+    [],
+  );
   return (
     <>
-      {epoch >= MAX_RESUBSCRIBE && (
+      {stillGapped && (
         <p className="flex items-center gap-2 text-sm text-destructive">
           <CircleAlert aria-hidden="true" className="size-4" /> Events are missing from this stream;
           the charts may have gaps.
         </p>
       )}
-      <RunStream key={`${runId}:${epoch}`} runId={runId} onGap={onGap} />
+      <RunStream key={`${runId}:${epoch}`} runId={runId} onGap={onGap} onEnded={onEnded} />
     </>
   );
 }
 
-function RunStream({ runId, onGap }: { runId: string; onGap: () => void }) {
+function RunStream({
+  runId,
+  onGap,
+  onEnded,
+}: {
+  runId: string;
+  onGap: () => void;
+  onEnded?: (() => void) | undefined;
+}) {
   const stream = useRunStream(runId);
   const stop = useAction<RunInfo>(`/api/runs/${encodeURIComponent(runId)}/stop`, {});
   const [lastEventAt, setLastEventAt] = useState(() => Date.now());
@@ -59,8 +76,13 @@ function RunStream({ runId, onGap }: { runId: string; onGap: () => void }) {
   useEffect(() => {
     if (stream.gap) onGap();
   }, [stream.gap, onGap]);
+  const ended = stream.ended !== null;
+  useEffect(() => {
+    if (ended) onEnded?.();
+  }, [ended, onEnded]);
   const t = useMemo(() => trends(stream.ticks), [stream.ticks]);
-  const stale = stream.phase === "running" && !stream.ended && now - lastEventAt > STALE_MS;
+  const age = now - lastEventAt;
+  const staleS = stream.phase === "running" && !stream.ended && age > STALE_MS ? Math.round(age / 1000) : null;
   const cfg = stream.config;
   return (
     <div className="flex flex-col gap-4">
@@ -68,7 +90,7 @@ function RunStream({ runId, onGap }: { runId: string; onGap: () => void }) {
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-sm">{runId}</span>
-            <RunStatus stream={stream} connection={stream.connection} stale={stale} />
+            <RunStatus stream={stream} connection={stream.connection} staleS={staleS} />
           </CardTitle>
           <CardDescription>
             {cfg
@@ -110,6 +132,9 @@ function RunStream({ runId, onGap }: { runId: string; onGap: () => void }) {
               <Button variant="outline" size="sm" onClick={stop.run} disabled={stop.state.status === "running"}>
                 <OctagonX aria-hidden="true" /> Stop run
               </Button>
+              {stop.state.status === "done" && (
+                <span className="text-xs text-muted-foreground">Stop requested.</span>
+              )}
               {stream.phase !== "running" && (
                 <span className="text-xs text-muted-foreground">
                   A stop during BOPTEST's warm-up takes effect once it finishes.

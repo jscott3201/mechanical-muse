@@ -86,11 +86,11 @@ export function trends(ticks: TickPoint[]): Trends {
   };
 }
 
-/** BOPTEST time as day of year and clock time ("day 185 14:30"). */
+/** BOPTEST time as whole days since January 1 and clock time ("day 185 14:30"). */
 export function formatSimTime(s: number): string {
-  const day = Math.floor(s / 86400);
-  const minutes = Math.round((s % 86400) / 60);
-  const hh = String(Math.floor(minutes / 60) % 24).padStart(2, "0");
-  const mm = String(minutes % 60).padStart(2, "0");
+  const total = Math.round(s / 60);
+  const day = Math.floor(total / 1440);
+  const hh = String(Math.floor((total % 1440) / 60)).padStart(2, "0");
+  const mm = String(total % 60).padStart(2, "0");
   return `day ${day} ${hh}:${mm}`;
 }

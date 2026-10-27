@@ -88,4 +88,21 @@ describe("RunsPage", () => {
     expect(FakeSource.last).not.toBe(first);
     expect(first?.readyState).toBe(2);
   });
+
+  it("starting a run fetches the list a bounded number of times", async () => {
+    const started = { ...JSON.parse(JSON.stringify({})), id: "run-new" };
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) =>
+      init?.method === "POST"
+        ? new Response(JSON.stringify({ ...started, config: { baseline: false, requests: true, start_s: 0, warmup_s: 0, steps: 1, step_s: 120, case: "c" }, state: "starting", ticks: 0, events: 0 }), { status: 201 })
+        : new Response("[]", { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<RunsPage />);
+    await act(async () => {
+      screen.getByRole("button", { name: /Start/ }).click();
+      await new Promise((r) => setTimeout(r, 200));
+    });
+    const gets = fetchMock.mock.calls.filter(([, init]) => (init?.method ?? "GET") === "GET").length;
+    expect(gets).toBeLessThanOrEqual(3);
+  });
 });

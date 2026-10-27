@@ -28,4 +28,14 @@ describe("LineChart", () => {
     expect(screen.getByText("no data")).toBeTruthy();
     expect(screen.getAllByRole("row")).toHaveLength(4);
   });
+
+  it("marks a value that has no neighbours, and says when a chart has no data", () => {
+    const lone: Series[] = [{ id: "a", label: "a", color: "red", points: [{ x: 0, y: null }, { x: 1, y: 5 }, { x: 2, y: null }] }];
+    const { container } = render(<LineChart title="T" unit="u" series={lone} formatX={String} formatY={String} />);
+    expect(container.querySelectorAll("circle")).toHaveLength(1);
+    cleanup();
+    const none: Series[] = [{ id: "a", label: "a", color: "red", points: [{ x: 0, y: null }] }];
+    render(<LineChart title="T" unit="u" series={none} formatX={String} formatY={String} />);
+    expect(screen.getByText("no data")).toBeTruthy();
+  });
 });

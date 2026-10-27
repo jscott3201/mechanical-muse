@@ -40,6 +40,8 @@ export interface RunStreamState {
   lastSeq: number | null;
   /** True once an event arrived out of order: the view should refetch the run. */
   gap: boolean;
+  /** Why the latest step wrote no new setpoints (fail-safe active), or null when it did. */
+  degraded: string | null;
 }
 
 export const MAX_TICKS = 6000;
@@ -55,6 +57,7 @@ export const initialRunStream: RunStreamState = {
   log: [],
   lastSeq: null,
   gap: false,
+  degraded: null,
 };
 
 function describe(e: SupervisorEvent): LogEntry["text"] {
@@ -78,6 +81,9 @@ function describe(e: SupervisorEvent): LogEntry["text"] {
 function severity(e: SupervisorEvent): LogEntry["severity"] {
   return e.kind === "clamped" ? "info" : e.kind === "stale" || e.kind === "degraded" ? "error" : "warning";
 }
+
+/** Events meaning a step did not write fresh setpoints. Clamping still writes, so it is not. */
+const FAIL_SAFE = new Set(["degraded", "held", "released", "stale", "rejected"]);
 
 export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamState {
   let next = state;
@@ -125,7 +131,13 @@ export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamSta
         ticks ??= [...base.ticks];
         ticks.push(point);
         const events = env.events.map((e) => ({ seq: env.seq, t, text: describe(e), severity: severity(e) }));
-        next = { ...base, ticks, log: events.length ? [...base.log, ...events] : base.log };
+        const failSafe = env.events.find((e) => FAIL_SAFE.has(e.kind));
+        next = {
+          ...base,
+          ticks,
+          log: events.length ? [...base.log, ...events] : base.log,
+          degraded: failSafe ? describe(failSafe) : null,
+        };
         break;
       }
       case "kpi":

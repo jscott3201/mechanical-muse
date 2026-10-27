@@ -12,14 +12,22 @@ function asFailure(e: unknown): ApiFailure {
   return new ApiFailure(0, "network", "cannot reach mm-server");
 }
 
-/** GETs `path` (or nothing while it is null); aborts on change or unmount. */
+/**
+ * GETs `path` (or nothing while it is null); aborts on change or unmount. A reload of the same
+ * path keeps showing the data it has until the new data arrives, so views built on it do not
+ * unmount and remount (a live stream would be dropped).
+ */
 export function useResource<T>(path: string | null): Resource<T> & { reload: () => void } {
   const [state, setState] = useState<Resource<T>>({ status: "loading" });
   const [version, setVersion] = useState(0);
+  const loadedPath = useRef<string | null>(null);
   useEffect(() => {
     if (path === null) return;
     const abort = new AbortController();
-    setState({ status: "loading" });
+    if (loadedPath.current !== path) {
+      loadedPath.current = path;
+      setState({ status: "loading" });
+    }
     request<T>("GET", path, undefined, abort.signal)
       .then((data) => setState({ status: "ready", data }))
       .catch((e: unknown) => {

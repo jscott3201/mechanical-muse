@@ -50,4 +50,8 @@ describe("formatSimTime", () => {
   it("shows day of year and clock time", () => {
     expect(formatSimTime(185 * 86400 + 12 * 3600 + 30 * 60)).toBe("day 185 12:30");
   });
+
+  it("rolls over to the next day", () => {
+    expect(formatSimTime(185 * 86400 + 23 * 3600 + 59 * 60 + 40)).toBe("day 186 00:00");
+  });
 });

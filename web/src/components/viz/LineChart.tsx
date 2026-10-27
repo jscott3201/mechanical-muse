@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from "react";
+import { memo, useId, useMemo, useState } from "react";
 
 import { useWidth } from "./useWidth";
 
@@ -39,13 +39,26 @@ function niceTicks(lo: number, hi: number, count = 4): number[] {
  * One measure on one y-scale against BOPTEST simulation time. Missing values break the line.
  * Identity is never colour alone: a legend, labels at the line ends, and a table view.
  */
-export function LineChart({ title, unit, series, formatX, formatY, step = false, height = 168 }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
-  const width = useWidth(ref);
+export const LineChart = memo(function LineChart({
+  title,
+  unit,
+  series,
+  formatX,
+  formatY,
+  step = false,
+  height = 168,
+}: Props) {
+  const [ref, width] = useWidth();
   const [hover, setHover] = useState<number | null>(null);
   const [table, setTable] = useState(false);
   const titleId = useId();
 
+  // y by x for each series: the table and the tooltip look values up here, not by scanning.
+  const byX = useMemo(
+    () => new Map(series.map((s) => [s.id, new Map(s.points.map((p) => [p.x, p.y]))])),
+    [series],
+  );
+  const hasData = useMemo(() => new Set(series.filter((s) => s.points.some((p) => p.y !== null)).map((s) => s.id)), [series]);
   const { xs, x0, x1, y0, y1 } = useMemo(() => {
     const xsSet = new Set<number>();
     let ylo = Infinity;
@@ -96,8 +109,23 @@ export function LineChart({ title, unit, series, formatX, formatY, step = false,
   };
 
   const hoverX = hover === null ? null : xs[hover];
-  const lastOf = (s: Series) => [...s.points].reverse().find((p) => p.y !== null);
-  const valueAt = (s: Series, x: number) => s.points.find((p) => p.x === x)?.y ?? null;
+  const valueAt = (s: Series, x: number) => byX.get(s.id)?.get(x) ?? null;
+  /** Points with no neighbour on either side: a path draws nothing for them, so mark them. */
+  const isolated = (s: Series) =>
+    s.points.filter(
+      (p, i) => p.y !== null && (s.points[i - 1]?.y ?? null) === null && (s.points[i + 1]?.y ?? null) === null,
+    );
+  // End labels: at each series' last value, nudged apart (at least 11 px) and kept in the plot.
+  const endLabels = useMemo(() => {
+    const placed = series
+      .map((s) => {
+        const last = [...s.points].reverse().find((p) => p.y !== null);
+        return last && last.y !== null ? { s, x: last.x, y: last.y } : null;
+      })
+      .filter((l): l is { s: Series; x: number; y: number } => l !== null)
+      .sort((a, b) => b.y - a.y);
+    return placed;
+  }, [series]);
 
   const onMove = (e: React.PointerEvent<SVGRectElement>) => {
     if (xs.length === 0) return;
@@ -125,6 +153,7 @@ export function LineChart({ title, unit, series, formatX, formatY, step = false,
                   <line x1="0" x2="16" y1="3" y2="3" stroke={s.color} strokeWidth="2" strokeDasharray={s.dashed ? "4 3" : undefined} />
                 </svg>
                 {s.label}
+                {!hasData.has(s.id) && " (no data)"}
               </span>
             ))}
           </span>
@@ -168,19 +197,34 @@ export function LineChart({ title, unit, series, formatX, formatY, step = false,
                 <text x={PAD.left - 6} y={sy(t)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[10px]">{formatY(t)}</text>
               </g>
             ))}
-            {[x0, (x0 + x1) / 2, x1].map((t, i) => (
+            {hasData.size === 0 && (
+              <text x={PAD.left + plotW / 2} y={PAD.top + plotH / 2} textAnchor="middle" className="fill-muted-foreground text-xs">
+                no data
+              </text>
+            )}
+            {(x1 > x0 ? [x0, (x0 + x1) / 2, x1] : [x0]).map((t, i) => (
               <text key={i} x={sx(t)} y={height - 6} textAnchor={i === 0 ? "start" : i === 2 ? "end" : "middle"} className="fill-muted-foreground text-[10px]">{formatX(t)}</text>
             ))}
             {series.map((s) => (
               <path key={s.id} d={path(s)} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray={s.dashed ? "6 4" : undefined} />
             ))}
-            {series.map((s, i) => {
-              const last = lastOf(s);
-              if (!last || last.y === null) return null;
-              return (
-                <text key={s.id} x={sx(last.x) + 6} y={sy(last.y) + (i - (series.length - 1) / 2) * 11} dy="0.32em" className="fill-foreground text-[10px]">{s.label}</text>
-              );
-            })}
+            {series.flatMap((s) =>
+              isolated(s).map((p) => (
+                <circle key={`${s.id}-${p.x}`} cx={sx(p.x)} cy={sy(p.y as number)} r="3" fill={s.color} />
+              )),
+            )}
+            {(() => {
+              let prev = -Infinity;
+              return endLabels.map((l) => {
+                const y = Math.min(Math.max(sy(l.y), prev + 11, PAD.top + 4), PAD.top + plotH);
+                prev = y;
+                return (
+                  <text key={l.s.id} x={sx(l.x) + 6} y={y} dy="0.32em" className="fill-foreground text-[10px]">
+                    {l.s.label}
+                  </text>
+                );
+              });
+            })()}
             {hoverX !== null && hoverX !== undefined && (
               <g>
                 <line x1={sx(hoverX)} x2={sx(hoverX)} y1={PAD.top} y2={PAD.top + plotH} className="stroke-muted-foreground" strokeWidth="1" />
@@ -194,7 +238,7 @@ export function LineChart({ title, unit, series, formatX, formatY, step = false,
           </svg>
           {hoverX !== null && hoverX !== undefined && (
             <div
-              role="status"
+              aria-hidden="true"
               className="pointer-events-none absolute top-1 rounded border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-sm"
               style={sx(hoverX) > width / 2 ? { right: width - sx(hoverX) + 8 } : { left: sx(hoverX) + 8 }}
             >
@@ -213,4 +257,4 @@ export function LineChart({ title, unit, series, formatX, formatY, step = false,
       )}
     </figure>
   );
-}
+});
