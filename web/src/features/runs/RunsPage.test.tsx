@@ -100,7 +100,7 @@ describe("RunsPage", () => {
       ticks: 3,
       events: 8,
     };
-    const baseline = { name: "base", recorded_run: "run-b", ticks: 30, baseline: true, start_s: 16027200, drafted: false, state: "completed", kpis: { ener_tot: 0.03 } };
+    const baseline = { name: "base", recorded_run: "run-b", ticks: 30, baseline: true, start_s: 16027200, drafted: false, pressure: false, own: [], state: "completed", kpis: { ener_tot: 0.03 } };
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
@@ -173,7 +173,7 @@ describe("RunsPage with drafts", () => {
     };
     const started = {
       id: "run-9",
-      config: { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 300, step_s: 120, case: "c", drafts: {} },
+      config: { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 300, step_s: 120, case: "c", drafts: {}, bindings: {} },
       state: "starting",
       ticks: 0,
       events: 0,
@@ -210,8 +210,8 @@ describe("RunsPage with drafts", () => {
 
 describe("RunsPage replays", () => {
   it("replays a recorded run and labels it as a replay", async () => {
-    const replay = { name: "day185-noon-requests", recorded_run: "run-1", ticks: 300, baseline: false, start_s: 16027200, drafted: false, state: "completed" };
-    const config = { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 300, step_s: 120, case: "c", drafts: {}, replay: { record: replay.name, recorded_run: "run-1" } };
+    const replay = { name: "day185-noon-requests", recorded_run: "run-1", ticks: 300, baseline: false, start_s: 16027200, drafted: false, pressure: false, own: [], state: "completed" };
+    const config = { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 300, step_s: 120, case: "c", drafts: {}, bindings: {}, replay: { record: replay.name, recorded_run: "run-1" } };
     const fetch = vi.fn(async (url: string, init?: RequestInit) => {
       if (url === "/api/bacnet") return bacnetOff();
       if (url === "/api/replays") return new Response(JSON.stringify([replay]), { status: 200 });

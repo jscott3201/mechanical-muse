@@ -47,7 +47,46 @@ async fn start_run(
     let Json(request) =
         request.map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.body_text()))?;
     check_drafts(&state, &request)?;
-    let handle = state.runs().create(&request).map_err(|e| match e {
+    let mut config = crate::runs::resolve(&request)
+        .map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string()))?;
+    // An engineer's sequence runs with the binding confirmed for it, recorded in the run.
+    for spec in config.drafts.keys() {
+        let own = state.spec(spec).is_some_and(|s| !s.detail.reference);
+        if let Some(binding) = state.binding(spec).filter(|_| own) {
+            config.bindings.insert(spec.clone(), binding);
+        }
+    }
+    // Our own sequences write these; a bound sequence may not write them too.
+    if !config.baseline {
+        let mut ours: Vec<String> = mm_runtime::preset::reset_outputs()
+            .into_iter()
+            .map(|(_, b)| b.point)
+            .collect();
+        if config.pressure {
+            ours.extend(
+                mm_runtime::preset::pressure_outputs()
+                    .into_iter()
+                    .map(|(_, b)| b.point),
+            );
+        }
+        for (spec, binding) in &config.bindings {
+            for f in &binding.floors {
+                for o in binding.outputs.iter().filter(|o| !o.point.is_empty()) {
+                    let point = o.point.replace("{floor}", &f.to_string());
+                    if ours.contains(&point) {
+                        return Err(Failure::new(
+                            StatusCode::BAD_REQUEST,
+                            "bad-request",
+                            format!(
+                                "{spec} would write {point}, which this run's own sequences write"
+                            ),
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    let handle = state.runs().register(config).map_err(|e| match e {
         StartError::Active(_) => Failure::new(StatusCode::CONFLICT, "run-active", e.to_string()),
         StartError::Invalid(_) => {
             Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string())
@@ -64,7 +103,13 @@ fn check_drafts(state: &AppState, request: &RunRequest) -> Result<(), Failure> {
     let bad = |m: String| Failure::new(StatusCode::BAD_REQUEST, "bad-request", m);
     let requests = request.requests.unwrap_or(true);
     for (spec, id) in request.drafts.iter().flatten() {
-        let used = spec == RESET_SPEC || (spec == REQUESTS_SPEC && requests);
+        let own = state.spec(spec).is_some_and(|s| !s.detail.reference);
+        if own && state.binding(spec).is_none() {
+            return Err(bad(format!(
+                "{spec} is not bound to BOPTEST yet; confirm a binding first"
+            )));
+        }
+        let used = own || spec == RESET_SPEC || (spec == REQUESTS_SPEC && requests);
         if !used {
             return Err(bad(format!("this run does not use {spec}")));
         }

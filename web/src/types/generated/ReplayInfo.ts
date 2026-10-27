@@ -18,6 +18,10 @@ drafted: boolean,
  */
 pressure: boolean, 
 /**
+ * Engineers' own sequences the recorded run ran (bound to the building).
+ */
+own: Array<string>, 
+/**
  * How the recorded run ended, if the record has its end.
  */
 state?: RunState, 

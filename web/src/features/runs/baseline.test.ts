@@ -15,7 +15,7 @@ const cfg: RunConfig = {
   steps: 300,
   step_s: 120,
   case: "multizone_office_complex_air",
-  drafts: {},
+  drafts: {}, bindings: {},
 };
 
 const run = (id: string, over: Partial<RunConfig>, kpis?: Record<string, number>): RunInfo => ({
@@ -35,6 +35,7 @@ const replay = (over: Partial<ReplayInfo>): ReplayInfo => ({
   start_s: 16027200,
   drafted: false,
   pressure: false,
+  own: [],
   state: "completed",
   kpis: { ener_tot: 0.3255 },
   ...over,

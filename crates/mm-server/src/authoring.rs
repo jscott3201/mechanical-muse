@@ -49,6 +49,8 @@ pub struct AuthoringConfig {
     pub explanations: Option<PathBuf>,
     /// Folder of committed (recorded) sequence readings for the workbench.
     pub readings: Option<PathBuf>,
+    /// Folder of committed (recorded) BOPTEST binding proposals for the workbench.
+    pub bindings: Option<PathBuf>,
 }
 
 impl Default for AuthoringConfig {
@@ -61,6 +63,7 @@ impl Default for AuthoringConfig {
             drafts: None,
             explanations: None,
             readings: None,
+            bindings: None,
         }
     }
 }

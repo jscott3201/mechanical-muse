@@ -2,6 +2,8 @@ import { useCallback, useRef, useState } from "react";
 
 import { ApiFailure, request } from "@/lib/api";
 import type { AcceptView } from "@/types/generated/AcceptView";
+import type { BindingView } from "@/types/generated/BindingView";
+import type { ConfirmRequest } from "@/types/generated/ConfirmRequest";
 import type { ReadRequest } from "@/types/generated/ReadRequest";
 import type { ReadView } from "@/types/generated/ReadView";
 import type { SequenceDraft } from "@/types/generated/SequenceDraft";
@@ -17,7 +19,7 @@ function asFailure(e: unknown): ApiFailure {
 }
 
 /** A POST whose body is given when it runs; only the latest call's reply lands. */
-function useCall<B, T>(path: string) {
+export function useCall<B, T>(path: string) {
   const [state, setState] = useState<Call<T>>({ status: "idle" });
   const latest = useRef(0);
   const run = useCallback(
@@ -45,4 +47,14 @@ export function useReadSequence() {
 /** The engineer accepts the reviewed draft as a sequence (`/api/workbench/accept`). */
 export function useAcceptSequence() {
   return useCall<{ draft: SequenceDraft; key: string | null }, AcceptView>("/api/workbench/accept");
+}
+
+/** Muse Spark proposes how a sequence connects to BOPTEST (`/api/workbench/{name}/binding/propose`). */
+export function useProposeBinding(spec: string) {
+  return useCall<undefined, BindingView>(`/api/workbench/${encodeURIComponent(spec)}/binding/propose`);
+}
+
+/** The engineer confirms a binding (`/api/workbench/{name}/binding`). */
+export function useConfirmBinding(spec: string) {
+  return useCall<ConfirmRequest, BindingView>(`/api/workbench/${encodeURIComponent(spec)}/binding`);
 }

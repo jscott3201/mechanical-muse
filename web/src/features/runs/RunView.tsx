@@ -17,7 +17,7 @@ import { change } from "./baseline";
 import { RunExplanationPanel } from "./RunExplanationPanel";
 import { RunStatus } from "./RunStatus";
 import { KpiTiles, RunProgress, SequenceGroups } from "./RunSummary";
-import { formatSimTime, trends } from "./trends";
+import { formatSimTime, ownTrends, trends } from "./trends";
 
 const KPI_LABELS: Record<string, string> = {
   ener_tot: "Energy use (kWh/m²)",
@@ -89,6 +89,8 @@ function RunStream({
     if (ended) onEnded?.();
   }, [ended, onEnded]);
   const t = useMemo(() => trends(stream.ticks), [stream.ticks]);
+  const ownBindings = stream.config?.bindings;
+  const own = useMemo(() => ownTrends(stream.ticks, ownBindings ?? {}), [stream.ticks, ownBindings]);
   const cfgForBands = stream.config;
   const bands = useMemo(() => {
     const f = cfgForBands?.fault;
@@ -121,7 +123,7 @@ function RunStream({
               </span>
             )}
             {cfg
-              ? `${cfg.baseline ? "Baseline: BOPTEST's own controllers, nothing written." : cfg.requests ? "Air handler requests feeding the plant reset." : "Plant reset with the request count fixed at 0."}${cfg.pressure ? " Duct static pressure reset on every floor, from its zones' requests." : ""} From ${formatSimTime(cfg.start_s)}, ${cfg.steps} steps of ${cfg.step_s} s, ${formatNumber(cfg.warmup_s / 3600, 1)} h warm-up, on BOPTEST ${cfg.case}.`
+              ? `${cfg.baseline ? "Baseline: BOPTEST's own controllers, nothing written." : cfg.requests ? "Air handler requests feeding the plant reset." : "Plant reset with the request count fixed at 0."}${cfg.pressure ? " Duct static pressure reset on every floor, from its zones' requests." : ""}${Object.entries(cfg.bindings ?? {}).map(([spec, b]) => ` Your sequence ${spec} on floor${b.floors.length === 1 ? "" : "s"} ${b.floors.join(", ")}, through the binding you confirmed.`).join("")} From ${formatSimTime(cfg.start_s)}, ${cfg.steps} steps of ${cfg.step_s} s, ${formatNumber(cfg.warmup_s / 3600, 1)} h warm-up, on BOPTEST ${cfg.case}.`
               : "Waiting for the run to start…"}
             {cfg?.fault && (
               <span className="block">
@@ -177,6 +179,23 @@ function RunStream({
             </>
           )}
         </div>
+      )}
+
+      {stream.ticks.length > 0 && own.length > 0 && (
+        <section aria-label="Your sequence on the building" className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-base font-medium">Your sequence on the building</h2>
+            <p className="text-sm text-muted-foreground">
+              Through the binding you confirmed: what each floor's instance sent (dashed) beside what the building
+              measured, and the readings that fed it.
+            </p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {own.map((c) => (
+              <LineChart key={c.id} bands={bands} title={c.title} unit={c.unit} series={c.series} formatX={formatSimTime} formatY={(v) => formatNumber(v, 2)} />
+            ))}
+          </div>
+        </section>
       )}
 
       {stream.kpi && (

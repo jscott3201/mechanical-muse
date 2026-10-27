@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+mod binder;
 mod client;
 mod explain;
 mod feedback;
@@ -16,6 +17,7 @@ mod repair;
 mod responses;
 mod task_check;
 
+pub use binder::{bind_request, propose_binding};
 pub use client::{Effort, ModelClient, ModelError, ModelReply, ModelRequest, OutputSchema, Usage};
 pub use explain::{
     Explained, ExplainedPart, Explanation, RunExplainedItem, RunExplanation, check_explanation,

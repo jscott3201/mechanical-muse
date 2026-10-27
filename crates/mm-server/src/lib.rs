@@ -7,6 +7,8 @@ pub mod author_dto;
 mod author_routes;
 pub mod authoring;
 pub mod bacnet;
+pub mod bind;
+pub mod bind_routes;
 pub mod drafts;
 pub mod dto;
 pub mod explain;
