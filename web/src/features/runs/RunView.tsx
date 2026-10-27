@@ -1,6 +1,7 @@
 import { CircleAlert, History, Info, OctagonX, Sparkles, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -94,11 +95,28 @@ function RunStream({
           <CardTitle className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-sm">{runId}</span>
             <RunStatus stream={stream} connection={stream.connection} staleS={staleS} />
+            {cfg?.replay && (
+              <Badge variant="outline">
+                <History aria-hidden="true" /> Replay of a recorded run
+              </Badge>
+            )}
           </CardTitle>
           <CardDescription>
+            {cfg?.replay && (
+              <span className="block">
+                Recorded events from {cfg.replay.recorded_run}, sent again at a fixed pace. Nothing runs
+                against BOPTEST now.
+              </span>
+            )}
             {cfg
               ? `${cfg.baseline ? "Baseline: BOPTEST's own controllers, nothing written." : cfg.requests ? "Air handler requests feeding the plant reset." : "Plant reset with the request count fixed at 0."} From ${formatSimTime(cfg.start_s)}, ${cfg.steps} steps of ${cfg.step_s} s, ${formatNumber(cfg.warmup_s / 3600, 1)} h warm-up, on BOPTEST ${cfg.case}.`
               : "Waiting for the run to start…"}
+            {cfg?.fault && (
+              <span className="block">
+                Test fault: {cfg.fault.point} reads NaN for steps {cfg.fault.from_step}–
+                {cfg.fault.from_step + cfg.fault.steps - 1}.
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
@@ -154,7 +172,7 @@ function RunStream({
               {stop.state.status === "done" && (
                 <span className="text-xs text-muted-foreground">Stop requested.</span>
               )}
-              {stream.phase !== "running" && (
+              {stream.phase !== "running" && !cfg?.replay && (
                 <span className="text-xs text-muted-foreground">
                   A stop during BOPTEST's warm-up takes effect once it finishes.
                 </span>
@@ -179,7 +197,11 @@ function RunStream({
         <Card>
           <CardHeader>
             <CardTitle>KPIs</CardTitle>
-            <CardDescription>Computed by BOPTEST for this run. Compare with a baseline run of the same window.</CardDescription>
+            <CardDescription>
+              {cfg?.replay
+                ? `Recorded with run ${cfg.replay.recorded_run}, as BOPTEST computed them then; not recomputed by this replay.`
+                : "Computed by BOPTEST for this run. Compare with a baseline run of the same window."}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>

@@ -11,6 +11,8 @@ import { useAction, useResource } from "@/hooks/useResource";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { DraftInfo } from "@/types/generated/DraftInfo";
+import type { ReplayInfo } from "@/types/generated/ReplayInfo";
+import type { ReplayRequest } from "@/types/generated/ReplayRequest";
 import type { RunInfo } from "@/types/generated/RunInfo";
 import type { RunRequest } from "@/types/generated/RunRequest";
 import type { RunState } from "@/types/generated/RunState";
@@ -39,6 +41,10 @@ function StateIcon({ state }: { state: RunState }) {
       return <CircleX aria-hidden="true" />;
   }
 }
+
+/** The demo fault: floor 1's supply-air temperature reads NaN for a few steps. */
+const FAULT_POINT = "floor1_reaAHU_TSup_y";
+const FAULT_STEPS = 5;
 
 const GRAPHS = [
   { spec: "chw_plant_reset", label: "Plant reset graph" },
@@ -99,6 +105,8 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
   const [hour, setHour] = useState(DEFAULTS.hour);
   const [steps, setSteps] = useState(DEFAULTS.steps);
   const stored = useResource<DraftInfo[]>("/api/drafts");
+  const [fault, setFault] = useState(false);
+  const [faultStep, setFaultStep] = useState(30);
   const [chosen, setChosen] = useState<Record<string, string | null>>({});
   const body = useMemo<RunRequest>(() => {
     const drafts: Record<string, string> = {};
@@ -113,8 +121,9 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
       steps,
       start_s: day * 86400 + hour * 3600,
       ...(Object.keys(drafts).length > 0 ? { drafts } : {}),
+      ...(fault && !baseline && requests ? { fault: { point: FAULT_POINT, from_step: faultStep, steps: FAULT_STEPS } } : {}),
     };
-  }, [baseline, requests, steps, day, hour, chosen]);
+  }, [baseline, requests, steps, day, hour, chosen, fault, faultStep]);
   const start = useAction<RunInfo>("/api/runs", body);
   // Each started run is reported exactly once, however often this component re-renders.
   const reported = useRef<string | null>(null);
@@ -171,6 +180,32 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
             <Input id="run-steps" type="number" min={1} max={5040} value={steps} onChange={(e) => setSteps(Number(e.target.value))} />
           </div>
         </div>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="run-fault">Inject a test fault</Label>
+          <Switch
+            id="run-fault"
+            checked={fault && !baseline && requests}
+            disabled={baseline || !requests}
+            onCheckedChange={setFault}
+          />
+        </div>
+        {fault && !baseline && requests && (
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="run-fault-step">From step</Label>
+            <Input
+              id="run-fault-step"
+              type="number"
+              min={0}
+              max={Math.max(0, steps - 1)}
+              value={faultStep}
+              onChange={(e) => setFaultStep(Number(e.target.value))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Floor 1's supply-air temperature reads NaN for {FAULT_STEPS} steps. The sequences that use it
+              stop writing and BOPTEST's own controllers take over, then they resume.
+            </p>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground">
           {steps} steps of {STEP_S} s = {formatNumber((steps * STEP_S) / 3600, 2)} simulated hours
           from {formatSimTime(day * 86400 + hour * 3600)}.
@@ -179,6 +214,59 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
           <Play aria-hidden="true" /> {start.state.status === "running" ? "Starting…" : "Start"}
         </Button>
         {start.state.status === "error" && <ErrorNote error={start.state.error} />}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ReplayButton({ replay, onStarted }: { replay: ReplayInfo; onStarted: (run: RunInfo) => void }) {
+  const body = useMemo<ReplayRequest>(() => ({ record: replay.name }), [replay.name]);
+  const start = useAction<RunInfo>("/api/runs/replay", body);
+  const reported = useRef<string | null>(null);
+  useEffect(() => {
+    if (start.state.status === "done" && reported.current !== start.state.data.id) {
+      reported.current = start.state.data.id;
+      onStarted(start.state.data);
+    }
+  }, [start.state, onStarted]);
+  return (
+    <li className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 text-sm">
+          <span className="block truncate font-mono text-xs">{replay.name}</span>
+          <span className="text-xs text-muted-foreground">
+            {replay.baseline ? "baseline" : replay.drafted ? "drafted graph" : "reset"} · {replay.ticks} steps from{" "}
+            {formatSimTime(replay.start_s)}
+          </span>
+        </span>
+        <Button size="sm" variant="outline" onClick={start.run} disabled={start.state.status === "running"}>
+          <History aria-hidden="true" /> Replay
+        </Button>
+      </div>
+      {start.state.status === "error" && <ErrorNote error={start.state.error} />}
+    </li>
+  );
+}
+
+/** Recorded runs the server can play back through the same live view. */
+function ReplayList({ onStarted }: { onStarted: (run: RunInfo) => void }) {
+  const replays = useResource<ReplayInfo[]>("/api/replays");
+  if (replays.status !== "ready" || replays.data.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Replay a recorded run</CardTitle>
+        <CardDescription>
+          Sends a recorded run's events again through the same view, labelled as a replay. Nothing
+          runs against BOPTEST.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="flex flex-col gap-2">
+          {replays.data.map((r) => (
+            <ReplayButton key={r.name} replay={r} onStarted={onStarted} />
+          ))}
+        </ul>
       </CardContent>
     </Card>
   );
@@ -208,6 +296,7 @@ export function RunsPage() {
     <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
       <div className="flex flex-col gap-4">
         <StartForm onStarted={onStarted} />
+        <ReplayList onStarted={onStarted} />
         {runs.status === "error" && <ErrorNote error={runs.error} onRetry={reload} />}
         {list.length > 0 && (
           <nav aria-label="Runs" className="flex flex-col gap-1">
@@ -224,7 +313,7 @@ export function RunsPage() {
                   <Badge variant="outline">
                     <StateIcon state={r.state} /> {r.state}
                   </Badge>
-                  {r.config.baseline ? "baseline" : "reset"} · {r.ticks}/{r.config.steps} steps
+                  {r.config.replay ? "replay" : r.config.baseline ? "baseline" : "reset"} · {r.ticks}/{r.config.steps} steps
                 </span>
               </button>
             ))}

@@ -7,6 +7,9 @@
 //! local `.env`; the key never leaves this process). Recorded runs for the "recorded" source are
 //! read from `MM_RECORDINGS_DIR` (default `fixtures/recordings`). Verified drafts are kept in
 //! `<MM_RUNS_DIR>/drafts` and session records in `MM_RUNS_DIR`.
+//!
+//! Recorded runs in `MM_REPLAYS_DIR` (default `fixtures/replays`) can be replayed through the
+//! same event stream, one tick every `MM_REPLAY_PACE_MS` (default 250 ms), labelled as replays.
 
 #![forbid(unsafe_code)]
 
@@ -40,6 +43,15 @@ async fn main() -> anyhow::Result<()> {
             url: std::env::var("MM_BOPTEST_URL").unwrap_or_else(|_| "http://127.0.0.1:80".into()),
         },
         records: Some(records.clone()),
+        replays: Some(PathBuf::from(
+            std::env::var("MM_REPLAYS_DIR").unwrap_or_else(|_| "fixtures/replays".into()),
+        )),
+        replay_pace: std::time::Duration::from_millis(
+            std::env::var("MM_REPLAY_PACE_MS")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(250),
+        ),
     };
     let spark = match std::env::var("MODEL_API_KEY") {
         Ok(key) if !key.trim().is_empty() => Some(std::sync::Arc::new(

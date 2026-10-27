@@ -73,6 +73,8 @@ function describe(e: SupervisorEvent): LogEntry["text"] {
       return `${where}: handed back to the baseline controller`;
     case "stale":
       return "readings did not move forward in time; nothing ran";
+    case "injected":
+      return `${where}: test fault injected (reading replaced with NaN)`;
     default:
       return `${where}: ${e.kind}`;
   }

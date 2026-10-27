@@ -47,6 +47,8 @@ impl AppState {
                     url: "http://127.0.0.1:80".into(),
                 },
                 records: None,
+                replays: None,
+                replay_pace: std::time::Duration::ZERO,
             },
         )
     }

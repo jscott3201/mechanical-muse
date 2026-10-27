@@ -57,6 +57,10 @@ pub struct RunsConfig {
     pub plant: PlantSource,
     /// Directory for JSON-lines run records; `None` keeps runs in memory only.
     pub records: Option<PathBuf>,
+    /// Directory of recorded runs that may be replayed (`<name>.jsonl`); `None` disables replay.
+    pub replays: Option<PathBuf>,
+    /// Wall time between replayed ticks.
+    pub replay_pace: std::time::Duration,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq)]
@@ -166,7 +170,11 @@ impl Runs {
 
     /// Registers a new run if none is active. The caller spawns its task.
     pub fn create(&self, request: &RunRequest) -> Result<Arc<RunHandle>, StartError> {
-        let config = resolve(request)?;
+        self.register(resolve(request)?)
+    }
+
+    /// Registers a run with a settled configuration (a live run, or a replay).
+    pub(crate) fn register(&self, config: RunConfig) -> Result<Arc<RunHandle>, StartError> {
         let mut reg = lock(&self.registry);
         if let Some(active) = reg
             .runs
@@ -228,6 +236,36 @@ fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
             "start_s must be at least warmup_s (the warm-up runs before the start)".into(),
         ));
     }
+    if let Some(f) = &r.fault {
+        if r.baseline.unwrap_or(false) {
+            return Err(StartError::Invalid(
+                "a baseline run has no sequences to fault".into(),
+            ));
+        }
+        if !fault_points().any(|p| p == f.point) {
+            return Err(StartError::Invalid(format!(
+                "{} is not a reading the sequences use",
+                f.point
+            )));
+        }
+        if f.from_step >= steps {
+            return Err(StartError::Invalid(format!(
+                "the fault starts at step {} but the run has {steps}",
+                f.from_step
+            )));
+        }
+        if f.steps == 0 || f.steps > 60 {
+            return Err(StartError::Invalid("a fault lasts 1 to 60 steps".into()));
+        }
+        // Without the request sequences the reset reads only occupancy: a fault elsewhere would
+        // be logged as injected and change nothing.
+        if !r.requests.unwrap_or(true) && !f.point.ends_with("_reaAHU_occ_y") {
+            return Err(StartError::Invalid(format!(
+                "without air handler requests only occupancy readings are used, not {}",
+                f.point
+            )));
+        }
+    }
     if !(1..=MAX_STEPS).contains(&steps) {
         return Err(StartError::Invalid(format!(
             "steps must be 1 to {MAX_STEPS}"
@@ -249,5 +287,20 @@ fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
         step_s: mm_runtime::preset::STEP_S,
         case: mm_runtime::preset::CASE.into(),
         drafts: r.drafts.clone().unwrap_or_default(),
+        fault: r.fault.clone(),
+        replay: None,
+    })
+}
+
+/// The readings the demo sequences use, which a test fault may replace.
+pub fn fault_points() -> impl Iterator<Item = String> {
+    mm_runtime::preset::FLOORS.iter().flat_map(|f| {
+        [
+            "reaAHU_TSup_y",
+            "TSupAirSet_u",
+            "reaAHU_yCooVal_y",
+            "reaAHU_occ_y",
+        ]
+        .map(move |p| format!("floor{f}_{p}"))
     })
 }
