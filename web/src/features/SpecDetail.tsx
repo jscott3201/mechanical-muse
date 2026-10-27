@@ -6,12 +6,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAction, useResource } from "@/hooks/useResource";
 import { formatWithUnit } from "@/lib/format";
+import type { GraphView } from "@/types/generated/GraphView";
 import type { Receipt as ReceiptDto } from "@/types/generated/Receipt";
 import type { SpecDetail as SpecDetailDto } from "@/types/generated/SpecDetail";
 import type { TaskPoint } from "@/types/generated/TaskPoint";
 
 import { AuthorPanel } from "./authoring/AuthorPanel";
 import { ErrorNote } from "./ErrorNote";
+import { GraphCanvas } from "./graph/GraphCanvas";
 import { Receipt } from "./Receipt";
 
 function PointTable({
@@ -53,6 +55,27 @@ function PointTable({
   );
 }
 
+/** Our hand-built reference graph, as the engine catalog types it. */
+function ReferenceGraph({ name }: { name: string }) {
+  const graph = useResource<GraphView>(`/api/specs/${encodeURIComponent(name)}/graph`);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Reference block graph</CardTitle>
+        <CardDescription>
+          Our hand-built graph for this sequence, made only of elementary CDL blocks from the
+          engine's catalog. Ports and connection types come from that catalog.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {graph.status === "loading" && <Skeleton className="h-[480px] w-full" />}
+        {graph.status === "error" && <ErrorNote error={graph.error} onRetry={graph.reload} />}
+        {graph.status === "ready" && <GraphCanvas graph={graph.data} label={`Reference graph of ${name}`} />}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SpecDetail({ name }: { name: string }) {
   const spec = useResource<SpecDetailDto>(`/api/specs/${encodeURIComponent(name)}`);
   const verify = useAction<ReceiptDto>(`/api/specs/${encodeURIComponent(name)}/verify`);
@@ -72,6 +95,7 @@ export function SpecDetail({ name }: { name: string }) {
           <PointTable title="Parameter" second="Value" points={params} />
         </CardContent>
       </Card>
+      <ReferenceGraph name={name} />
       <AuthorPanel spec={name} scenarios={scenarios.length} />
       <Card>
         <CardHeader>

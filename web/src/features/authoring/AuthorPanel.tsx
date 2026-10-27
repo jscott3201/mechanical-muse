@@ -15,6 +15,7 @@ import type { ModelSource } from "@/types/generated/ModelSource";
 import type { Problem } from "@/types/generated/Problem";
 
 import { ErrorNote } from "../ErrorNote";
+import { GraphCanvas } from "../graph/GraphCanvas";
 import { Outcome } from "../Receipt";
 
 /**
@@ -147,7 +148,15 @@ function Verdict({ view }: { view: AttemptView }) {
   }
 }
 
+/** The blocks and points a draft's problems name, for outlining in its graph. */
+function flaggedNodes(view: AttemptView): string[] {
+  const problems = view.result === "invalid" || view.result === "load-failed" ? view.problems : [];
+  return [...new Set(problems.map((p) => p.node).filter((n): n is string => Boolean(n)))];
+}
+
 function AttemptRow({ attempt }: { attempt: AttemptEntry }) {
+  const [open, setOpen] = useState(false);
+  const graph = attempt.view?.graph;
   return (
     <li className="flex flex-col gap-2 rounded-md border p-3">
       <p className="text-xs text-muted-foreground">
@@ -155,7 +164,25 @@ function AttemptRow({ attempt }: { attempt: AttemptEntry }) {
         {attempt.view && attempt.view.usage.output > 0 && ` · ${formatNumber(attempt.view.usage.output, 0)} output tokens`}
       </p>
       {attempt.view ? (
-        <Verdict view={attempt.view} />
+        <>
+          <Verdict view={attempt.view} />
+          {graph && (
+            <div className="flex flex-col gap-2">
+              <div>
+                <Button size="sm" variant="outline" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+                  {open ? "Hide the drafted graph" : "Show the drafted graph"}
+                </Button>
+              </div>
+              {open && (
+                <GraphCanvas
+                  graph={graph}
+                  flagged={flaggedNodes(attempt.view)}
+                  label={`Graph drafted in attempt ${attempt.index}`}
+                />
+              )}
+            </div>
+          )}
+        </>
       ) : (
         <p className="flex items-center gap-2 font-medium">
           <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> Muse Spark is drafting…
