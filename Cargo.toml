@@ -23,6 +23,13 @@ thiserror = "2"
 serde_yaml_ng = "0.10"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 tokio = { version = "1", features = ["time"] }
+axum = "0.8"
+ts-rs = "12"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
 
 # Workspace crates
 mm-graph = { path = "crates/mm-graph" }

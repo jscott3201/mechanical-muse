@@ -19,6 +19,7 @@ Everything in this repository was written during the event, starting October 26,
 | Muse Spark authoring agent: prompt, Responses client, draft-verify-repair loop | `crates/mm-agent` | Working offline against scripted replies and live against Muse Spark (`docs/model-api.md` section 10) |
 | Library benchmark harness: scrubbed tasks, baselines, run records | `crates/mm-bench` | First results in `docs/benchmark-results.md` |
 | BOPTEST runtime host: supervisory loop, BOPTEST client, fail-safe | `crates/mm-runtime` | Runs the verified AHU requests and CHW plant reset against BOPTEST live; 10-hour comparison with the baseline in `docs/runtime-results.md` |
+| HTTP API: specs, typed block graphs, verification receipts | `crates/mm-server` | Working: spec, graph and verify endpoints with generated TypeScript types; live run stream next |
 | BACnet device mirror | `crates/` | Planned |
 | Web app | `web/` | Planned |
 | Design notes and API references | `docs/` | Started |
