@@ -19,7 +19,7 @@ Mechanical Muse turns a written building-control sequence into a verified, runna
 6. A React web app shows the authoring trace, verification results, live trends, KPIs, and
    explanations.
 
-Status: offline pipeline (`mm-graph`, `mm-bridge`, `mm-agent`) and the benchmark harness (`mm-bench`) work; Muse Spark has run live (see `docs/benchmark-results.md`). The CHW plant reset spec is validated, and `mm-runtime` runs it against a scripted plant. Next: the first live BOPTEST run. Update this line when milestones land.
+Status: offline pipeline (`mm-graph`, `mm-bridge`, `mm-agent`) and the benchmark harness (`mm-bench`) work; Muse Spark has run live (see `docs/benchmark-results.md`). The CHW plant reset spec is validated, and `mm-runtime` has run it live against BOPTEST (`docs/runtime-results.md`). Next: AHU request wiring and a baseline KPI comparison. Update this line when milestones land.
 
 ## Hard rules (these override convenience)
 
@@ -102,9 +102,9 @@ Engine facts every change must respect (details: `docs/engine-api.md`):
 | `web/` | Vite + React + TypeScript + shadcn/ui front end. |
 | `specs/` | Our own sequence specs, vectors, and expected graphs, one folder per sequence. |
 | `fixtures/` | Recorded (scrubbed) model transcripts and CXF/CSV test data. |
-| `docs/` | Design notes: `engine-api.md`, `model-api.md`, `block-graph-schema.md` (+ `.schema.json`), `boptest-point-map.md` (+ `boptest-points.csv`), `plant-reset.md`, `benchmark-split.md` (+ `.json`), `bacnet-device-table.md`, `coding-agents.md`, `DECISIONS.md`, `upstream-gaps.md`. |
+| `docs/` | Design notes: `engine-api.md`, `model-api.md`, `block-graph-schema.md` (+ `.schema.json`), `boptest-point-map.md` (+ `boptest-points.csv`), `plant-reset.md`, `benchmark-split.md` (+ `.json`), `bacnet-device-table.md`, `coding-agents.md`, `DECISIONS.md`, `upstream-gaps.md`, `runtime-results.md`. |
 | `third_party/` | Pre-existing material that must be redistributed, each with its notice. |
-| `compose.yaml` | BOPTEST service(s) for local runs. |
+| `compose.yaml` | BOPTEST v0.9.0 for local runs, from a checkout named by `BOPTEST_DIR` (`make boptest-up`); `compose.boptest-images.yaml` swaps in the quay.io minio images. |
 | `.agents/skills/` | Project skills, the committed copy (`mm-*` are project-specific). Agents do not edit them. |
 | `.muse/hooks.json` | Wires the Stop hook (`.muse/hooks/verify.sh`) into Muse Code: the checks below run before a turn can finish. Agents do not edit `.muse/`. |
 | `.claude/` | Local only (gitignored): Claude Code's settings, which wire the same Stop hook, and its copy of the skills. |
