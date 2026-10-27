@@ -8,6 +8,21 @@ Built solo by Justin Scott for the Meta Global AI Developer Hackathon (Indie tra
 
 > Status: work in progress during the hackathon.
 
+## Run it
+
+You need Rust (see `rust-toolchain.toml`), Node (`web/.nvmrc`) and a BOPTEST v0.9.0 checkout
+(`git clone --branch v0.9.0 --depth 1 https://github.com/ibpsa/project1-boptest`).
+
+1. BOPTEST, either locally with Docker (`export BOPTEST_DIR=<checkout>; make boptest-up`, slow on
+   Apple silicon) or on Modal with native x86 (`make boptest-modal`, see
+   [docs/boptest-on-modal.md](docs/boptest-on-modal.md)).
+2. The server: `make server` (set `MM_BOPTEST_URL` for Modal). For live Muse Spark authoring, put
+   a Meta Model API key in `.env` as `MODEL_API_KEY` and run `make server-live`.
+3. The web app: `cd web && npm ci && npm run dev`, then open the printed address.
+
+Without BOPTEST or a model key, the web app can still verify the specs, play back the recorded
+Muse Spark session (labelled "recorded"), and replay recorded BOPTEST runs (labelled "replay").
+
 ## Built during the hackathon
 
 Everything in this repository was written during the event, starting October 26, 2026. The commit history is the record.
@@ -37,6 +52,7 @@ These are public, open-source projects used unmodified, each pinned to one commi
 | [open-control-library](https://github.com/jscott3201/open-control-library) | Justin Scott | MIT OR Apache-2.0 | `124427b` | Fault rules and test vectors for the benchmark; six rules (card, CXF and vectors) and four point dictionaries copied unmodified into `fixtures/open-control-library/` as test data |
 | [rusty-bacnet](https://github.com/jscott3201/rusty-bacnet) | Justin Scott | MIT | `1caf4db` (v0.14.0) | Simulated BACnet devices |
 | [BOPTEST](https://github.com/ibpsa/project1-boptest) | IBPSA Project 1 | BSD-3-Clause style | `9b1610b` (v0.9.0) | Large office building emulator and KPIs |
+| [MinIO](https://github.com/minio/minio) and [mc](https://github.com/minio/mc) | MinIO, Inc. | AGPL-3.0 | `f19c534` and `1e78af4` (the releases BOPTEST v0.9.0 names) | BOPTEST's object store, built from source by `deploy/minio` and `deploy/modal` because those releases are no longer published as images; not redistributed |
 | [shadcn/ui](https://github.com/shadcn-ui/ui) components | shadcn | MIT | CLI 4.21.4, style radix-nova | UI primitives copied into `web/src/components/ui` by the shadcn CLI, used unmodified except that they import our own `cn` helper |
 | [React Flow](https://github.com/xyflow/xyflow) (`@xyflow/react`) | xyflow | MIT | 12.12.0 | Draws block graphs (pan, zoom, typed port handles); the layered layout is our own (`web/src/features/graph/layout.ts`) |
 

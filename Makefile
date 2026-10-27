@@ -1,6 +1,6 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml).
-.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down server server-live
+.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live
 
 check: fmt-check clippy test
 
@@ -50,8 +50,20 @@ deny:
 # BOPTEST v0.9.0 on http://127.0.0.1:80 (compose.yaml; both targets need BOPTEST_DIR). provision
 # uploads the test cases once and exits; the first run builds the images (after switching
 # BOPTEST versions, rebuild with `docker compose build`).
-boptest-up:
+boptest-up: boptest-minio
 	docker compose up -d web worker provision
+
+# minio and mc built from source at the releases BOPTEST names (deploy/minio/Dockerfile).
+boptest-minio:
+	docker build -q -t mm-boptest-minio:RELEASE.2025-04-22T22-12-26Z deploy/minio
+
+# BOPTEST on Modal (native x86, several times faster than emulation): builds the image on first
+# use and prints a tunnel URL for MM_BOPTEST_URL. Needs the modal CLI and a BOPTEST checkout.
+# Stops after MINUTES (default 120); `modal app stop mm-boptest` stops it early.
+MINUTES ?= 120
+boptest-modal:
+	BOPTEST_SRC="$${BOPTEST_DIR:?set BOPTEST_DIR to a BOPTEST v0.9.0 checkout}" \
+	modal run deploy/modal/mm_boptest.py --minutes $(MINUTES)
 
 boptest-down:
 	docker compose down
