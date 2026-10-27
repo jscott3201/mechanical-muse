@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 use oce_api::{CompletedFrame, Engine, InputDefinition, Value, ValueType};
 
-use crate::dto::EngineErrorDto;
+use crate::dto::{EngineErrorDto, WireValue};
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum StepError {
@@ -85,6 +85,42 @@ impl FrameStepper {
         }
         self.values.insert(path.to_owned(), value);
         Ok(())
+    }
+
+    /// Sets an input from a wire value, converted to the input's declared type. This is how
+    /// hosts outside `mm-bridge` drive the engine without naming its types.
+    pub fn set_wire(&mut self, path: &str, value: &WireValue) -> Result<(), StepError> {
+        let ty = self
+            .input_type(path)
+            .ok_or_else(|| StepError::UnknownInput(path.to_owned()))?;
+        let converted = match (ty, value) {
+            (ValueType::Real, WireValue::Real(x)) => Some(Value::Real(*x)),
+            (ValueType::Integer, WireValue::Integer(n)) => Some(Value::Integer(*n)),
+            (ValueType::Boolean, WireValue::Boolean(b)) => Some(Value::Boolean(*b)),
+            (ValueType::Enum(class), WireValue::Enum { ordinal, .. }) => Some(Value::Enum {
+                class,
+                ordinal: *ordinal,
+            }),
+            _ => None,
+        };
+        match converted {
+            Some(v) => self.set(path, v),
+            None => Err(StepError::WrongType {
+                path: path.to_owned(),
+                expected: type_name(ty),
+            }),
+        }
+    }
+
+    /// Like [`FrameStepper::step`], returning the boundary outputs as wire values, in the
+    /// engine's (lexical) path order.
+    pub fn step_wire(&mut self, time: f64) -> Result<Vec<(String, WireValue)>, StepError> {
+        let frame = self.step(time)?;
+        Ok(frame
+            .outputs()
+            .iter()
+            .map(|(path, value)| (path.clone(), WireValue::from_value(value)))
+            .collect())
     }
 
     /// Submits the whole input table at `time` and executes one frame. A refusal leaves the

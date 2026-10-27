@@ -726,6 +726,15 @@ dependencies = [
 [[package]]
 name = "mm-runtime"
 version = "0.1.0"
+dependencies = [
+ "mm-bridge",
+ "mm-graph",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+]
 
 [[package]]
 name = "mm-server"
