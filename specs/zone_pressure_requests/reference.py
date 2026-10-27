@@ -1,11 +1,14 @@
-"""Independent reference for one zone's static pressure reset requests, and the generator of
+"""Independent reference for one zone's static pressure reset requests (v2), and the generator of
 vectors.json.
 
-Written from the behaviour of the Modelica Buildings Library's VAV terminal system-request
-sequence, static pressure half (commit a131864e, as vendored by the pinned open-control-engine),
-read as elementary block semantics: one-sided hysteresis comparisons and a true-delay. It does not
-use open-control-engine code or engine output: the vectors it writes are the oracle the
-engine-run graph is checked against.
+v1 followed the static pressure half of the Modelica Buildings Library's VAV terminal
+system-request sequence (commit a131864e, as vendored by the pinned open-control-engine): airflow
+requests only once the damper had been above 95 % for a minute. On BOPTEST the zone dampers open
+too slowly for that (spec.md), so v2 keeps the damper request and adds requests from the airflow
+shortfall itself. Read as elementary block semantics: one-sided hysteresis comparisons and
+true-delays. It does not use open-control-engine code or engine output: the vectors it writes are
+the oracle the engine-run graph is checked against. v1's task and vectors are kept as
+task.v1.json and vectors.v1.json.
 
 Frame semantics match the engine's host tick: one evaluation per tick, timers use elapsed model
 time.
@@ -23,10 +26,10 @@ STEP = 60.0
 
 P = dict(
     dam_open=0.95, dam_band=0.10,   # damper "open" above 0.95, until no longer above 0.85
-    open_for=60.0,                  # s the damper must stay open before airflow requests count
     flow_on=0.01, flow_on_band=0.005,  # m3/s; the zone is served while its setpoint is above
-    three=0.5, two=0.7,             # airflow fractions of setpoint below which 3 or 2 requests
+    one=0.9, two=0.7, three=0.5,    # airflow fractions of setpoint below which 1, 2 or 3 requests
     flow_band=0.01,                 # m3/s release band on the airflow comparisons
+    persist=120.0,                  # s an airflow shortfall must last before it counts
 )
 
 
@@ -59,26 +62,25 @@ class ZoneRequests:
     def __init__(self, p=P):
         self.p = p
         self.open = Above(p["dam_open"], p["dam_band"])
-        self.long_open = TrueDelay(p["open_for"])
         self.served = Above(p["flow_on"], p["flow_on_band"])
-        # Starved below a fraction of setpoint: the difference (fraction x setpoint - airflow)
-        # goes above 0, and the condition holds until it is no longer above -flow_band.
-        self.three = Above(0.0, p["flow_band"])
-        self.two = Above(0.0, p["flow_band"])
+        # Short of a fraction of setpoint: the difference (fraction x setpoint - airflow) goes
+        # above 0, and the condition holds until it is no longer above -flow_band.
+        self.short = {k: Above(0.0, p["flow_band"]) for k in ("one", "two", "three")}
+        self.long = {k: TrueDelay(p["persist"]) for k in ("one", "two", "three")}
 
     def step(self, t, dam, flow, setpoint):
         p = self.p
         is_open = self.open.step(dam)
-        long_open = self.long_open.step(t, is_open)
         served = self.served.step(setpoint)
-        three = self.three.step(p["three"] * setpoint - flow)
-        two = self.two.step(p["two"] * setpoint - flow)
-        counts = long_open and served
-        if counts and three:
+        lasting = {}
+        for k in ("one", "two", "three"):
+            short = self.short[k].step(p[k] * setpoint - flow)
+            lasting[k] = self.long[k].step(t, short and served)
+        if lasting["three"]:
             return 3
-        if counts and two:
+        if lasting["two"]:
             return 2
-        return 1 if is_open else 0
+        return 1 if lasting["one"] or is_open else 0
 
 
 def run(stim, horizon):
@@ -121,34 +123,47 @@ def scenarios():
                            (720, 0.951)), const(0.5), const(0.5)),
             900, {60: 0, 120: 1, 300: 1, 420: 1, 480: 0, 600: 0, 660: 0, 720: 1, 900: 1}),
         "starved_three": (
-            "Damper fully open from the start, airflow 0.2 of a 0.5 m3/s setpoint (below half): 1 "
-            "request at once, 3 once the damper has been open 60 s.",
-            stim(const(1.0), const(0.2), const(0.5)), 600, {0: 1, 60: 3, 600: 3}),
+            "Damper at 60 % (not open), airflow 0.2 of a 0.5 m3/s setpoint (below half) from the "
+            "start: nothing until the shortfall has lasted 120 s, then 3 requests.",
+            stim(const(0.6), const(0.2), const(0.5)), 600, {0: 0, 60: 0, 120: 3, 600: 3}),
         "starved_two": (
-            "Damper fully open, airflow 0.3 of a 0.5 m3/s setpoint (below 70 % but not below "
-            "half): 2 requests once the damper has been open 60 s.",
-            stim(const(1.0), const(0.3), const(0.5)), 600, {0: 1, 60: 2, 600: 2}),
+            "Airflow 0.3 of a 0.5 m3/s setpoint (below 70 %, not below half): 2 requests after "
+            "120 s.",
+            stim(const(0.6), const(0.3), const(0.5)), 600, {60: 0, 120: 2, 600: 2}),
+        "short_one": (
+            "Airflow 0.425 of a 0.5 m3/s setpoint (below 90 %, not below 70 %): 1 request after "
+            "120 s.",
+            stim(const(0.6), const(0.425), const(0.5)), 600, {60: 0, 120: 1, 600: 1}),
         "airflow_recovers_through_the_bands": (
-            "Damper open, setpoint 0.5 m3/s; airflow rises 0.2, 0.255 (still within 0.01 of "
-            "half: 3), 0.27 (2), 0.355 (still within 0.01 of 70 %: 2), 0.37 (1), then falls back "
-            "to 0.34 (2) and 0.24 (3).",
-            stim(const(1.0), piecewise((0, 0.2), (300, 0.255), (420, 0.27), (540, 0.355),
-                                       (660, 0.37), (780, 0.34), (900, 0.24)), const(0.5)),
-            1080, {240: 3, 300: 3, 420: 2, 540: 2, 660: 1, 780: 2, 900: 3, 1080: 3}),
+            "Setpoint 0.5 m3/s; airflow 0.2 (3 after 120 s), 0.255 at 300 s (still within 0.01 of "
+            "half: 3), 0.27 (2), 0.355 (still within 0.01 of 70 %: 2), 0.37 (1), 0.455 (still "
+            "within 0.01 of 90 %: 1), 0.47 (0); then back to 0.34 at 1020 s: the shortfalls start "
+            "again, so 2 only from 1140 s.",
+            stim(const(0.6), piecewise((0, 0.2), (300, 0.255), (420, 0.27), (540, 0.355),
+                                       (660, 0.37), (780, 0.455), (900, 0.47), (1020, 0.34)),
+                 const(0.5)),
+            1260, {120: 3, 300: 3, 420: 2, 540: 2, 660: 1, 780: 1, 900: 0, 1020: 0, 1080: 0,
+                   1140: 2, 1260: 2}),
         "zone_not_served": (
-            "Damper open and no airflow, but the setpoint is 0 (the zone is off): only the "
-            "damper request. When the setpoint rises to 0.5 m3/s at 300 s the starved zone sends "
-            "3; at 0.008 m3/s from 600 s it is still served (not at or below 0.005), and at "
-            "0.004 m3/s from 780 s it is not.",
-            stim(const(1.0), const(0.0),
+            "Damper at 60 % and no airflow, but the setpoint is 0 (the zone is off): no requests. "
+            "When the setpoint rises to 0.5 m3/s at 300 s the starved zone sends 3 from 420 s; at "
+            "0.008 m3/s from 600 s it is still served (not at or below 0.005), and at 0.004 m3/s "
+            "from 780 s it is not.",
+            stim(const(0.6), const(0.0),
                  piecewise((0, 0.0), (300, 0.5), (600, 0.008), (780, 0.004))),
-            960, {0: 1, 240: 1, 300: 3, 600: 3, 720: 3, 780: 1, 960: 1}),
-        "reopen_restarts_the_timer": (
-            "A starved zone whose damper is open from the start, closes to 80 % at 120 s and "
-            "reopens at 300 s: 1 request at once, 3 from 60 s, 0 while closed, 1 at the reopen, "
-            "and 3 again only after another 60 s.",
-            stim(piecewise((0, 1.0), (120, 0.8), (300, 1.0)), const(0.1), const(0.5)),
-            600, {0: 1, 60: 3, 120: 0, 240: 0, 300: 1, 360: 3, 600: 3}),
+            960, {0: 0, 300: 0, 360: 0, 420: 3, 600: 3, 720: 3, 780: 0, 960: 0}),
+        "brief_dips_ignored": (
+            "Airflow at its setpoint except dips to 60 % for 60 s (300 s), 120 s (600 s) and "
+            "180 s (900 s): a dip counts only once it has lasted 120 s, so only the last one "
+            "sends 2 requests, at 1020 s.",
+            stim(const(0.6), piecewise((0, 0.5), (300, 0.3), (360, 0.5), (600, 0.3), (720, 0.5),
+                                       (900, 0.3), (1080, 0.5)), const(0.5)),
+            1200, {300: 0, 600: 0, 660: 0, 720: 0, 900: 0, 960: 0, 1020: 2, 1080: 0, 1200: 0}),
+        "damper_and_airflow": (
+            "Damper at 96 % with airflow at 85 % of setpoint: 1 request at once from the damper, "
+            "still 1 after 120 s; airflow falls to 60 % at 300 s, so 2 from 420 s.",
+            stim(const(0.96), piecewise((0, 0.425), (300, 0.3)), const(0.5)),
+            600, {0: 1, 120: 1, 300: 1, 360: 1, 420: 2, 600: 2}),
     }
 
 

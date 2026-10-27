@@ -158,6 +158,10 @@ engine `fa5cb19`.
   on; every draft here got it right on the first try, with the loop rule in the prompt. It has
   no staging hold, which was the plant reset's other hard part.
 - The one zone draft that missed on its first try passed after one repair.
+- Zone requests v2 (airflow-based, `docs/runtime-results.md` says why): first try 0 of 3, after
+  repair 3 of 3, 9 of 9 scenarios each. Every first draft failed the same edge: a damper at
+  exactly 85 % must release its request, and all three held it; each was fixed in one repair.
+  Constant baselines pass 1 of 9. Tokens 12k to 14k input and 10k to 19k output per run.
 - Tokens: 3.3k to 14.5k input and 9.7k to 16.7k output per run.
 
 ## Control sequence: air handler chilled-water requests (run of 2026-10-26)

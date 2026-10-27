@@ -2,7 +2,7 @@
  "schema": "mechanical-muse/vectors/v1",
  "clock": {
   "step_s": 60.0,
-  "horizon_s": 1080
+  "horizon_s": 1260
  },
  "scenarios": [
   {
@@ -84,9 +84,9 @@
   },
   {
    "name": "starved_three",
-   "description": "Damper fully open from the start, airflow 0.2 of a 0.5 m3/s setpoint (below half): 1 request at once, 3 once the damper has been open 60 s.",
+   "description": "Damper at 60 % (not open), airflow 0.2 of a 0.5 m3/s setpoint (below half) from the start: nothing until the shortfall has lasted 120 s, then 3 requests.",
    "inputs": {
-    "uDam": 1.0,
+    "uDam": 0.6,
     "VDis_flow": 0.2,
     "VSet_flow": 0.5
    },
@@ -94,12 +94,12 @@
     {
      "output": "yPreReq",
      "from_s": 0.0,
-     "to_s": 0.0,
-     "equals": 1
+     "to_s": 60.0,
+     "equals": 0
     },
     {
      "output": "yPreReq",
-     "from_s": 60.0,
+     "from_s": 120.0,
      "to_s": 600.0,
      "equals": 3
     }
@@ -107,9 +107,9 @@
   },
   {
    "name": "starved_two",
-   "description": "Damper fully open, airflow 0.3 of a 0.5 m3/s setpoint (below 70 % but not below half): 2 requests once the damper has been open 60 s.",
+   "description": "Airflow 0.3 of a 0.5 m3/s setpoint (below 70 %, not below half): 2 requests after 120 s.",
    "inputs": {
-    "uDam": 1.0,
+    "uDam": 0.6,
     "VDis_flow": 0.3,
     "VSet_flow": 0.5
    },
@@ -117,22 +117,45 @@
     {
      "output": "yPreReq",
      "from_s": 0.0,
-     "to_s": 0.0,
-     "equals": 1
+     "to_s": 60.0,
+     "equals": 0
     },
     {
      "output": "yPreReq",
-     "from_s": 60.0,
+     "from_s": 120.0,
      "to_s": 600.0,
      "equals": 2
     }
    ]
   },
   {
-   "name": "airflow_recovers_through_the_bands",
-   "description": "Damper open, setpoint 0.5 m3/s; airflow rises 0.2, 0.255 (still within 0.01 of half: 3), 0.27 (2), 0.355 (still within 0.01 of 70 %: 2), 0.37 (1), then falls back to 0.34 (2) and 0.24 (3).",
+   "name": "short_one",
+   "description": "Airflow 0.425 of a 0.5 m3/s setpoint (below 90 %, not below 70 %): 1 request after 120 s.",
    "inputs": {
-    "uDam": 1.0,
+    "uDam": 0.6,
+    "VDis_flow": 0.425,
+    "VSet_flow": 0.5
+   },
+   "expect": [
+    {
+     "output": "yPreReq",
+     "from_s": 0.0,
+     "to_s": 60.0,
+     "equals": 0
+    },
+    {
+     "output": "yPreReq",
+     "from_s": 120.0,
+     "to_s": 600.0,
+     "equals": 1
+    }
+   ]
+  },
+  {
+   "name": "airflow_recovers_through_the_bands",
+   "description": "Setpoint 0.5 m3/s; airflow 0.2 (3 after 120 s), 0.255 at 300 s (still within 0.01 of half: 3), 0.27 (2), 0.355 (still within 0.01 of 70 %: 2), 0.37 (1), 0.455 (still within 0.01 of 90 %: 1), 0.47 (0); then back to 0.34 at 1020 s: the shortfalls start again, so 2 only from 1140 s.",
+   "inputs": {
+    "uDam": 0.6,
     "VDis_flow": [
      {
       "t": 0.0,
@@ -156,11 +179,15 @@
      },
      {
       "t": 780.0,
-      "value": 0.34
+      "value": 0.455
      },
      {
       "t": 900.0,
-      "value": 0.24
+      "value": 0.47
+     },
+     {
+      "t": 1020.0,
+      "value": 0.34
      }
     ],
     "VSet_flow": 0.5
@@ -169,12 +196,12 @@
     {
      "output": "yPreReq",
      "from_s": 0.0,
-     "to_s": 0.0,
-     "equals": 1
+     "to_s": 60.0,
+     "equals": 0
     },
     {
      "output": "yPreReq",
-     "from_s": 60.0,
+     "from_s": 120.0,
      "to_s": 360.0,
      "equals": 3
     },
@@ -187,28 +214,28 @@
     {
      "output": "yPreReq",
      "from_s": 660.0,
-     "to_s": 720.0,
-     "equals": 1
-    },
-    {
-     "output": "yPreReq",
-     "from_s": 780.0,
      "to_s": 840.0,
-     "equals": 2
+     "equals": 1
     },
     {
      "output": "yPreReq",
      "from_s": 900.0,
      "to_s": 1080.0,
-     "equals": 3
+     "equals": 0
+    },
+    {
+     "output": "yPreReq",
+     "from_s": 1140.0,
+     "to_s": 1260.0,
+     "equals": 2
     }
    ]
   },
   {
    "name": "zone_not_served",
-   "description": "Damper open and no airflow, but the setpoint is 0 (the zone is off): only the damper request. When the setpoint rises to 0.5 m3/s at 300 s the starved zone sends 3; at 0.008 m3/s from 600 s it is still served (not at or below 0.005), and at 0.004 m3/s from 780 s it is not.",
+   "description": "Damper at 60 % and no airflow, but the setpoint is 0 (the zone is off): no requests. When the setpoint rises to 0.5 m3/s at 300 s the starved zone sends 3 from 420 s; at 0.008 m3/s from 600 s it is still served (not at or below 0.005), and at 0.004 m3/s from 780 s it is not.",
    "inputs": {
-    "uDam": 1.0,
+    "uDam": 0.6,
     "VDis_flow": 0.0,
     "VSet_flow": [
      {
@@ -233,12 +260,12 @@
     {
      "output": "yPreReq",
      "from_s": 0.0,
-     "to_s": 240.0,
-     "equals": 1
+     "to_s": 360.0,
+     "equals": 0
     },
     {
      "output": "yPreReq",
-     "from_s": 300.0,
+     "from_s": 420.0,
      "to_s": 720.0,
      "equals": 3
     },
@@ -246,61 +273,97 @@
      "output": "yPreReq",
      "from_s": 780.0,
      "to_s": 960.0,
-     "equals": 1
+     "equals": 0
     }
    ]
   },
   {
-   "name": "reopen_restarts_the_timer",
-   "description": "A starved zone whose damper is open from the start, closes to 80 % at 120 s and reopens at 300 s: 1 request at once, 3 from 60 s, 0 while closed, 1 at the reopen, and 3 again only after another 60 s.",
+   "name": "brief_dips_ignored",
+   "description": "Airflow at its setpoint except dips to 60 % for 60 s (300 s), 120 s (600 s) and 180 s (900 s): a dip counts only once it has lasted 120 s, so only the last one sends 2 requests, at 1020 s.",
    "inputs": {
-    "uDam": [
+    "uDam": 0.6,
+    "VDis_flow": [
      {
       "t": 0.0,
-      "value": 1.0
-     },
-     {
-      "t": 120.0,
-      "value": 0.8
+      "value": 0.5
      },
      {
       "t": 300.0,
-      "value": 1.0
+      "value": 0.3
+     },
+     {
+      "t": 360.0,
+      "value": 0.5
+     },
+     {
+      "t": 600.0,
+      "value": 0.3
+     },
+     {
+      "t": 720.0,
+      "value": 0.5
+     },
+     {
+      "t": 900.0,
+      "value": 0.3
+     },
+     {
+      "t": 1080.0,
+      "value": 0.5
      }
     ],
-    "VDis_flow": 0.1,
     "VSet_flow": 0.5
    },
    "expect": [
     {
      "output": "yPreReq",
      "from_s": 0.0,
-     "to_s": 0.0,
-     "equals": 1
-    },
-    {
-     "output": "yPreReq",
-     "from_s": 60.0,
-     "to_s": 60.0,
-     "equals": 3
-    },
-    {
-     "output": "yPreReq",
-     "from_s": 120.0,
-     "to_s": 240.0,
+     "to_s": 960.0,
      "equals": 0
     },
     {
      "output": "yPreReq",
-     "from_s": 300.0,
-     "to_s": 300.0,
+     "from_s": 1020.0,
+     "to_s": 1020.0,
+     "equals": 2
+    },
+    {
+     "output": "yPreReq",
+     "from_s": 1080.0,
+     "to_s": 1200.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "damper_and_airflow",
+   "description": "Damper at 96 % with airflow at 85 % of setpoint: 1 request at once from the damper, still 1 after 120 s; airflow falls to 60 % at 300 s, so 2 from 420 s.",
+   "inputs": {
+    "uDam": 0.96,
+    "VDis_flow": [
+     {
+      "t": 0.0,
+      "value": 0.425
+     },
+     {
+      "t": 300.0,
+      "value": 0.3
+     }
+    ],
+    "VSet_flow": 0.5
+   },
+   "expect": [
+    {
+     "output": "yPreReq",
+     "from_s": 0.0,
+     "to_s": 360.0,
      "equals": 1
     },
     {
      "output": "yPreReq",
-     "from_s": 360.0,
+     "from_s": 420.0,
      "to_s": 600.0,
-     "equals": 3
+     "equals": 2
     }
    ]
   }
