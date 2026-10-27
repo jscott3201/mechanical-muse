@@ -1,0 +1,44 @@
+# Mechanical Muse for reviewers: no Rust, Node, model key or BOPTEST needed.
+#
+#   docker compose -f compose.demo.yaml up --build      # or: make docker-demo
+#
+# then open http://localhost:8080. It verifies every spec with the engine and plays back the
+# recorded Muse Spark session, recorded BOPTEST runs and recorded explanations, each labelled as
+# recorded or replay. Stop with Ctrl-C, then `docker compose -f compose.demo.yaml down`.
+#
+# Optional, for live mode (docs/packaging.md):
+#   - Live Muse Spark: add compose.demo.live.yaml, which reads MODEL_API_KEY from an env file you
+#     supply (default ./.env). The key stays in the container's environment, never in the image.
+#   - Live BOPTEST: start BOPTEST first (`make boptest-up`, port 80 on this machine, or
+#     `make boptest-modal`), then set MM_BOPTEST_URL if it is not on this machine's port 80.
+#
+# This file is separate from compose.yaml (BOPTEST for development), which it does not change.
+name: mechanical-muse
+
+services:
+  muse:
+    build: .
+    image: mechanical-muse:local
+    ports:
+      - "127.0.0.1:${MM_PORT:-8080}:8080"
+    environment:
+      # Where a live run finds BOPTEST. The default reaches a BOPTEST on this machine's port 80
+      # (make boptest-up); without one, live runs report that BOPTEST is unreachable and
+      # everything recorded still works.
+      MM_BOPTEST_URL: ${MM_BOPTEST_URL:-http://host.docker.internal:80}
+      RUST_LOG: ${RUST_LOG:-info}
+    extra_hosts:
+      # Docker Desktop defines host.docker.internal; this makes it work on Linux too.
+      - "host.docker.internal:host-gateway"
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /app/runs:uid=10001,gid=10001
+      - /tmp
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/api/health"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 3

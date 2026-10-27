@@ -61,9 +61,11 @@ pub struct Spec {
     pub detail: SpecDetail,
     /// The task as the model receives it (the same `task.json`).
     pub task: mm_agent::TaskSpec,
-    pub graph: BlockGraph,
+    /// The hand-built reference graph; `None` for an engineer's own sequence from the workbench,
+    /// which only Muse Spark's verified drafts implement.
+    pub graph: Option<BlockGraph>,
     pub vectors: VectorFile,
-    pub view: GraphView,
+    pub view: Option<GraphView>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -120,7 +122,71 @@ impl Spec {
     /// Emits the reference graph and replays the vectors (fresh engine per scenario). Blocking:
     /// call it from the blocking pool.
     pub fn replay(&self, palette: &Palette) -> Result<(Vec<u8>, ReplayReport), String> {
-        self.replay_graph(&self.graph, palette)
+        let graph = self
+            .graph
+            .as_ref()
+            .ok_or("this sequence has no reference graph; run a verified draft")?;
+        self.replay_graph(graph, palette)
+    }
+
+    /// A spec from an engineer's reviewed task and accepted scenarios (no reference graph).
+    pub fn from_workbench(
+        name: &str,
+        title: &str,
+        about: &str,
+        task: mm_agent::TaskSpec,
+        vectors: VectorFile,
+    ) -> Self {
+        let point = |p: &mm_agent::PointSpec| TaskPoint {
+            name: p.name.clone(),
+            r#type: Some(signal(p.ty.port_kind())),
+            unit: p.unit.clone(),
+            meaning: p.meaning.clone(),
+            value: None,
+        };
+        let detail = SpecDetail {
+            summary: SpecSummary {
+                name: name.to_owned(),
+                title: title.to_owned(),
+                inputs: task.inputs.iter().map(point).collect(),
+                outputs: task.outputs.iter().map(point).collect(),
+                scenarios: u32::try_from(vectors.scenarios.len()).unwrap_or(u32::MAX),
+            },
+            about: about.to_owned(),
+            description: task.description.clone(),
+            params: task
+                .params
+                .iter()
+                .map(|p| TaskPoint {
+                    name: p.name.clone(),
+                    r#type: None,
+                    unit: p.unit.clone(),
+                    meaning: p.meaning.clone(),
+                    value: match p.value {
+                        mm_graph::ParamValue::Number(n) => Some(n),
+                        mm_graph::ParamValue::Bool(b) => Some(if b { 1.0 } else { 0.0 }),
+                        mm_graph::ParamValue::Text(_) => None,
+                    },
+                })
+                .collect(),
+            scenarios: vectors
+                .scenarios
+                .iter()
+                .map(|s| ScenarioInfo {
+                    name: s.name.clone(),
+                    description: s.description.clone(),
+                })
+                .collect(),
+            step_s: vectors.clock.step_s,
+            reference: false,
+        };
+        Self {
+            detail,
+            task,
+            graph: None,
+            vectors,
+            view: None,
+        }
     }
 
     /// [`Spec::replay`] for another graph of this spec (a model's draft).
@@ -203,6 +269,7 @@ fn load_one(name: &str, dir: &Path, palette: &Palette) -> Result<Spec, SpecError
             })
             .collect(),
         step_s: vectors.clock.step_s,
+        reference: true,
     };
     let view = graph_view(&graph, palette).map_err(|problem| SpecError::Graph {
         spec: name.to_owned(),
@@ -211,9 +278,9 @@ fn load_one(name: &str, dir: &Path, palette: &Palette) -> Result<Spec, SpecError
     Ok(Spec {
         detail,
         task,
-        graph,
+        graph: Some(graph),
         vectors,
-        view,
+        view: Some(view),
     })
 }
 

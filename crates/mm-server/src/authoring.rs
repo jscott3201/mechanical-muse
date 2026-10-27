@@ -47,6 +47,8 @@ pub struct AuthoringConfig {
     pub drafts: Option<PathBuf>,
     /// Folder of committed (recorded) graph explanations.
     pub explanations: Option<PathBuf>,
+    /// Folder of committed (recorded) sequence readings for the workbench.
+    pub readings: Option<PathBuf>,
 }
 
 impl Default for AuthoringConfig {
@@ -58,6 +60,7 @@ impl Default for AuthoringConfig {
             records: None,
             drafts: None,
             explanations: None,
+            readings: None,
         }
     }
 }
@@ -299,10 +302,8 @@ type Done = (AuthorState, Option<DraftInfo>, Option<String>, TokenUsage);
 
 async fn author(session: &AuthorSession, state: &AppState) -> Result<Done, String> {
     let spec = state
-        .specs()
-        .get(&session.config.spec)
-        .ok_or_else(|| format!("spec {} is not loaded", session.config.spec))?
-        .clone();
+        .spec(&session.config.spec)
+        .ok_or_else(|| format!("spec {} is not loaded", session.config.spec))?;
     let authoring = state.authoring();
     let client = match &session.recording {
         Some(recording) => AnyModel::Recorded(RecordedClient::new(

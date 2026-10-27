@@ -26,6 +26,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/authoring/{id}/events", get(events))
         .route("/api/drafts", get(drafts))
         .route("/api/drafts/{content_id}/graph", get(draft_graph))
+        .route("/api/drafts/{content_id}/cxf", get(draft_cxf))
 }
 
 fn find(state: &AppState, id: &str) -> Result<Arc<AuthorSession>, Failure> {
@@ -45,7 +46,7 @@ async fn start(
 ) -> Result<(StatusCode, Json<AuthorInfo>), Failure> {
     let Json(request) =
         request.map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.body_text()))?;
-    if state.specs().get(&name).is_none() {
+    if state.spec(&name).is_none() {
         return Err(Failure::new(
             StatusCode::NOT_FOUND,
             "unknown-spec",
@@ -110,4 +111,58 @@ async fn draft_graph(
     graph_view(&draft.graph, state.palette())
         .map(Json)
         .map_err(|e| Failure::new(StatusCode::INTERNAL_SERVER_ERROR, "bad-draft", e))
+}
+
+/// The verified draft as CXF (JSON-LD), emitted again from its stored graph (the emitter is
+/// deterministic), as a download for the engineer's own tools.
+async fn draft_cxf(
+    State(state): State<AppState>,
+    Path(content_id): Path<String>,
+) -> Result<axum::response::Response, Failure> {
+    use axum::response::IntoResponse;
+    let draft = state.authoring().drafts.get(&content_id).ok_or_else(|| {
+        Failure::new(
+            StatusCode::NOT_FOUND,
+            "unknown-draft",
+            "no verified draft with that content id",
+        )
+    })?;
+    let cxf = mm_graph::emit_cxf(
+        &draft.graph,
+        state.palette(),
+        &mm_graph::EmitOptions::default(),
+    )
+    .map_err(|e| {
+        Failure::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "bad-draft",
+            e.to_string(),
+        )
+    })?;
+    let short: String = content_id
+        .rsplit(':')
+        .next()
+        .unwrap_or_default()
+        .chars()
+        .filter(char::is_ascii_alphanumeric)
+        .take(8)
+        .collect();
+    let spec: String = draft
+        .info
+        .spec
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '_')
+        .collect();
+    let disposition = format!("attachment; filename=\"{spec}-{short}.cxf.jsonld\"");
+    Ok((
+        [
+            (
+                axum::http::header::CONTENT_TYPE,
+                "application/ld+json".to_owned(),
+            ),
+            (axum::http::header::CONTENT_DISPOSITION, disposition),
+        ],
+        cxf,
+    )
+        .into_response())
 }

@@ -21,6 +21,8 @@ pub mod runs;
 mod session;
 pub mod specs;
 mod web;
+pub mod workbench;
+mod workbench_draft;
 
 pub use authoring::AuthoringConfig;
 pub use routes::{AppState, ENGINE_REV, app};

@@ -1,0 +1,572 @@
+{
+  "key": "read:c9e2f13586089fbc",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "draft": {
+    "name": "ahu1_sat_stpt",
+    "title": "AHU-1 Supply Air Temperature Setpoint",
+    "description": "The task computes discharge air temperature setpoint and a dehumidification flag every 60 s. While AHU enable is false the setpoint is 55 F (285.93 K). On each rising edge of AHU enable start a 600 s pulldown timer that holds the setpoint at 55 F. After pulldown expires compute an outdoor reset: 65 F (291.48 K) when outdoor is at or below 60 F (288.71 K), 55 F when outdoor is at or above 70 F (294.26 K), linear in between with setpoint falling 1 F for each 1 F rise in outdoor. A dehumidification latch sets when return humidity stays above 0.60 for 300 s continuously and forces the setpoint to 55 F regardless of outdoor, and clears when humidity falls below 0.55 with control returning to outdoor reset. The dehumidification active output mirrors the latch. The document does not define start up values before the first update or failed sensor behavior.",
+    "inputs": [
+      {
+        "name": "ahuEnable",
+        "type": "bool",
+        "unit": "1",
+        "meaning": "AHU enable status true when running"
+      },
+      {
+        "name": "oat",
+        "type": "real",
+        "unit": "K",
+        "meaning": "Outdoor air temperature"
+      },
+      {
+        "name": "retHum",
+        "type": "real",
+        "unit": "1",
+        "meaning": "Return air relative humidity fraction 0 to 1"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "datStpt",
+        "type": "real",
+        "unit": "K",
+        "meaning": "Discharge air temperature setpoint"
+      },
+      {
+        "name": "dehumActive",
+        "type": "bool",
+        "unit": "1",
+        "meaning": "Dehumidification override active indication for graphics"
+      }
+    ],
+    "params": [
+      {
+        "name": "offStpt",
+        "value": 285.9277777777778,
+        "unit": "K",
+        "meaning": "Setpoint when AHU is off"
+      },
+      {
+        "name": "pulldownTime",
+        "value": 600.0,
+        "unit": "s",
+        "meaning": "Hold duration after each AHU start"
+      },
+      {
+        "name": "pulldownStpt",
+        "value": 285.9277777777778,
+        "unit": "K",
+        "meaning": "Setpoint during pulldown hold"
+      },
+      {
+        "name": "oatColdThresh",
+        "value": 288.7055555555555,
+        "unit": "K",
+        "meaning": "Outdoor temperature at or below which setpoint is at cold limit"
+      },
+      {
+        "name": "oatWarmThresh",
+        "value": 294.2611111111111,
+        "unit": "K",
+        "meaning": "Outdoor temperature at or above which setpoint is at warm limit"
+      },
+      {
+        "name": "stptAtColdOat",
+        "value": 291.4833333333333,
+        "unit": "K",
+        "meaning": "Setpoint when outdoor is at or below cold threshold"
+      },
+      {
+        "name": "stptAtWarmOat",
+        "value": 285.9277777777778,
+        "unit": "K",
+        "meaning": "Setpoint when outdoor is at or above warm threshold"
+      },
+      {
+        "name": "dehumEnterThresh",
+        "value": 0.6,
+        "unit": "1",
+        "meaning": "Return humidity above which entry timer runs"
+      },
+      {
+        "name": "dehumEntryDelay",
+        "value": 300.0,
+        "unit": "s",
+        "meaning": "Continuous time above enter threshold to activate dehumidification"
+      },
+      {
+        "name": "dehumExitThresh",
+        "value": 0.55,
+        "unit": "1",
+        "meaning": "Return humidity below which dehumidification clears"
+      },
+      {
+        "name": "dehumStpt",
+        "value": 285.9277777777778,
+        "unit": "K",
+        "meaning": "Setpoint when dehumidification is active"
+      },
+      {
+        "name": "updatePeriod",
+        "value": 60.0,
+        "unit": "s",
+        "meaning": "Calculation and transmit period"
+      }
+    ],
+    "step_s": 60.0,
+    "horizon_s": 1800.0,
+    "scenarios": [
+      {
+        "name": "offSteady",
+        "description": "AHU off holds 55 F setpoint with dehumidification off.",
+        "rationale": "Pins down steady off behavior with 55 F setpoint and no dehumidification.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": false
+              }
+            ]
+          },
+          {
+            "point": "oat",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 291.4833333333333
+              }
+            ]
+          },
+          {
+            "point": "retHum",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.4
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "datStpt",
+            "from_s": 60.0,
+            "to_s": 600.0,
+            "equals": 285.9277777777778,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 60.0,
+            "to_s": 600.0,
+            "equals": false
+          }
+        ]
+      },
+      {
+        "name": "pulldownHoldRelease",
+        "description": "Pulldown holds 55 F for 10 min after start then releases to OAT reset.",
+        "rationale": "Pins down 10 minute pulldown hold after start and release to midpoint reset.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": false
+              },
+              {
+                "t": 60.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "oat",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 291.4833333333333
+              }
+            ]
+          },
+          {
+            "point": "retHum",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.4
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "datStpt",
+            "from_s": 120.0,
+            "to_s": 540.0,
+            "equals": 285.9277777777778,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 120.0,
+            "to_s": 540.0,
+            "equals": false
+          },
+          {
+            "output": "datStpt",
+            "from_s": 780.0,
+            "to_s": 1020.0,
+            "equals": 288.7055555555555,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 780.0,
+            "to_s": 1020.0,
+            "equals": false
+          }
+        ]
+      },
+      {
+        "name": "hotOatLimit",
+        "description": "After pulldown hot outdoor at or above 70 F holds low setpoint 55 F.",
+        "rationale": "Pins down warm outdoor limit holding low setpoint.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": false
+              },
+              {
+                "t": 60.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "oat",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 297.0388888888889
+              }
+            ]
+          },
+          {
+            "point": "retHum",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.4
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "datStpt",
+            "from_s": 780.0,
+            "to_s": 1200.0,
+            "equals": 285.9277777777778,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 780.0,
+            "to_s": 1200.0,
+            "equals": false
+          }
+        ]
+      },
+      {
+        "name": "coldOatLimit",
+        "description": "After pulldown cold outdoor at or below 60 F holds high setpoint 65 F.",
+        "rationale": "Pins down cold outdoor limit holding high setpoint.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": false
+              },
+              {
+                "t": 60.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "oat",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 285.9277777777778
+              }
+            ]
+          },
+          {
+            "point": "retHum",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.4
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "datStpt",
+            "from_s": 780.0,
+            "to_s": 1200.0,
+            "equals": 291.4833333333333,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 780.0,
+            "to_s": 1200.0,
+            "equals": false
+          }
+        ]
+      },
+      {
+        "name": "dehumEntryDelay",
+        "description": "Dehumidification activates only after humidity stays above 60 percent for 5 min and forces 55 F.",
+        "rationale": "Pins down 5 minute dehumidification entry delay and override to 55 F.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": false
+              },
+              {
+                "t": 60.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "oat",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 285.9277777777778
+              }
+            ]
+          },
+          {
+            "point": "retHum",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.5
+              },
+              {
+                "t": 720.0,
+                "value": 0.65
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "datStpt",
+            "from_s": 780.0,
+            "to_s": 900.0,
+            "equals": 291.4833333333333,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 780.0,
+            "to_s": 900.0,
+            "equals": false
+          },
+          {
+            "output": "datStpt",
+            "from_s": 1080.0,
+            "to_s": 1260.0,
+            "equals": 285.9277777777778,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 1080.0,
+            "to_s": 1260.0,
+            "equals": true
+          }
+        ]
+      },
+      {
+        "name": "dehumExitRecovery",
+        "description": "Dehumidification clears when humidity drops below 55 percent and reset returns.",
+        "rationale": "Pins down dehumidification exit below 55 percent and return to reset.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": false
+              },
+              {
+                "t": 60.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "oat",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 285.9277777777778
+              }
+            ]
+          },
+          {
+            "point": "retHum",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.4
+              },
+              {
+                "t": 60.0,
+                "value": 0.65
+              },
+              {
+                "t": 840.0,
+                "value": 0.5
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "datStpt",
+            "from_s": 720.0,
+            "to_s": 780.0,
+            "equals": 285.9277777777778,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 720.0,
+            "to_s": 780.0,
+            "equals": true
+          },
+          {
+            "output": "datStpt",
+            "from_s": 900.0,
+            "to_s": 1080.0,
+            "equals": 291.4833333333333,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 900.0,
+            "to_s": 1080.0,
+            "equals": false
+          }
+        ]
+      },
+      {
+        "name": "restartPulldown",
+        "description": "Stopping and starting AHU restarts 10 min pulldown hold.",
+        "rationale": "Pins down restart of 10 minute pulldown on every AHU start.",
+        "inputs": [
+          {
+            "point": "ahuEnable",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": false
+              },
+              {
+                "t": 60.0,
+                "value": true
+              },
+              {
+                "t": 900.0,
+                "value": false
+              },
+              {
+                "t": 960.0,
+                "value": true
+              }
+            ]
+          },
+          {
+            "point": "oat",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 291.4833333333333
+              }
+            ]
+          },
+          {
+            "point": "retHum",
+            "steps": [
+              {
+                "t": 0.0,
+                "value": 0.4
+              }
+            ]
+          }
+        ],
+        "expect": [
+          {
+            "output": "datStpt",
+            "from_s": 720.0,
+            "to_s": 840.0,
+            "equals": 288.7055555555555,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 720.0,
+            "to_s": 840.0,
+            "equals": false
+          },
+          {
+            "output": "datStpt",
+            "from_s": 1020.0,
+            "to_s": 1200.0,
+            "equals": 285.9277777777778,
+            "tolerance": 1e-6
+          },
+          {
+            "output": "dehumActive",
+            "from_s": 1020.0,
+            "to_s": 1200.0,
+            "equals": false
+          }
+        ]
+      }
+    ],
+    "open_questions": [
+      "Does AHU enable true at power up count as a start that triggers the 600 s pulldown, and what are the outputs before the first 60 s update.",
+      "Are outdoor comparisons inclusive at exactly 60 F and 70 F, and is the straight line exactly setpoint F equals 125 minus outdoor F.",
+      "Are humidity comparisons strict above 0.60 for entry and below 0.55 for exit, and what happens at exactly 0.60 and 0.55.",
+      "Does the dehumidification entry timer run only while AHU enable is true, what is dehumActive while AHU is off, and is the timer and latch reset when AHU stops.",
+      "Does the dehumidification override and dehumActive apply during the 10 minute pulldown hold or only after pulldown.",
+      "Does dehumidification clear immediately when a sample is below 0.55 or only at the next minute update, with no additional delay.",
+      "What values shall be used when outdoor temperature or return humidity is invalid or lost, hold last good or use a default.",
+      "Does turning AHU off force the setpoint to 55 F immediately or at the next minute update."
+    ]
+  },
+  "problems": []
+}

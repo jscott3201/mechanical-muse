@@ -14,7 +14,17 @@ Quickest: `make demo`, then open http://127.0.0.1:8080. It builds the web app an
 the API on one address. With no model key and no BOPTEST it still verifies every spec, plays back
 a recorded Muse Spark session, recorded BOPTEST runs and recorded explanations, all labelled as
 recorded. `make demo-live` adds live Muse Spark from a key in `.env`; set `MM_BOPTEST_URL` for
-live runs and `MM_BACNET_ADDR` for the BACnet mirror. The full setup:
+live runs and `MM_BACNET_ADDR` for the BACnet mirror.
+
+### Run it without toolchains
+
+With only Docker: `docker compose -f compose.demo.yaml up --build` (or `make docker-demo`), then
+open http://localhost:8080. Same recorded mode as `make demo`, no key and no BOPTEST needed; the
+first build takes several minutes. Add `-f compose.demo.live.yaml` for live Muse Spark from your
+own `MODEL_API_KEY` in `.env`. On Modal: `modal serve deploy/modal/mm_demo.py`. Details, live
+mode and troubleshooting: [docs/packaging.md](docs/packaging.md).
+
+### Full setup
 
 You need Rust (see `rust-toolchain.toml`), Node (`web/.nvmrc`) and a BOPTEST v0.9.0 checkout
 (`git clone --branch v0.9.0 --depth 1 https://github.com/ibpsa/project1-boptest`).
@@ -44,8 +54,9 @@ Everything in this repository was written during the event, starting October 26,
 | Library benchmark harness: scrubbed tasks, baselines, run records | `crates/mm-bench` | First results in `docs/benchmark-results.md` |
 | BOPTEST runtime host: supervisory loop, BOPTEST client, fail-safe | `crates/mm-runtime` | Runs the verified AHU requests and CHW plant reset against BOPTEST live; 10-hour comparison with the baseline in `docs/runtime-results.md` |
 | HTTP API: specs, typed block graphs, verification receipts | `crates/mm-server` | Working: spec, graph and verify endpoints; authoring sessions (Muse Spark, or a labelled recorded run) streamed as server-sent events, with verified drafts stored with their receipts; BOPTEST run sessions that can run a drafted sequence after replaying its vectors again, or inject a labelled test fault; labelled replays of recorded runs; run records; generated TypeScript types |
+| MCP server for coding agents: specs, palette, validator, CXF emitter, vector replay as tools | `crates/mm-mcp` | Working offline over stdio, on the official MCP Rust SDK (`rmcp`): Muse Code or any MCP client drafts a block graph and our tools check it (passes X of Y scenarios, with the same repair text our agent gets); no model calls of its own ([docs/mcp.md](docs/mcp.md)) |
 | BACnet device mirror | `crates/mm-bacnet` | Working: live runs served read-only as one BACnet/IP device (55 objects: BOPTEST readings, sequence outputs, setpoints sent); remote writes refused; tested over UDP ([docs/bacnet-mirror.md](docs/bacnet-mirror.md)) |
-| Web app | `web/` | Working: specs and verification receipts; Muse Spark authoring followed attempt by attempt (engine refusals, failing scenarios, the green receipt; recorded runs labelled); start BOPTEST runs on reference or drafted graphs and follow them live (status, receipts, trends, KPIs beside a baseline run of the same window, event log); block graph view of reference and drafted graphs, with the blocks a problem names outlined; plain-language explanations written by Muse Spark (labelled; recorded copies for use without a key) of a graph, reference or drafted, whose parts outline their blocks, and of a run's events (faults, handbacks) in an operator's words; replays of recorded runs |
+| Web app | `web/` | Working: specs and verification receipts; Muse Spark authoring followed attempt by attempt (engine refusals, failing scenarios, the green receipt; recorded runs labelled); start BOPTEST runs on reference or drafted graphs and follow them live (status, receipts, trends, KPIs beside a baseline run of the same window, event log); block graph view of reference and drafted graphs, with the blocks a problem names outlined; plain-language explanations written by Muse Spark (labelled; recorded copies for use without a key) of a graph, reference or drafted, whose parts outline their blocks, and of a run's events (faults, handbacks) in an operator's words; replays of recorded runs; bring your own sequence: Muse Spark reads pasted text, a PDF or a photo of a sequence of operations, lists what it leaves open and proposes test scenarios, the engineer reviews and accepts them, then Spark drafts against them and a verified draft downloads as CXF ([docs/workbench.md](docs/workbench.md)) |
 | Design notes and API references | `docs/` | Started |
 | Coding-agent setup: agent context, project skills, verification hook | `AGENTS.md`, `.agents/skills/`, `.muse/`, `.mcp.json`, `scripts/` | Started |
 
@@ -64,6 +75,8 @@ These are public, open-source projects used unmodified, each pinned to one commi
 | [MinIO](https://github.com/minio/minio) and [mc](https://github.com/minio/mc) | MinIO, Inc. | AGPL-3.0 | `f19c534` and `1e78af4` (the releases BOPTEST v0.9.0 names) | BOPTEST's object store, built from source by `deploy/minio` and `deploy/modal` because those releases are no longer published as images; not redistributed |
 | [shadcn/ui](https://github.com/shadcn-ui/ui) components | shadcn | MIT | CLI 4.21.4, style radix-nova | UI primitives copied into `web/src/components/ui` by the shadcn CLI, used unmodified except that they import our own `cn` helper |
 | [React Flow](https://github.com/xyflow/xyflow) (`@xyflow/react`) | xyflow | MIT | 12.12.0 | Draws block graphs (pan, zoom, typed port handles); the layered layout is our own (`web/src/features/graph/layout.ts`) |
+| [rmcp](https://github.com/modelcontextprotocol/rust-sdk) (official MCP Rust SDK) | Model Context Protocol project | Apache-2.0 | 3.5.1 (crates.io, pinned `=3.5.1`; features `server`, `transport-io`) | The MCP protocol side of `crates/mm-mcp` (JSON-RPC over stdio, version negotiation, handshake, discovery); the tools behind it are our own. Brings in [schemars](https://github.com/GREsau/schemars) 1.2.3 (MIT) and a few other ordinary crates (chrono, uuid, tokio-util), all in `Cargo.lock` |
+| Node.js, Rust and Debian official container images | OpenJS Foundation, Rust project, Debian (Docker Official Images) | MIT, MIT OR Apache-2.0, DFSG licenses | `node:26.12.1-trixie-slim`, `rust:1.97.1-slim-trixie`, `debian:trixie-slim`, each pinned by digest in `Dockerfile` | Build and runtime base images for the packaged app (`Dockerfile`, [docs/packaging.md](docs/packaging.md)); unmodified |
 
 Ordinary crates.io libraries (such as serde, reqwest, tokio and thiserror) and npm packages (such as React, Vite, Tailwind CSS and Radix UI) are used unmodified under their own licenses; `Cargo.lock` and `web/package-lock.json` pin every version. The Geist font (`@fontsource-variable/geist`) is under the SIL Open Font License 1.1.
 

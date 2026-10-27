@@ -159,7 +159,7 @@ async fn explain(
 ) -> Result<Json<ExplanationView>, Failure> {
     let Json(request) =
         request.map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.body_text()))?;
-    let spec = state.specs().get(&name).cloned().ok_or_else(|| {
+    let spec = state.spec(&name).ok_or_else(|| {
         Failure::new(
             StatusCode::NOT_FOUND,
             "unknown-spec",
@@ -167,7 +167,13 @@ async fn explain(
         )
     })?;
     let graph: BlockGraph = match &request.graph {
-        None => spec.graph.clone(),
+        None => spec.graph.clone().ok_or_else(|| {
+            Failure::new(
+                StatusCode::NOT_FOUND,
+                "no-reference-graph",
+                "this sequence has no hand-built graph; explain one of its verified drafts",
+            )
+        })?,
         Some(id) => {
             let draft = state
                 .authoring()

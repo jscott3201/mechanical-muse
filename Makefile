@@ -1,8 +1,11 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml).
-.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live
+.PHONY: live-read mcp web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live docker-build docker-demo docker-demo-live docker-demo-down modal-demo
 
 check: fmt-check clippy test
+
+# Where the key file lives (a git worktree can point at the main checkout's).
+ENV_DIR ?= .
 
 ci: lint clippy types doctest specs deny web
 
@@ -93,11 +96,35 @@ demo-live: web-build
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" MM_WEB_DIR=web/dist \
 	cargo run -q -p mm-server
 
+# The same app in Docker, no Rust or Node needed (docs/packaging.md): http://localhost:8080.
+# docker-demo-live adds live Muse Spark from MODEL_API_KEY in an env file (default .env).
+DEMO_COMPOSE = docker compose -f compose.demo.yaml
+docker-build:
+	$(DEMO_COMPOSE) build
+
+docker-demo:
+	$(DEMO_COMPOSE) up --build
+
+docker-demo-live:
+	$(DEMO_COMPOSE) -f compose.demo.live.yaml up --build
+
+docker-demo-down:
+	$(DEMO_COMPOSE) down
+
+# The same image on Modal as a temporary web endpoint (`modal deploy` keeps it up).
+modal-demo:
+	modal serve deploy/modal/mm_demo.py
+
 # The server with live Muse Spark authoring: maps the local .env key without printing it.
 server-live:
-	@set -a; . ./.env; set +a; \
+	@set -a; . $(ENV_DIR)/.env; set +a; \
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
 	cargo run -p mm-server
+
+# The MCP server on stdin/stdout for coding agents (docs/mcp.md); .mcp.json starts the same
+# binary. Offline: no model calls, no network.
+mcp:
+	@cargo run -q --locked -p mm-mcp
 
 # Needs BOPTEST up and/or MODEL_API_KEY.
 test-live:
@@ -106,9 +133,16 @@ test-live:
 # First live Muse Spark call (costs a few cents). Loads .env into this process only and never
 # prints a value. Uses MODEL_API_KEY, falling back to META_API.
 live:
-	@set -a; . ./.env; set +a; \
+	@set -a; . $(ENV_DIR)/.env; set +a; \
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
 	cargo test -p mm-agent --test author_loop -- --ignored --nocapture
+
+# Muse Spark reads a sequence document and drafts against its own proposed scenarios.
+#   make live-read [MM_READ_DOC=fixtures/sequences/<file>]
+live-read:
+	@set -a; . $(ENV_DIR)/.env; set +a; \
+	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
+	cargo test -p mm-agent --test read_live -- --ignored --nocapture
 
 # Benchmark run on a library checkout at the pinned commit. Example:
 #   make bench LIB=<open-control-library at 124427b> ARGS="--subset test_clean --tier b --out runs/x.json"
