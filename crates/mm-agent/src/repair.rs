@@ -4,6 +4,8 @@
 use mm_bridge::{
     LoadFailure, ReplayLimits, ScenarioOutcome, ScenarioReport, VectorFile, check_vectors, replay,
 };
+
+use crate::feedback::feedback_message;
 use mm_graph::{BLOCK_GRAPH_SCHEMA, BlockGraph, EmitOptions, Finding, Palette, emit_cxf, validate};
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -346,104 +348,4 @@ fn check_draft(
         failures,
     };
     (outcome, None)
-}
-
-/// The repair turn's text. Codes come first so the model can act on them; messages are engine
-/// prose and only a hint.
-fn feedback_message(outcome: &AttemptOutcome, feedback: Feedback, vectors: &VectorFile) -> String {
-    let mut out = String::from("Your block graph was not accepted.\n");
-    match outcome {
-        AttemptOutcome::Passed { .. } | AttemptOutcome::HarnessError { .. } => {
-            return String::new();
-        }
-        AttemptOutcome::ModelError { error } => out.push_str(&format!("Model error: {error}\n")),
-        AttemptOutcome::NotAGraph { detail } => {
-            out.push_str(&format!("It is not a valid block graph: {detail}\n"));
-        }
-        AttemptOutcome::InterfaceMismatch { problems } => {
-            out.push_str("Its interface differs from the task:\n");
-            problems
-                .iter()
-                .for_each(|p| out.push_str(&format!("- {p}\n")));
-        }
-        AttemptOutcome::Invalid { findings } => {
-            out.push_str("The validator found:\n");
-            for f in findings {
-                out.push_str(&format!(
-                    "- {} at {}: {}\n",
-                    f.code.as_str(),
-                    f.subject,
-                    f.detail
-                ));
-            }
-        }
-        AttemptOutcome::LoadFailed { failure } => {
-            out.push_str(&format!(
-                "The control engine refused it at stage {} ({}).\n",
-                failure.stage, failure.code
-            ));
-            for d in &failure.diagnostics {
-                let subject = d.subject.as_deref().unwrap_or("-");
-                out.push_str(&format!("- {} at {subject}: {}\n", d.code, d.message));
-            }
-            // Some refusals (an algebraic loop, for one) carry no diagnostic records; the engine's
-            // error text is then the only explanation, so pass it on.
-            if failure.diagnostics.is_empty()
-                && let Some(error) = &failure.error
-            {
-                out.push_str(&format!("- {}\n", error.detail));
-            }
-        }
-        AttemptOutcome::ReplayFailed {
-            passed,
-            total,
-            failures,
-        } => match feedback {
-            Feedback::ValidatorOnly => out.push_str(
-                "It loads, but its behavior does not match the task. Re-read the task and check \
-                 signs, thresholds, timing and port order.\n",
-            ),
-            Feedback::WithVectors => {
-                out.push_str(&format!(
-                    "It loads, but {} of {total} test scenarios failed:\n",
-                    total - passed
-                ));
-                for s in failures {
-                    let about = vectors
-                        .scenarios
-                        .iter()
-                        .find(|v| v.name == s.name)
-                        .map(|v| v.description.as_str())
-                        .filter(|d| !d.is_empty())
-                        .map_or(String::new(), |d| format!(" ({d})"));
-                    out.push_str(&format!("- {}{about}: {}\n", s.name, describe(&s.outcome)));
-                }
-            }
-        },
-    }
-    out.push_str("Reply with a corrected block graph.");
-    out
-}
-
-fn describe(outcome: &ScenarioOutcome) -> String {
-    match outcome {
-        ScenarioOutcome::Pass => "passed".into(),
-        ScenarioOutcome::Fail {
-            t,
-            output,
-            expected,
-            actual,
-            from_s,
-            to_s,
-        } => format!(
-            "at t = {t} s, {output} should be {} (checked from {from_s} to {to_s} s) but was {}",
-            wire(expected),
-            wire(actual)
-        ),
-        ScenarioOutcome::Error { code, detail, .. } => format!("error {code}: {detail}"),
-    }
-}
-
-fn wire(value: &mm_bridge::WireValue) -> String {
-    serde_json::to_string(value).unwrap_or_default()
 }
