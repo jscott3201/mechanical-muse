@@ -117,7 +117,8 @@ Engine facts every change must respect (details: `docs/engine-api.md`):
   matches the engine's floor; rusty-bacnet's is lower. Do not use unstable features.
 - `#![forbid(unsafe_code)]` in every crate. Workspace lints in the root `Cargo.toml`.
 - Shared git dependencies live in `[workspace.dependencies]`:
-  - `oce-api`: open-control-engine v0.2.0, `rev = "4063202b9a9e50c723bb858d786108571d3d401d"`.
+  - `oce-api`: open-control-engine v0.2.0 (`development`, 2026-10-27), `rev = "fa5cb19d4b2b8831fb6a2979bc1d1099f69f3693"`. Moved from
+    `4063202` on the human's decision; the README says why.
   - `bacnet-objects`, `bacnet-server`, `bacnet-types`: rusty-bacnet v0.14.0,
     `rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc"`.
   - open-control-library is test data only, pinned at commit `124427b` (v0.1.0 prep). Its own

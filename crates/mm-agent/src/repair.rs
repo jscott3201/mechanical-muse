@@ -269,6 +269,17 @@ pub fn interface_problems(graph: &BlockGraph, task: &TaskSpec) -> Vec<String> {
     problems
 }
 
+/// Checks one reply the way the loop does (interface, validator, emitter, engine load, replay),
+/// without a model call. Used to re-score stored drafts on another engine revision.
+pub fn check_reply(
+    text: &str,
+    task: &TaskSpec,
+    palette: &Palette,
+    vectors: &VectorFile,
+) -> AttemptOutcome {
+    check_draft(text, task, palette, vectors).0
+}
+
 fn check_draft(
     text: &str,
     task: &TaskSpec,

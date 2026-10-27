@@ -8,12 +8,14 @@
 mod baseline;
 mod card;
 mod library;
+mod rescore;
 mod run;
 mod scrub;
 
 pub use baseline::{Baseline, baseline_graph, baselines, interface_of};
 pub use card::{Card, CardOutput, CardParam, parse_card};
 pub use library::{Rule, Split, load_rule, load_rule_files, load_split};
+pub use rescore::{Changed, RescoreReport, rescore, verdict};
 pub use run::{
     BenchConfig, ENGINE_REV, FailureKind, RuleResult, RunRecord, RunSummary, prompt_hash,
     run_bench, summarize,

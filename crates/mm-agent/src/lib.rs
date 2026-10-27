@@ -19,6 +19,6 @@ pub use prompt::{
 pub use recorded::{RecordedClient, RecordedReply, Recording};
 pub use repair::{
     Attempt, AttemptOutcome, AuthorConfig, AuthoringTrace, Feedback, Progress, VerifiedDraft,
-    author, author_observed, interface_problems,
+    author, author_observed, check_reply, interface_problems,
 };
 pub use responses::{SparkClient, parse_response, request_body, retry_delay};

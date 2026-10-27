@@ -91,7 +91,8 @@ is "repaired against the scoring vectors", not a blind score.
 | v2 | high | with vectors | up to 5 | 0 of 3 | **2 of 3** | 10, 8, 10 of 10 |
 
 - Run 1: replay 8/10, then passed. Run 3: the engine refused the first draft as an algebraic
-  loop (`load-failed-schedule`), the repair passed 8 of 10, the next passed all 10.
+  loop (recorded as `load-failed-schedule`; `algebraic-loop` on engine `fa5cb19`), the repair
+  passed 8 of 10, the next passed all 10.
 - Run 2 never passed: 8, 8 and 6 of 10 after its first draft was refused, then its fifth call
   came back HTTP 400 "filtered due to the prompt triggering our content management policy". The
   prompt is graph JSON and scenario values; we have no explanation for the filter.
@@ -150,7 +151,7 @@ strengthened before this run.)
 | Attempts | up to 3 per rule. Repair feedback is `validator-only`: validator and load problems in full, and a replay failure only as "behavior does not match", with no scenario names, counts or values. |
 | Exemplars | none (zero-shot) |
 | Runs | 3 independent runs per rule (no documented seed) |
-| Judge | our replay in `mm-bridge` on open-control-engine `4063202b`; open-control-library `124427b` |
+| Judge | our replay in `mm-bridge` on open-control-engine `4063202b`; open-control-library `124427b`. Re-checked on `fa5cb19` (see below). |
 | Prompt hash | `fnv1a64:4916127a304439fb` (instructions + schema; the same for both tiers) |
 | Tier A | task = rule name, description, point meanings, parameter values (prose only) |
 | Tier B | tier A plus the card's pseudo-code, which is close to a direct specification |
@@ -181,6 +182,16 @@ of the 396 verified graphs reuses all of the reference graph's block ids, and 11
 different number of blocks than the reference while still passing every vector. This is weak
 evidence against verbatim recall. It does not rule out familiarity. Fresh, unpublished rules are
 the next step.
+
+## Re-checked on engine `fa5cb19` (2026-10-27)
+
+The engine pin moved from `4063202` to `fa5cb19`. With no model calls, every stored reply in
+the records behind this page was checked again on the new engine (`mm-bench --rescore`): 1,760
+of 1,760 library scenarios still pass with the reference rules, and every first-try and
+after-repair verdict is unchanged (test_clean tiers A and B, the whole-library run, and every
+spec run with the current vectors). The one difference is a name: engine refusals of algebraic
+loops now carry the engine's own code, `algebraic-loop`, with each loop member as a subject,
+where our records say `load-failed-schedule` (our fallback when the old engine gave no code).
 
 ## Caveats (keep these beside the numbers)
 
