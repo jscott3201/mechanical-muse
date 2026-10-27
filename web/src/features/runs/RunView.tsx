@@ -15,6 +15,7 @@ import type { RunInfo } from "@/types/generated/RunInfo";
 import { ErrorNote } from "../ErrorNote";
 import { change } from "./baseline";
 import { RunStatus } from "./RunStatus";
+import { KpiTiles, RunProgress, SequenceGroups } from "./RunSummary";
 import { formatSimTime, trends } from "./trends";
 
 const KPI_LABELS: Record<string, string> = {
@@ -129,44 +130,10 @@ function RunStream({
               {stream.ended.message}
             </p>
           )}
-          {stream.sequences.length > 0 && (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Sequence</TableHead>
-                    <TableHead>Spec</TableHead>
-                    <TableHead>Graph</TableHead>
-                    <TableHead>Verified model (content id)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stream.sequences.map((s) => (
-                    <TableRow key={s.name}>
-                      <TableCell className="font-mono text-xs">{s.name}</TableCell>
-                      <TableCell>{s.spec}</TableCell>
-                      <TableCell>
-                        {s.origin === "drafted" ? (
-                          <span className="inline-flex items-center gap-1">
-                            {s.source === "recorded" ? (
-                              <History aria-hidden="true" className="size-4" />
-                            ) : (
-                              <Sparkles aria-hidden="true" className="size-4" />
-                            )}
-                            Drafted by {s.model ?? "the model"}
-                            {s.source === "recorded" ? " (recorded run)" : ""}
-                          </span>
-                        ) : (
-                          "Hand-built reference"
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs break-all">{s.content_id}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+          {cfg && stream.phase === "running" && !stream.ended && (
+            <RunProgress done={stream.ticks.length} total={cfg.steps} />
           )}
+          {stream.sequences.length > 0 && <SequenceGroups sequences={stream.sequences} />}
           {!stream.ended && stream.phase !== null && (
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" size="sm" onClick={stop.run} disabled={stop.state.status === "running"}>
@@ -185,6 +152,8 @@ function RunStream({
           {stop.state.status === "error" && <ErrorNote error={stop.state.error} />}
         </CardContent>
       </Card>
+
+      {stream.kpi && base && <KpiTiles kpi={stream.kpi} base={base.kpis} />}
 
       {stream.ticks.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-2">

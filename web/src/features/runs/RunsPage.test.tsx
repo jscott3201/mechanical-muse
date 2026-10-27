@@ -85,7 +85,9 @@ describe("RunsPage", () => {
     });
     expect(screen.getByText("completed")).toBeTruthy();
     expect(screen.getByText("Chilled-water supply temperature")).toBeTruthy();
-    expect(screen.getAllByText("chw").length).toBeGreaterThan(0);
+    // Instances are grouped by spec and graph; each instance is one click away.
+    expect(screen.getAllByText("chw_plant_reset").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /Show all \d+ instances/ })).toBeTruthy();
     expect(screen.getByText("Energy use (kWh/m²)")).toBeTruthy();
     expect(screen.getByText(/Air handler requests feeding the plant reset/)).toBeTruthy();
   });
@@ -116,7 +118,9 @@ describe("RunsPage", () => {
     });
     expect(await screen.findByText(/Beside the recorded baseline run run-b/)).toBeTruthy();
     // 0.02966 against 0.03; KPIs the baseline lacks read "no data", never 0.
-    expect(screen.getByText("−1.1 %")).toBeTruthy();
+    // In the headline tile and in the table row.
+    expect(screen.getAllByText("−1.1 %").length).toBe(2);
+    expect(screen.getByLabelText("Change against the baseline run")).toBeTruthy();
     expect(screen.getAllByText("no data").length).toBeGreaterThan(0);
   });
 

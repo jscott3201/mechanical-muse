@@ -17,7 +17,7 @@ export const POINTS = {
 } as const;
 
 /** BOPTEST models floor 2 as ten identical floors: its flows and power are ten times one floor. */
-const floorLabel = (f: number) => (f === 2 ? "floor 2 (×10 multiplier)" : `floor ${f}`);
+const floorLabel = (f: number) => (f === 2 ? "floor 2 ×10" : `floor ${f}`);
 
 export const FLOORS = [1, 2, 3] as const;
 
