@@ -10,9 +10,11 @@ mod client;
 mod explain;
 mod feedback;
 mod prompt;
+mod reader;
 mod recorded;
 mod repair;
 mod responses;
+mod task_check;
 
 pub use client::{Effort, ModelClient, ModelError, ModelReply, ModelRequest, OutputSchema, Usage};
 pub use explain::{
@@ -23,6 +25,10 @@ pub use prompt::{
     AUTHORING_RULES, Exemplar, ParamHint, PointSpec, TaskSpec, palette_listing,
     system_instructions, task_message,
 };
+pub use reader::{
+    Attachment, ReadOutcome, ReadSequence, SequenceSource, check_reading, read_request,
+    read_sequence,
+};
 pub use recorded::{RecordedClient, RecordedReply, Recording};
 pub use repair::{
     Attempt, AttemptOutcome, AuthorConfig, AuthoringTrace, Feedback, GraphCheck, Progress,
@@ -30,3 +36,4 @@ pub use repair::{
     repair_message,
 };
 pub use responses::{SparkClient, parse_response, request_body, retry_delay};
+pub use task_check::check_task;

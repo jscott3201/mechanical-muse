@@ -88,6 +88,9 @@ pub struct SpecDetail {
     pub scenarios: Vec<ScenarioInfo>,
     /// Engine clock of the vectors.
     pub step_s: f64,
+    /// Whether a hand-built reference graph exists. An engineer's own sequence from the
+    /// workbench has none: only Muse Spark's verified drafts implement it.
+    pub reference: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, TS)]

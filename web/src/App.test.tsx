@@ -25,6 +25,7 @@ const detail: SpecDetail = {
     { name: "valve_latch", description: "Latch." },
   ],
   step_s: 60,
+  reference: true,
 };
 const receipt: Receipt = {
   spec: "ahu_chw_requests",
@@ -50,6 +51,7 @@ const health: Health = { status: "ok", engine_rev: "4063202b9a9e50c7", specs: 1,
 const routes: Record<string, unknown> = {
   "GET /api/health": health,
   "GET /api/specs": [summary],
+  "GET /api/workbench": [],
   "GET /api/specs/ahu_chw_requests": detail,
   "POST /api/specs/ahu_chw_requests/verify": receipt,
 };

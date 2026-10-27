@@ -1,8 +1,11 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml).
-.PHONY: mcp web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live docker-build docker-demo docker-demo-live docker-demo-down modal-demo
+.PHONY: live-read mcp web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live docker-build docker-demo docker-demo-live docker-demo-down modal-demo
 
 check: fmt-check clippy test
+
+# Where the key file lives (a git worktree can point at the main checkout's).
+ENV_DIR ?= .
 
 ci: lint clippy types doctest specs deny web
 
@@ -114,7 +117,7 @@ modal-demo:
 
 # The server with live Muse Spark authoring: maps the local .env key without printing it.
 server-live:
-	@set -a; . ./.env; set +a; \
+	@set -a; . $(ENV_DIR)/.env; set +a; \
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
 	cargo run -p mm-server
 
@@ -130,9 +133,16 @@ test-live:
 # First live Muse Spark call (costs a few cents). Loads .env into this process only and never
 # prints a value. Uses MODEL_API_KEY, falling back to META_API.
 live:
-	@set -a; . ./.env; set +a; \
+	@set -a; . $(ENV_DIR)/.env; set +a; \
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
 	cargo test -p mm-agent --test author_loop -- --ignored --nocapture
+
+# Muse Spark reads a sequence document and drafts against its own proposed scenarios.
+#   make live-read [MM_READ_DOC=fixtures/sequences/<file>]
+live-read:
+	@set -a; . $(ENV_DIR)/.env; set +a; \
+	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
+	cargo test -p mm-agent --test read_live -- --ignored --nocapture
 
 # Benchmark run on a library checkout at the pinned commit. Example:
 #   make bench LIB=<open-control-library at 124427b> ARGS="--subset test_clean --tier b --out runs/x.json"
