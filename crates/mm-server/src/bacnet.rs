@@ -57,10 +57,17 @@ pub fn info(map: &PointMap, device_instance: u32, port: u16) -> BacnetInfo {
 }
 
 /// The points a live run produces: the watched BOPTEST readings, every sequence output
-/// (`<instance>.<output>`), and the two plant setpoints the runtime sends.
+/// (`<instance>.<output>`), and the setpoints the runtime sends (two plant setpoints and, with
+/// the pressure resets, one per floor). Points a run does not produce read as no data.
 pub fn point_map(specs: &SpecStore) -> Result<PointMap, mm_bacnet::MapError> {
+    // The static pressure setpoints BOPTEST echoes back are listed once, as sent (below).
     let mut points: Vec<PointSpec> = preset::watch_points()
         .into_iter()
+        .chain(
+            preset::pressure_watch_points()
+                .into_iter()
+                .filter(|p| !p.ends_with("_u")),
+        )
         .map(|name| PointSpec {
             unit: boptest_unit(&name).unwrap_or("1").to_owned(),
             name,
@@ -72,6 +79,12 @@ pub fn point_map(specs: &SpecStore) -> Result<PointMap, mm_bacnet::MapError> {
         .map(|f| (preset::requests_name(*f), preset::REQUESTS_SPEC))
         .collect();
     instances.push((preset::RESET.to_owned(), preset::RESET_SPEC));
+    for f in preset::FLOORS {
+        for z in preset::ZONES {
+            instances.push((preset::zone_name(f, z), preset::ZONE_PRESSURE_SPEC));
+        }
+        instances.push((preset::pressure_name(f), preset::PRESSURE_SPEC));
+    }
     for (instance, spec) in instances {
         let Some(spec) = specs.get(spec) else {
             continue;
@@ -84,7 +97,11 @@ pub fn point_map(specs: &SpecStore) -> Result<PointMap, mm_bacnet::MapError> {
             });
         }
     }
-    for point in [preset::TSUP_POINT, preset::DP_POINT] {
+    let floor_points = preset::pressure_outputs().into_iter().map(|(_, o)| o.point);
+    for point in [preset::TSUP_POINT.to_owned(), preset::DP_POINT.to_owned()]
+        .into_iter()
+        .chain(floor_points)
+    {
         let name = format!("{point}_u");
         points.push(PointSpec {
             unit: boptest_unit(&name).unwrap_or("1").to_owned(),

@@ -138,6 +138,28 @@ timing scenarios, which the repair then fixed. The truncated reply hit `max_outp
 was retried as a new attempt. Tokens per session: 161k / 30k / 33k input and 56k / 40k / 42k
 output. Same caveat: three sessions.
 
+## Control sequences: duct static pressure (runs of 2026-10-27)
+
+Our own specs `specs/zone_pressure_requests/` (one VAV zone's requests from its damper and
+airflow) and `specs/ahu_static_pressure_reset/` (trim and respond on one air handler's duct
+static pressure setpoint). Each was validated before any model saw it: the hand-built graph
+passes every scenario and 10 and 11 deliberate mistakes each fail one (see the specs).
+
+**Run setup:** `muse-spark-1.3`, high effort, up to 5 attempts, repair feedback with vectors,
+3 runs per spec, zero-shot; prompt hash `fnv1a64:df6004cacf3aa986` (with the loop rule);
+engine `fa5cb19`.
+
+| Spec | First try | After repair | Best scenarios per run | Constant baselines |
+| --- | --- | --- | --- | --- |
+| Zone static pressure requests | 2 of 3 | 3 of 3 | 7, 7, 7 of 7 | 1 of 7 |
+| Duct static pressure reset | 3 of 3 | 3 of 3 | 6, 6, 6 of 6 | 0 of 6 |
+
+- The reset has the same stored-setpoint feedback that the plant reset's first drafts looped
+  on; every draft here got it right on the first try, with the loop rule in the prompt. It has
+  no staging hold, which was the plant reset's other hard part.
+- The one zone draft that missed on its first try passed after one repair.
+- Tokens: 3.3k to 14.5k input and 9.7k to 16.7k output per run.
+
 ## Control sequence: air handler chilled-water requests (run of 2026-10-26)
 
 Our own spec (`specs/ahu_chw_requests/`): one air handler's chilled-water reset requests (0 to

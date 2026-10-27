@@ -22,6 +22,11 @@ pub struct RunRequest {
     #[serde(default)]
     #[ts(optional)]
     pub requests: Option<bool>,
+    /// Also run the duct static pressure reset on every floor, fed by its zones' requests
+    /// (default false).
+    #[serde(default)]
+    #[ts(optional)]
+    pub pressure: Option<bool>,
     /// Simulation start, seconds from January 1.
     #[serde(default)]
     #[ts(optional)]
@@ -61,6 +66,9 @@ pub struct Fault {
 pub struct RunConfig {
     pub baseline: bool,
     pub requests: bool,
+    /// The duct static pressure resets run (absent in records from before they existed).
+    #[serde(default)]
+    pub pressure: bool,
     pub start_s: f64,
     pub warmup_s: f64,
     pub steps: u32,

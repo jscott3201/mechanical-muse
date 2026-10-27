@@ -11,9 +11,11 @@ Device `599`, name `MECHANICAL-MUSE`. The project has no BACnet vendor id; the d
 
 | Points | Object type | Names | Updated from |
 | --- | --- | --- | --- |
-| 18 BOPTEST values shown beside the setpoints (plant and air handler readings, and the AHU supply air setpoints BOPTEST reports in effect) | Analog Input | BOPTEST names, e.g. `reaChiWatSys_TCHWSup_y` | each tick's readings |
-| 8 sequence outputs (three AHU request instances, the plant reset) | Analog Value, read-only | `<instance>.<output>`, e.g. `chw.TSupSet`, `ahu2.yChiWatResReq` | each tick's engine outputs (booleans as 0 or 1) |
-| 2 plant setpoints the runtime sent | Analog Value, read-only | `oveChiWatSys_TWSet_u`, `oveChiWatSys_dpSet_u` | each tick's writes |
+| 24 BOPTEST values: the 18 shown beside the chilled-water setpoints (plant and air handler readings, and the AHU supply air setpoints BOPTEST reports in effect), and each floor's duct static pressure and supply fan power | Analog Input | BOPTEST names, e.g. `reaChiWatSys_TCHWSup_y`, `floor2_reaAHU_PFanSup_y` | each tick's readings |
+| 26 sequence outputs: three AHU chilled-water request instances and the plant reset (8), 15 zone pressure request instances and 3 floor static pressure resets (18) | Analog Value, read-only | `<instance>.<output>`, e.g. `chw.TSupSet`, `zone2eas.yPreReq`, `sp1.dpSet` | each tick's engine outputs (booleans as 0 or 1) |
+| 5 setpoints the runtime sent: 2 plant setpoints and 3 floor static pressure setpoints | Analog Value, read-only | `oveChiWatSys_TWSet_u`, `oveChiWatSys_dpSet_u`, `floor1_dpSet_u` … | each tick's writes |
+
+A run without the pressure resets leaves their 26 points at no data (see below).
 
 - Instance numbers are the 1-based rank of the name among objects of the same type, so the same
   specs always give the same objects (`crates/mm-bacnet/src/map.rs`, tested). Adding a spec
@@ -63,7 +65,7 @@ bacnet -i 127.0.0.1 -p 47809 readm 127.0.0.1:47808 ai:1 object-name,pv,reliabili
 bacnet --allow-write -i 127.0.0.1 -p 47809 write 127.0.0.1:47808 av:7 pv 300   # refused
 ```
 
-Checked this way on 2026-10-27: discovery, one ReadPropertyMultiple of all 28 objects (140
+Checked this way on 2026-10-27: discovery, one ReadPropertyMultiple of all 28 objects it had then (140
 values), and WriteProperty (present value, out of service, object names), WritePropertyMultiple,
 CreateObject, DeleteObject and SubscribeCOV, each refused with services /
 service-request-denied and nothing changed.

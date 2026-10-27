@@ -50,7 +50,16 @@ const FAULT_STEPS = 5;
 const GRAPHS = [
   { spec: "chw_plant_reset", label: "Plant reset graph" },
   { spec: "ahu_chw_requests", label: "Air handler requests graph" },
+  { spec: "ahu_static_pressure_reset", label: "Static pressure reset graph" },
+  { spec: "zone_pressure_requests", label: "Zone pressure requests graph" },
 ] as const;
+
+/** Whether a spec's graph runs with these switches (drafts for unused specs are not sent). */
+function uses(spec: string, requests: boolean, pressure: boolean): boolean {
+  if (spec === "ahu_chw_requests") return requests;
+  if (spec === "ahu_static_pressure_reset" || spec === "zone_pressure_requests") return pressure;
+  return true;
+}
 
 /** Reference graph or one of the spec's verified drafts. */
 function GraphChoice({
@@ -102,6 +111,7 @@ function GraphChoice({
 function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
   const [baseline, setBaseline] = useState(false);
   const [requests, setRequests] = useState(true);
+  const [pressure, setPressure] = useState(false);
   const [day, setDay] = useState(DEFAULTS.day);
   const [hour, setHour] = useState(DEFAULTS.hour);
   const [steps, setSteps] = useState(DEFAULTS.steps);
@@ -114,18 +124,18 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
     const drafts: Record<string, string> = {};
     for (const { spec } of GRAPHS) {
       const id = chosen[spec];
-      const used = spec === "chw_plant_reset" || requests;
-      if (id && used && !baseline) drafts[spec] = id;
+      if (id && uses(spec, requests, pressure) && !baseline) drafts[spec] = id;
     }
     return {
       baseline,
       requests,
+      pressure: pressure && !baseline,
       steps,
       start_s: day * 86400 + hour * 3600,
       ...(Object.keys(drafts).length > 0 ? { drafts } : {}),
       ...(fault && !baseline && requests ? { fault: { point: FAULT_POINT, from_step: faultStep, steps: FAULT_STEPS } } : {}),
     };
-  }, [baseline, requests, steps, day, hour, chosen, fault, faultStep]);
+  }, [baseline, requests, pressure, steps, day, hour, chosen, fault, faultStep]);
   const start = useAction<RunInfo>("/api/runs", body);
   // Each started run is reported exactly once, however often this component re-renders.
   const reported = useRef<string | null>(null);
@@ -159,6 +169,10 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
           <Label htmlFor="run-requests">Air handler requests</Label>
           <Switch id="run-requests" checked={requests && !baseline} disabled={baseline} onCheckedChange={setRequests} />
         </div>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="run-pressure">Duct static pressure reset (15 zones, 3 air handlers)</Label>
+          <Switch id="run-pressure" checked={pressure && !baseline} disabled={baseline} onCheckedChange={setPressure} />
+        </div>
         {stored.status === "ready" &&
           GRAPHS.map(({ spec, label }) => {
             const drafts = stored.data.filter((d) => d.spec === spec);
@@ -170,7 +184,7 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
                 drafts={drafts}
                 value={chosen[spec] ?? null}
                 onChange={(id) => setChosen((c) => ({ ...c, [spec]: id }))}
-                disabled={baseline || (spec === "ahu_chw_requests" && !requests)}
+                disabled={baseline || !uses(spec, requests, pressure)}
               />
             );
           })}

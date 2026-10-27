@@ -165,8 +165,25 @@ async fn supervisor(
     }
     let reset = vec![(RESET.to_owned(), preset::reset_bindings(config.requests))];
     sequences.extend(load(state, config, RESET_SPEC, reset, &mut info).await?);
-    let sup = Supervisor::new(sequences, preset::reset_outputs(), FailSafe::Release)
-        .map_err(|e| e.to_string())?;
+    let mut outputs = preset::reset_outputs();
+    if config.pressure {
+        let zones = FLOORS
+            .iter()
+            .flat_map(|f| {
+                preset::ZONES
+                    .iter()
+                    .map(move |z| (preset::zone_name(*f, z), preset::zone_bindings(*f, z)))
+            })
+            .collect();
+        sequences.extend(load(state, config, preset::ZONE_PRESSURE_SPEC, zones, &mut info).await?);
+        let floors = FLOORS
+            .iter()
+            .map(|f| (preset::pressure_name(*f), preset::pressure_bindings(*f)))
+            .collect();
+        sequences.extend(load(state, config, preset::PRESSURE_SPEC, floors, &mut info).await?);
+        outputs.extend(preset::pressure_outputs());
+    }
+    let sup = Supervisor::new(sequences, outputs, FailSafe::Release).map_err(|e| e.to_string())?;
     Ok((sup, info))
 }
 
@@ -280,7 +297,10 @@ async fn steps(
     bacnet: Option<&crate::bacnet::BacnetMirror>,
 ) -> Result<RunState, String> {
     let stop = handle.stop_signal();
-    let watch = preset::watch_points();
+    let mut watch = preset::watch_points();
+    if handle.config.pressure {
+        watch.extend(preset::pressure_watch_points());
+    }
     handle.set_state(RunState::Running);
     handle.publish(
         None,

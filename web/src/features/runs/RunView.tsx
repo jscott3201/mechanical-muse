@@ -112,7 +112,7 @@ function RunStream({
               </span>
             )}
             {cfg
-              ? `${cfg.baseline ? "Baseline: BOPTEST's own controllers, nothing written." : cfg.requests ? "Air handler requests feeding the plant reset." : "Plant reset with the request count fixed at 0."} From ${formatSimTime(cfg.start_s)}, ${cfg.steps} steps of ${cfg.step_s} s, ${formatNumber(cfg.warmup_s / 3600, 1)} h warm-up, on BOPTEST ${cfg.case}.`
+              ? `${cfg.baseline ? "Baseline: BOPTEST's own controllers, nothing written." : cfg.requests ? "Air handler requests feeding the plant reset." : "Plant reset with the request count fixed at 0."}${cfg.pressure ? " Duct static pressure reset on every floor, from its zones' requests." : ""} From ${formatSimTime(cfg.start_s)}, ${cfg.steps} steps of ${cfg.step_s} s, ${formatNumber(cfg.warmup_s / 3600, 1)} h warm-up, on BOPTEST ${cfg.case}.`
               : "Waiting for the run to start…"}
             {cfg?.fault && (
               <span className="block">
@@ -193,6 +193,12 @@ function RunStream({
           <LineChart title="Reset requests, all air handlers" unit="count" series={t.requests} step domain={REQUESTS_DOMAIN} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
           <LineChart title="Cooling coil valves" unit="% open" series={t.valves} domain={PERCENT_DOMAIN} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
           <LineChart title="Chiller power" unit="kW" series={t.chillerPower} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
+          {cfg?.pressure && (
+            <>
+              <LineChart title="Duct static pressure setpoint sent" unit="Pa" series={t.ductSetpoints} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
+              <LineChart title="Supply fan power" unit="kW" series={t.fanPower} formatX={formatSimTime} formatY={(v) => formatNumber(v, 1)} />
+            </>
+          )}
         </div>
       )}
 

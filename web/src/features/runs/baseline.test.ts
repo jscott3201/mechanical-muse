@@ -9,6 +9,7 @@ import { change, findBaseline } from "./baseline";
 const cfg: RunConfig = {
   baseline: false,
   requests: true,
+  pressure: false,
   start_s: 16027200,
   warmup_s: 86400,
   steps: 300,

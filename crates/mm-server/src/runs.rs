@@ -287,6 +287,7 @@ fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
         baseline,
         // A baseline runs no sequence, so it uses no requests either.
         requests: !baseline && r.requests.unwrap_or(true),
+        pressure: !baseline && r.pressure.unwrap_or(false),
         start_s,
         warmup_s,
         steps,
