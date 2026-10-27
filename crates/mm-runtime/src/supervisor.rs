@@ -49,6 +49,29 @@ pub enum Event {
     Released {
         point: String,
     },
+    /// The sequence stepped but has no output with this name.
+    NoSuchOutput {
+        sequence: String,
+        output: String,
+    },
+}
+
+/// A wiring mistake caught before the run starts, so it cannot fail silently every tick.
+#[derive(Debug, Clone, PartialEq, Serialize, thiserror::Error)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum ConfigError {
+    #[error("two sequences are named {name}")]
+    DuplicateSequence { name: String },
+    #[error("point {point} has bounds [{min}, {max}]")]
+    BadBounds { point: String, min: f64, max: f64 },
+    #[error("point {point} is written by more than one binding")]
+    DuplicatePoint { point: String },
+    #[error("{context} names unknown sequence {sequence}")]
+    UnknownSequence { context: String, sequence: String },
+    #[error("{reader} reads {sequence}, which does not run before it")]
+    RunOrder { reader: String, sequence: String },
+    #[error("gate of {point} gives {given}, not a Boolean")]
+    GateType { point: String, given: &'static str },
 }
 
 /// Everything that happened in one tick, for the UI, the BACnet mirror and the run record.
@@ -74,14 +97,15 @@ impl Supervisor {
         sequences: Vec<RunningSequence>,
         bindings: Vec<(String, OutputBinding)>,
         policy: FailSafe,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, ConfigError> {
+        check(&sequences, &bindings)?;
+        Ok(Self {
             sequences,
             bindings,
             policy,
             last_time: None,
             last_good: BTreeMap::new(),
-        }
+        })
     }
 
     pub fn tick(&mut self, readings: &Measurements) -> TickReport {
@@ -94,10 +118,10 @@ impl Supervisor {
             for seq in &mut self.sequences {
                 match seq.step(time, readings, &outputs) {
                     Ok(values) => {
-                        outputs.insert(seq.name.clone(), values);
+                        outputs.insert(seq.name().to_owned(), values);
                     }
                     Err(reason) => events.push(Event::Degraded {
-                        sequence: seq.name.clone(),
+                        sequence: seq.name().to_owned(),
                         reason,
                     }),
                 }
@@ -108,7 +132,14 @@ impl Supervisor {
 
         let mut writes = Writes::new();
         for (sequence, binding) in &self.bindings {
-            let value = outputs.get(sequence).and_then(|o| o.get(&binding.output));
+            let stepped = outputs.get(sequence);
+            let value = stepped.and_then(|o| o.get(&binding.output));
+            if stepped.is_some() && value.is_none() {
+                events.push(Event::NoSuchOutput {
+                    sequence: sequence.clone(),
+                    output: binding.output.clone(),
+                });
+            }
             let gate_open = match &binding.gate {
                 None => Some(true),
                 Some(gate) => match gate.eval(readings, &outputs) {
@@ -195,6 +226,71 @@ impl Supervisor {
         }
         Ok(steps)
     }
+}
+
+fn check(
+    sequences: &[RunningSequence],
+    bindings: &[(String, OutputBinding)],
+) -> Result<(), ConfigError> {
+    let mut seen: Vec<&str> = Vec::new();
+    for seq in sequences {
+        for source in seq.sources() {
+            for (upstream, _) in source.outputs_read() {
+                if !seen.contains(&upstream) {
+                    return Err(ConfigError::RunOrder {
+                        reader: seq.name().to_owned(),
+                        sequence: upstream.to_owned(),
+                    });
+                }
+            }
+        }
+        if seen.contains(&seq.name()) {
+            return Err(ConfigError::DuplicateSequence {
+                name: seq.name().to_owned(),
+            });
+        }
+        seen.push(seq.name());
+    }
+    let mut points: Vec<&str> = Vec::new();
+    for (sequence, b) in bindings {
+        if !seen.contains(&sequence.as_str()) {
+            return Err(ConfigError::UnknownSequence {
+                context: format!("binding for {}", b.point),
+                sequence: sequence.clone(),
+            });
+        }
+        if !(b.min.is_finite() && b.max.is_finite() && b.min <= b.max) {
+            return Err(ConfigError::BadBounds {
+                point: b.point.clone(),
+                min: b.min,
+                max: b.max,
+            });
+        }
+        if points.contains(&b.point.as_str()) {
+            return Err(ConfigError::DuplicatePoint {
+                point: b.point.clone(),
+            });
+        }
+        points.push(&b.point);
+        if let Some(gate) = &b.gate {
+            if let Some(given) = gate.static_type().filter(|t| *t != "a Boolean") {
+                return Err(ConfigError::GateType {
+                    point: b.point.clone(),
+                    given,
+                });
+            }
+            // Gates are evaluated after every sequence has run, so any known sequence will do.
+            for (upstream, _) in gate.outputs_read() {
+                if !seen.contains(&upstream) {
+                    return Err(ConfigError::UnknownSequence {
+                        context: format!("gate of {}", b.point),
+                        sequence: upstream.to_owned(),
+                    });
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 fn send(writes: &mut Writes, point: &str, value: f64) {

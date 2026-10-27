@@ -80,6 +80,33 @@ pub enum SourceError {
 pub type TickOutputs = BTreeMap<String, BTreeMap<String, WireValue>>;
 
 impl Source {
+    /// The type this source always gives, in the engine's words, or `None` when it depends on
+    /// another sequence's output. Used to reject bad bindings before the run starts.
+    pub fn static_type(&self) -> Option<&'static str> {
+        match self {
+            Source::Measurement { .. } => Some("a Real"),
+            Source::MeasurementAbove { .. } | Source::AnyTrue { .. } => Some("a Boolean"),
+            Source::SumInt { .. } => Some("an Integer"),
+            Source::Constant { value } => Some(match value {
+                Scalar::Real(_) => "a Real",
+                Scalar::Int(_) => "an Integer",
+                Scalar::Bool(_) => "a Boolean",
+            }),
+            Source::Output { .. } => None,
+        }
+    }
+
+    /// Every `(sequence, output)` this source reads, including nested ones.
+    pub fn outputs_read(&self) -> Vec<(&str, &str)> {
+        match self {
+            Source::Output { sequence, output } => vec![(sequence.as_str(), output.as_str())],
+            Source::AnyTrue { of } | Source::SumInt { of } => {
+                of.iter().flat_map(Source::outputs_read).collect()
+            }
+            _ => Vec::new(),
+        }
+    }
+
     pub fn eval(
         &self,
         readings: &Measurements,

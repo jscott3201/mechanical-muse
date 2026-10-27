@@ -65,6 +65,12 @@ impl FrameStepper {
             .map(|d| d.value_type)
     }
 
+    /// The declared type of an input, in words (`"a Real"`, `"an Integer"`, ...), for hosts
+    /// that check their bindings without naming engine types.
+    pub fn input_type_name(&self, path: &str) -> Option<&'static str> {
+        self.input_type(path).map(type_name)
+    }
+
     /// Sets the value an input will carry from the next frame on.
     pub fn set(&mut self, path: &str, value: Value) -> Result<(), StepError> {
         let ty = self

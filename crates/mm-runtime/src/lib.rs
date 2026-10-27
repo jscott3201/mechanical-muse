@@ -16,5 +16,5 @@ mod wiring;
 pub use boptest::BoptestClient;
 pub use plant::{FakePlant, Measurements, Plant, PlantError, Writes};
 pub use sequence::{LoadError, RunningSequence, StepFailure};
-pub use supervisor::{Event, FailSafe, Supervisor, TickReport};
+pub use supervisor::{ConfigError, Event, FailSafe, Supervisor, TickReport};
 pub use wiring::{InputBinding, OutputBinding, Scalar, Source, SourceError, TickOutputs};
