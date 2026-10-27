@@ -45,3 +45,7 @@ web/dist/
 /.agents/skills/rust-ts-contracts/
 /.agents/skills/source-verification/
 /.agents/skills/spike/
+
+# Python bytecode
+__pycache__/
+*.pyc
