@@ -7,9 +7,11 @@ metadata:
 ---
 Test case `multizone_office_complex_air` (15 VAV boxes, floor 2 is x10, 386 points). Depth: `docs/boptest-point-map.md` sections 3, 6-8, 10; `docs/plant-reset.md`.
 
-**REST** (compose serves 127.0.0.1:8000; replies are `{status,message,payload}`)
+**REST** (BOPTEST v0.9.0 compose serves 127.0.0.1:80; replies are `{status,message,payload}`)
+- Send `Content-Type: application/json` only with a body: a bodiless request carrying it gets a 500 (the server parses the empty body).
 - `POST /testcases/multizone_office_complex_air/select` gives a testid. Then `PUT /scenario/{id}` with `{"time_period":"peak_heat_day"}` (warm-up runs under baseline control) or `PUT /initialize/{id}`; `PUT /step/{id}` `{"step":120}`; loop `POST /advance/{id}`; `GET /kpi/{id}`; `PUT /stop/{id}`. An empty payload means the scenario ended. An idle test stops after 900 s.
-- The worker image is x86_64 (Rosetta or QEMU on Apple silicon, else an x86 VM); host, step size and episode length are pending in `docs/DECISIONS.md`.
+- Local service: `make boptest-up` (`compose.yaml`, needs `BOPTEST_DIR`). One worker, emulated x86 on Apple silicon: select about 2.5 min, initialize 7-19 min (mostly fixed), a 120 s step 0.8 s (summer morning) to 9.4 s (January). Day 184 is a Sunday; use day 185 for an occupied summer weekday. Results: `docs/runtime-results.md`. Always stop a test: an orphan holds the only worker (an abandoned select still creates one). Stop an orphan only once it is running: stopping one that is still starting crashed v0.9.0's web service (unhandled rejection; restart it with `docker compose up -d --no-deps web`). The web service's worker-reply timeout is raised to 1 h in `compose.boptest-images.yaml` (default 20 min, which a 1-day warm-up can exceed: a 500 naming `initialize`). `/stop` replies with a plain `OK`, not JSON. Details in `docs/DECISIONS.md`.
+- Live test: `cargo test -p mm-runtime --test live_boptest -- --ignored --nocapture` (env knobs in the file header).
 
 **Each 120 s step** (10,080 per two weeks)
 1. Take the last payload (measurements plus the effective `_u` values), refresh derived signals, run one engine frame at `t` = payload `time` (`mm-oce-engine-host`).

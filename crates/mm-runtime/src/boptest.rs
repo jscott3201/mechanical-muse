@@ -9,7 +9,8 @@ use crate::plant::{Measurements, Plant, PlantError, Writes};
 
 /// Per request; a hung advance should fail in minutes, not hours.
 const STEP_TIMEOUT: Duration = Duration::from_secs(300);
-/// Initialization runs the whole warm-up inside one request.
+/// Initialization runs the whole warm-up inside one request, and select waits for a free worker
+/// (an abandoned select still creates a test, which then holds that worker).
 const INIT_TIMEOUT: Duration = Duration::from_secs(3600);
 
 /// A selected BOPTEST test, ready to initialize and advance.
@@ -26,23 +27,28 @@ fn transport(e: reqwest::Error) -> PlantError {
     }
 }
 
-/// The whole JSON reply, after checking the HTTP status.
-async fn send_raw(request: reqwest::RequestBuilder) -> Result<Value, PlantError> {
+/// The reply text, after checking the HTTP status. A refusal keeps its status even when the
+/// body is not JSON (the message is then the start of the raw text).
+async fn send_text(request: reqwest::RequestBuilder) -> Result<String, PlantError> {
     let response = request.send().await.map_err(transport)?;
     let status = response.status().as_u16();
     let text = response.text().await.map_err(transport)?;
-    let body: Value = serde_json::from_str(&text).map_err(|_| PlantError::Malformed {
-        message: text.chars().take(200).collect(),
-    })?;
     if !(200..300).contains(&status) {
-        let message = body
-            .get("message")
-            .and_then(Value::as_str)
-            .unwrap_or("no message")
-            .to_owned();
+        let message = serde_json::from_str::<Value>(&text)
+            .ok()
+            .and_then(|b| b.get("message").and_then(Value::as_str).map(str::to_owned))
+            .unwrap_or_else(|| text.chars().take(200).collect());
         return Err(PlantError::Refused { status, message });
     }
-    Ok(body)
+    Ok(text)
+}
+
+/// The whole JSON reply, after checking the HTTP status.
+async fn send_raw(request: reqwest::RequestBuilder) -> Result<Value, PlantError> {
+    let text = send_text(request).await?;
+    serde_json::from_str(&text).map_err(|_| PlantError::Malformed {
+        message: text.chars().take(200).collect(),
+    })
 }
 
 /// The reply's `payload`; a reply without one is a protocol mismatch, not an end of scenario.
@@ -72,7 +78,7 @@ fn measurements(payload: &Value) -> Result<Measurements, PlantError> {
 }
 
 impl BoptestClient {
-    /// Selects a test case on the service at `base` (for example `http://127.0.0.1:8000`).
+    /// Selects a test case on the service at `base` (BOPTEST v0.9.0's compose serves `http://127.0.0.1:80`).
     pub async fn select(base: &str, testcase: &str) -> Result<Self, PlantError> {
         let http = reqwest::Client::builder()
             .connect_timeout(Duration::from_secs(10))
@@ -80,7 +86,10 @@ impl BoptestClient {
             .build()
             .map_err(transport)?;
         let base = base.trim_end_matches('/').to_owned();
-        let body = send_raw(http.post(format!("{base}/testcases/{testcase}/select"))).await?;
+        let select = http
+            .post(format!("{base}/testcases/{testcase}/select"))
+            .timeout(INIT_TIMEOUT);
+        let body = send_raw(select).await?;
         let testid = body
             .get("testid")
             .and_then(Value::as_str)
@@ -136,7 +145,8 @@ impl BoptestClient {
 
     pub async fn stop(&self) -> Result<(), PlantError> {
         let url = format!("{}/stop/{}", self.base, self.testid);
-        send(self.http.put(url)).await.map(|_| ())
+        // v0.9.0 answers a stop with a plain `OK`, not the usual JSON envelope.
+        send_text(self.http.put(url)).await.map(|_| ())
     }
 }
 

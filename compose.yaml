@@ -1,0 +1,21 @@
+# BOPTEST v0.9.0 for local runs. BOPTEST is a pre-existing external service (see the README's
+# dependency table); this file only points Docker Compose at a checkout of it.
+#
+#   git clone --branch v0.9.0 --depth 1 https://github.com/ibpsa/project1-boptest <dir>
+#   export BOPTEST_DIR=<dir>
+#   make boptest-up          # builds on first run; web on http://127.0.0.1:80
+#
+# The minio images come from quay.io (the same releases BOPTEST names), because Docker Hub may
+# refuse anonymous pulls of minio/mc. BOPTEST's own .env supplies its local dev settings.
+# On arm64 the worker runs under x86 emulation; see docs/DECISIONS.md for measured speeds.
+# Built images are reused; after pointing BOPTEST_DIR at another version, `docker compose build`.
+# The project name matches BOPTEST's own default (its directory name), so images built from the
+# checkout are reused; do not run another stack named boptest alongside (both bind port 80).
+name: boptest
+
+include:
+  - path:
+      - ${BOPTEST_DIR:?set BOPTEST_DIR to a BOPTEST v0.9.0 checkout}/docker-compose.yml
+      - compose.boptest-images.yaml
+    project_directory: ${BOPTEST_DIR}
+    env_file: ${BOPTEST_DIR}/.env
