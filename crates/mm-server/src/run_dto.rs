@@ -254,6 +254,10 @@ pub struct ReplayInfo {
     pub start_s: f64,
     /// True when the recorded run used a model-drafted graph.
     pub drafted: bool,
+    /// The specs the recorded run used drafted graphs for, sorted (an engineer's own
+    /// sequence always runs from a draft; our specs may run hand-built).
+    #[serde(default)]
+    pub drafts: Vec<String>,
     /// True when the recorded run ran the duct static pressure resets.
     #[serde(default)]
     pub pressure: bool,

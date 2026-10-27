@@ -103,6 +103,11 @@ fn info(name: &str, events: &[Envelope]) -> ReplayInfo {
         baseline: config.as_ref().is_some_and(|c| c.baseline),
         start_s: config.as_ref().map_or(0.0, |c| c.start_s),
         drafted: config.as_ref().is_some_and(|c| !c.drafts.is_empty()),
+        // `drafts` is a BTreeMap, so its keys come sorted.
+        drafts: config
+            .as_ref()
+            .map(|c| c.drafts.keys().cloned().collect())
+            .unwrap_or_default(),
         own: config
             .as_ref()
             .map(|c| c.bindings.keys().cloned().collect())

@@ -34,6 +34,7 @@ const replay = (over: Partial<ReplayInfo>): ReplayInfo => ({
   baseline: true,
   start_s: 16027200,
   drafted: false,
+  drafts: [],
   pressure: false,
   own: [],
   state: "completed",
