@@ -42,7 +42,7 @@ struct TaskCard {
 #[derive(Debug, Clone, Deserialize)]
 struct CardPoint {
     name: String,
-    r#type: String,
+    r#type: mm_graph::SignalType,
     unit: String,
     meaning: String,
 }
@@ -78,7 +78,14 @@ impl SpecStore {
             file: "specs directory",
             source,
         })?;
-        for entry in entries.flatten() {
+        for entry in entries {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(e) => {
+                    tracing::warn!(error = %e, "skipping an unreadable entry in the specs directory");
+                    continue;
+                }
+            };
             let path = entry.path();
             if !path.join("task.json").is_file() {
                 continue;
@@ -137,7 +144,7 @@ fn load_one(name: &str, dir: &Path, palette: &Palette) -> Result<Spec, SpecError
         .unwrap_or_else(|| name.to_owned());
     let point = |p: &CardPoint| TaskPoint {
         name: p.name.clone(),
-        r#type: Some(p.r#type.clone()),
+        r#type: Some(signal(p.r#type.port_kind())),
         unit: p.unit.clone(),
         meaning: p.meaning.clone(),
         value: None,

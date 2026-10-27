@@ -80,7 +80,7 @@ async fn lists_specs_sorted_with_their_interfaces() {
         .unwrap();
     assert_eq!(chw["title"], "Chilled-water plant reset");
     assert_eq!(chw["inputs"][0]["name"], "nReqRes");
-    assert_eq!(chw["inputs"][0]["type"], "int");
+    assert_eq!(chw["inputs"][0]["type"], "Integer");
     assert!(
         chw["inputs"][0].get("value").is_none(),
         "points carry no value"
@@ -183,4 +183,97 @@ async fn unknown_spec_and_route_are_404_with_codes() {
     let (status, body) = call("GET", "/api/nothing").await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["code"], "not-found");
+}
+
+/// A copy of one spec with a planted mistake, served from its own directory.
+fn mutated_router(mutate: impl Fn(&mut Value, &mut Value)) -> axum::Router {
+    let src = specs_dir().join("chw_plant_reset");
+    let root = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("mutated-specs-{}", std::process::id()));
+    let dst = root.join("chw_plant_reset");
+    std::fs::create_dir_all(&dst).unwrap();
+    for file in ["task.json", "spec.md"] {
+        std::fs::copy(src.join(file), dst.join(file)).unwrap();
+    }
+    let read = |f: &str| -> Value {
+        serde_json::from_slice(&std::fs::read(src.join(f)).unwrap()).unwrap()
+    };
+    let (mut graph, mut vectors) = (read("graph.json"), read("vectors.json"));
+    mutate(&mut graph, &mut vectors);
+    std::fs::write(dst.join("graph.json"), serde_json::to_vec(&graph).unwrap()).unwrap();
+    std::fs::write(
+        dst.join("vectors.json"),
+        serde_json::to_vec(&vectors).unwrap(),
+    )
+    .unwrap();
+    let palette = Palette::pinned().unwrap();
+    let specs = SpecStore::load(&root, &palette).unwrap();
+    app(AppState::new(specs, palette))
+}
+
+async fn verify_with(router: axum::Router) -> Value {
+    let response = router
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/specs/chw_plant_reset/verify")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
+    serde_json::from_slice(&bytes).unwrap()
+}
+
+#[tokio::test]
+async fn a_wrong_graph_gets_a_failing_receipt_with_details() {
+    let (_, good) = call("POST", "/api/specs/chw_plant_reset/verify").await;
+    // Trim of 1 % instead of 2 % (one of the spec's catalogued mistakes).
+    let bad = verify_with(mutated_router(|graph, _| {
+        for block in graph["blocks"].as_array_mut().unwrap() {
+            let id = block["id"].as_str().unwrap().to_owned();
+            for param in block["params"].as_array_mut().unwrap() {
+                if (id == "trimValue" && param["name"] == "k")
+                    || (id == "trimAndResp" && param["name"] == "p")
+                {
+                    param["value"] = serde_json::json!(-0.01);
+                }
+            }
+        }
+    }))
+    .await;
+    assert_eq!(bad["passed"], false);
+    assert_ne!(
+        bad["content_id"], good["content_id"],
+        "a changed graph has a new id"
+    );
+    let fail = bad["scenarios"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["result"] == "fail")
+        .expect("at least one failing scenario");
+    assert!(fail["t"].is_number() && fail["from_s"].is_number() && fail["to_s"].is_number());
+    assert!(fail["expected"].is_number() && fail["actual"].is_number());
+    assert_ne!(fail["expected"], fail["actual"]);
+    assert!(fail["output"].is_string() && fail["ticks"].as_u64().unwrap() > 0);
+}
+
+#[tokio::test]
+async fn a_wrong_expectation_fails_against_the_same_model() {
+    let (_, good) = call("POST", "/api/specs/chw_plant_reset/verify").await;
+    let bad = verify_with(mutated_router(|_, vectors| {
+        let first = &mut vectors["scenarios"][0]["expect"][0];
+        let v = first["equals"].as_f64().unwrap();
+        first["equals"] = serde_json::json!(v + 1.0);
+    }))
+    .await;
+    assert_eq!(bad["passed"], false);
+    assert_eq!(
+        bad["content_id"], good["content_id"],
+        "the model itself is unchanged"
+    );
+    assert_eq!(bad["scenarios"][0]["result"], "fail");
 }

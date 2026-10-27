@@ -35,10 +35,10 @@ pub struct Health {
 #[ts(export)]
 pub struct TaskPoint {
     pub name: String,
-    /// `real`, `int` or `bool` for points; absent for parameters.
+    /// Signal type for points; absent for parameters.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
-    pub r#type: Option<String>,
+    pub r#type: Option<Signal>,
     pub unit: String,
     pub meaning: String,
     /// Parameter value; absent for points.
@@ -155,11 +155,18 @@ pub enum ScenarioResult {
         expected: serde_json::Value,
         #[ts(type = "number | boolean | string | { class: number, ordinal: number }")]
         actual: serde_json::Value,
+        /// The expectation window that failed.
+        from_s: f64,
+        to_s: f64,
     },
     /// The scenario could not run (bad name, wrong type, refused frame).
     Error {
         code: String,
         detail: String,
+        /// Simulation time of the failure, when it happened mid-scenario.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        t: Option<f64>,
     },
 }
 

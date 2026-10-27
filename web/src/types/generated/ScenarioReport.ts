@@ -4,4 +4,12 @@ export type ScenarioReport = { name: string,
 /**
  * Frames executed.
  */
-ticks: number, } & ({ "result": "pass" } | { "result": "fail", t: number, output: string, expected: number | boolean | string | { class: number, ordinal: number }, actual: number | boolean | string | { class: number, ordinal: number }, } | { "result": "error", code: string, detail: string, });
+ticks: number, } & ({ "result": "pass" } | { "result": "fail", t: number, output: string, expected: number | boolean | string | { class: number, ordinal: number }, actual: number | boolean | string | { class: number, ordinal: number }, 
+/**
+ * The expectation window that failed.
+ */
+from_s: number, to_s: number, } | { "result": "error", code: string, detail: string, 
+/**
+ * Simulation time of the failure, when it happened mid-scenario.
+ */
+t?: number, });

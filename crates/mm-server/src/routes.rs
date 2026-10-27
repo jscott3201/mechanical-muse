@@ -31,7 +31,7 @@ pub struct AppState {
 struct Inner {
     specs: SpecStore,
     palette: Palette,
-    verify_slots: Semaphore,
+    verify_slots: Arc<Semaphore>,
 }
 
 impl AppState {
@@ -40,7 +40,7 @@ impl AppState {
             inner: Arc::new(Inner {
                 specs,
                 palette,
-                verify_slots: Semaphore::new(VERIFY_SLOTS),
+                verify_slots: Arc::new(Semaphore::new(VERIFY_SLOTS)),
             }),
         }
     }
@@ -74,11 +74,11 @@ impl Failure {
         }
     }
 
-    fn unknown_spec(name: &str) -> Self {
+    fn unknown_spec(_name: &str) -> Self {
         Self::new(
             StatusCode::NOT_FOUND,
             "unknown-spec",
-            format!("no spec named {name}"),
+            "no spec with that name",
         )
     }
 }
@@ -137,6 +137,8 @@ async fn spec_graph(
 }
 
 /// Emits the spec's reference graph and replays its vectors on a fresh engine per scenario.
+/// The slot permit moves into the blocking task, so it lasts as long as the work even if the
+/// client disconnects; when both slots are busy the request is refused rather than queued.
 async fn verify_spec(
     State(state): State<AppState>,
     Path(name): Path<String>,
@@ -147,71 +149,75 @@ async fn verify_spec(
         .get(&name)
         .ok_or_else(|| Failure::unknown_spec(&name))?
         .clone();
-    let _slot = state.inner.verify_slots.acquire().await.map_err(|_| {
-        Failure::new(
-            StatusCode::SERVICE_UNAVAILABLE,
-            "shutting-down",
-            "the server is stopping",
-        )
-    })?;
-    let worker = state.clone();
-    let receipt = tokio::task::spawn_blocking(move || {
-        let cxf =
-            emit_cxf(&spec.graph, &worker.inner.palette, &EmitOptions::default()).map_err(|e| {
-                Failure::new(
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "emit-failed",
-                    e.to_string(),
-                )
-            })?;
-        let report = replay(&cxf, &spec.vectors, &ReplayLimits::default()).map_err(|e| {
+    let permit = Arc::clone(&state.inner.verify_slots)
+        .try_acquire_owned()
+        .map_err(|_| {
             Failure::new(
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "replay-failed",
-                e.to_string(),
+                StatusCode::SERVICE_UNAVAILABLE,
+                "busy",
+                "verifications are already running; try again shortly",
             )
         })?;
-        Ok::<_, Failure>(Receipt {
-            spec: name,
-            passed: report.passed(),
-            content_id: report.content_id,
-            scenarios: report
-                .scenarios
-                .into_iter()
-                .map(|s| ScenarioReport {
-                    name: s.name,
-                    ticks: s.ticks,
-                    result: match s.outcome {
-                        ScenarioOutcome::Pass => ScenarioResult::Pass,
-                        ScenarioOutcome::Fail {
-                            t,
-                            output,
-                            expected,
-                            actual,
-                            ..
-                        } => ScenarioResult::Fail {
-                            t,
-                            output,
-                            expected: serde_json::to_value(&expected)
-                                .unwrap_or(serde_json::Value::Null),
-                            actual: serde_json::to_value(&actual)
-                                .unwrap_or(serde_json::Value::Null),
-                        },
-                        ScenarioOutcome::Error { code, detail, .. } => {
-                            ScenarioResult::Error { code, detail }
-                        }
-                    },
-                })
-                .collect(),
-        })
+    let worker = state.clone();
+    let spec_name = name.clone();
+    let joined = tokio::task::spawn_blocking(move || {
+        let _permit = permit;
+        let server_fault =
+            |code: &str, e: String| Failure::new(StatusCode::INTERNAL_SERVER_ERROR, code, e);
+        let cxf = emit_cxf(&spec.graph, &worker.inner.palette, &EmitOptions::default())
+            .map_err(|e| server_fault("emit-failed", e.to_string()))?;
+        let report = replay(&cxf, &spec.vectors, &ReplayLimits::default())
+            .map_err(|e| server_fault("replay-failed", e.to_string()))?;
+        Ok::<_, Failure>(receipt(spec_name, report))
     })
-    .await
-    .map_err(|_| {
-        Failure::new(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "verify-crashed",
-            "verification stopped unexpectedly",
-        )
-    })??;
-    Ok(Json(receipt))
+    .await;
+    match joined {
+        Ok(result) => result.map(Json),
+        Err(e) => {
+            tracing::error!(error = %e, spec = %name, "verification task failed");
+            Err(Failure::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "verify-crashed",
+                "verification stopped unexpectedly",
+            ))
+        }
+    }
+}
+
+fn receipt(spec: String, report: mm_bridge::ReplayReport) -> Receipt {
+    Receipt {
+        spec,
+        passed: report.passed(),
+        content_id: report.content_id,
+        scenarios: report
+            .scenarios
+            .into_iter()
+            .map(|s| ScenarioReport {
+                name: s.name,
+                ticks: s.ticks,
+                result: match s.outcome {
+                    ScenarioOutcome::Pass => ScenarioResult::Pass,
+                    ScenarioOutcome::Fail {
+                        t,
+                        output,
+                        expected,
+                        actual,
+                        from_s,
+                        to_s,
+                    } => ScenarioResult::Fail {
+                        t,
+                        output,
+                        expected: serde_json::to_value(&expected)
+                            .unwrap_or(serde_json::Value::Null),
+                        actual: serde_json::to_value(&actual).unwrap_or(serde_json::Value::Null),
+                        from_s,
+                        to_s,
+                    },
+                    ScenarioOutcome::Error { code, detail, t } => {
+                        ScenarioResult::Error { code, detail, t }
+                    }
+                },
+            })
+            .collect(),
+    }
 }

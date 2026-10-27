@@ -4,7 +4,7 @@
 
 check: fmt-check clippy test
 
-ci: lint clippy test doctest specs types deny
+ci: lint clippy types doctest specs deny
 
 fmt:
 	cargo fmt --all
@@ -33,7 +33,10 @@ specs:
 	git diff --exit-code -- specs/
 
 # ts-rs writes the TypeScript types during the test run; the committed copies must match.
-types: test
+# Generated files are removed first, so a renamed or deleted DTO cannot leave an orphan behind.
+types:
+	rm -f web/src/types/generated/*.ts
+	$(MAKE) -s test
 	@test -z "$$(git status --porcelain -- web/src/types/generated)" || \
 		{ git status --porcelain -- web/src/types/generated; echo "regenerate and commit web/src/types/generated"; exit 1; }
 
