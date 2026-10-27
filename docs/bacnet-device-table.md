@@ -1,8 +1,8 @@
 # BACnet device table: BOPTEST `multizone_office_complex_air`
 
-Prepared for Justin Scott (Aionforge Labs), project Mechanical Muse. Date: 2026-10-26.
+Project Mechanical Muse, 2026-10-26. A design proposal; the mirror built so far is the smaller read-only one in `docs/bacnet-mirror.md`.
 Sources: BOPTEST `bacnet/BopTestProxy.py`, `bacnet/README.md`, `testcases/multizone_office_complex_air/models/bacnet.ttl`, `testcase.py`; Rusty BACnet `docs/python-api.md`, `website/.../reference/python/server.md`, `crates/rusty-bacnet/rusty_bacnet.pyi`, `crates/bacnet-types/src/enums/units.rs`.
-Companion files in the same folder: `bacnet-objects.csv` (the complete 414-object table, one row per object) and `boptest-point-map.md` (G36 wiring). Everything below is my proposal unless it says "stock proxy" or "BOPTEST".
+Companions: `boptest-point-map.md` (G36 wiring) and `boptest-points.csv` (every BOPTEST point, with units and ranges). The full 414-row object table (`bacnet-objects.csv` below) was generated during research and is not committed. Everything below is my proposal unless it says "stock proxy" or "BOPTEST".
 
 ## 1. Headline
 
@@ -123,7 +123,7 @@ Rules and recommendations:
 
 ## 5. Why only input-type objects for derived points
 
-Rusty BACnet's local update call for host-computed values, `set_present_value_local`, accepts exactly Analog Input (finite REAL), Binary Input (0/1) and Multi-state Input (1..number of states). Correction (checked in rusty-bacnet source at the pinned rev `1caf4db7`): it also accepts non-commandable AV/BV/MSV built with `PresentValueAccess::ReadOnly` or `Writable`; it rejects AO and commandable Values, and `AnalogValueObject::new` is commandable by default. The `mm-bacnet-mirror` skill has the details. The original note follows. Using AI/BI/MSI for the 117 derived signals therefore needs only that one narrow call per point per tick, they are read-only to peers by construction, and a BACnet operator cannot accidentally overwrite a G36 intermediate. (AV objects default to commandable in Rusty BACnet; making them read-only needs `present_value_access="read_only"` and a different local write path that I did not verify.) If the UI wants AV for the derived points, that is a cosmetic change in `gen_points.py`, not a design change.
+Rusty BACnet's local update call for host-computed values, `set_present_value_local`, accepts Analog, Binary and Multi-state Inputs, and also non-commandable Analog, Binary and Multi-state Values built with `PresentValueAccess::ReadOnly` or `Writable` (checked in the source at the pinned rev `1caf4db7`); it rejects Analog Outputs and commandable Values, and `AnalogValueObject::new` is commandable by default. Input-type objects for the 117 derived signals therefore need only that one call per point per tick and are read-only to peers by construction, so a BACnet operator cannot overwrite an intermediate signal. Read-only Analog Values work equally well; the mirror that was built (`docs/bacnet-mirror.md`) uses them for sequence outputs.
 
 ## 6. Object tables for each device class
 

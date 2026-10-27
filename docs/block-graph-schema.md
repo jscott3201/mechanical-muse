@@ -1,6 +1,6 @@
 # Compact block-graph format (v0 proposal)
 
-The LLM emits this JSON through structured output; a deterministic emitter expands it to CXF JSON-LD; the Open Control Engine (via `cxf-verify` or `oce-api`) verifies it. Files: schema `docs/block-graph.schema.json` (71 lines), a Python prototype of the converter, emitter and validator (`mm_blockgraph.py`) is kept in local research notes as a porting reference for `mm-graph`.
+The LLM emits this JSON through structured output; a deterministic emitter expands it to CXF JSON-LD; the Open Control Engine (via `cxf-verify` or `oce-api`) verifies it. Files: schema `docs/block-graph.schema.json` (71 lines), and `crates/mm-graph`, the Rust port of a Python prototype of the converter, emitter and validator (the prototype is not in the repository).
 
 ## 1. What shaped the format
 
@@ -111,7 +111,7 @@ Addressing: a bare token is a boundary input (as source) or boundary output (as 
 
 ## 4. Two library rules converted by script (round-trip proven)
 
-`scripts/mm_blockgraph.py::cxf_to_compact` reads the CXF; `compact_to_cxf` regenerates it from the compact JSON plus the palette. Wire form below (pretty-printed here, minified in the size measurements).
+The prototype converter (not in the repository; `mm-graph` is the port) read the CXF into the compact form and regenerated it from the compact JSON plus the palette. Wire form below (pretty-printed here, minified in the size measurements).
 
 **AHU-0027** (2 blocks): raw `rule.cxf.jsonld` 4,182 B (13 nodes) -> wire 650 B (6.4x smaller) -> the JSON shown in section 2.
 
