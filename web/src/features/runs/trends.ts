@@ -12,7 +12,12 @@ export const POINTS = {
   dp: "reaChiWatSys_dp_y",
   chillers: "reaChiWatSys_reaPChi_y",
   valve: (floor: number) => `floor${floor}_reaAHU_yCooVal_y`,
+  ductSet: (floor: number) => `floor${floor}_dpSet_u`,
+  fan: (floor: number) => `floor${floor}_reaAHU_PFanSup_y`,
 } as const;
+
+/** BOPTEST models floor 2 as ten identical floors: its flows and power are ten times one floor. */
+const floorLabel = (f: number) => (f === 2 ? "floor 2 (×10 multiplier)" : `floor ${f}`);
 
 export const FLOORS = [1, 2, 3] as const;
 
@@ -22,6 +27,10 @@ export interface Trends {
   requests: Series[];
   valves: Series[];
   chillerPower: Series[];
+  /** Static pressure setpoints sent, per floor (runs with the pressure resets). */
+  ductSetpoints: Series[];
+  /** Supply fan power, per floor. */
+  fanPower: Series[];
 }
 
 type Pick = (t: TickPoint) => number | null;
@@ -83,6 +92,15 @@ export function trends(ticks: TickPoint[]): Trends {
         return v === null ? null : v / 1000;
       }),
     ],
+    ductSetpoints: FLOORS.map((f, i) =>
+      series(`f${f}`, floorLabel(f), `var(--viz-${i + 1})`, ticks, (t) => num(t.writes[POINTS.ductSet(f)]), true),
+    ),
+    fanPower: FLOORS.map((f, i) =>
+      series(`f${f}`, floorLabel(f), `var(--viz-${i + 1})`, ticks, (t) => {
+        const v = num(t.readings[POINTS.fan(f)]);
+        return v === null ? null : v / 1000;
+      }),
+    ),
   };
 }
 

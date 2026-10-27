@@ -1,6 +1,8 @@
 //! The demo wiring on BOPTEST `multizone_office_complex_air`: three air handler request
 //! sequences (`specs/ahu_chw_requests`, one per floor) feeding the chilled-water plant reset
-//! (`specs/chw_plant_reset`). Pure data: callers load each sequence from verified CXF with its
+//! (`specs/chw_plant_reset`), and optionally a duct static pressure reset per floor
+//! (`specs/ahu_static_pressure_reset`) fed by its five zones' requests
+//! (`specs/zone_pressure_requests`). Pure data: callers load each sequence from verified CXF with its
 //! receipt, then hand these bindings to [`crate::RunningSequence::load`] and
 //! [`crate::Supervisor::new`]. The live test and `mm-server` share it so they cannot drift.
 
@@ -127,4 +129,155 @@ pub fn watch_points() -> Vec<String> {
         }
     }
     points
+}
+
+/// Spec folders of the zone pressure requests and of the per-floor static pressure reset.
+pub const ZONE_PRESSURE_SPEC: &str = "zone_pressure_requests";
+pub const PRESSURE_SPEC: &str = "ahu_static_pressure_reset";
+/// BOPTEST's zone names on every floor, in its own order (`vAV1` to `vAV5`).
+pub const ZONES: [&str; 5] = ["Cor", "Sou", "Eas", "Nor", "Wes"];
+/// Supply airflow (m3/s) above which a floor's supply fan counts as running.
+pub const FAN_ON_FLOW: f64 = 0.1;
+
+/// Sequence name of one zone's pressure request instance, e.g. `zone2eas`.
+pub fn zone_name(floor: u8, zone: &str) -> String {
+    format!("zone{floor}{}", zone.to_ascii_lowercase())
+}
+
+/// Sequence name of one floor's static pressure reset, e.g. `sp2`.
+pub fn pressure_name(floor: u8) -> String {
+    format!("sp{floor}")
+}
+
+/// One zone's request inputs: its damper position, airflow and airflow setpoint.
+pub fn zone_bindings(floor: u8, zone: &str) -> Vec<InputBinding> {
+    let reading = |input: &str, point: String| InputBinding {
+        input: input.into(),
+        source: Source::Measurement { point },
+    };
+    vec![
+        reading("uDam", format!("floor{floor}_reaZon{zone}_yDam_y")),
+        reading("VDis_flow", format!("floor{floor}_reaZon{zone}_V_flow_y")),
+        reading(
+            "VSet_flow",
+            format!("floor{floor}_reaZon{zone}_V_flowSet_y"),
+        ),
+    ]
+}
+
+/// One floor's reset inputs: the sum of its zones' requests (those sequences must run first),
+/// and the fan counted as running while the floor's supply airflow is above [`FAN_ON_FLOW`].
+pub fn pressure_bindings(floor: u8) -> Vec<InputBinding> {
+    vec![
+        InputBinding {
+            input: "nReqPre".into(),
+            source: Source::SumInt {
+                of: ZONES
+                    .iter()
+                    .map(|z| Source::Output {
+                        sequence: zone_name(floor, z),
+                        output: "yPreReq".into(),
+                    })
+                    .collect(),
+            },
+        },
+        InputBinding {
+            input: "u1FanOn".into(),
+            source: Source::MeasurementAbove {
+                point: format!("floor{floor}_reaAHU_V_flowSup_y"),
+                threshold: FAN_ON_FLOW,
+            },
+        },
+    ]
+}
+
+/// Each floor's static pressure setpoint, clamped to BOPTEST's 50 Pa lower bound and to its own
+/// constant 400 Pa (its overwrite allows up to 410 Pa).
+pub fn pressure_outputs() -> Vec<(String, OutputBinding)> {
+    FLOORS
+        .iter()
+        .map(|f| {
+            (
+                pressure_name(*f),
+                OutputBinding {
+                    output: "dpSet".into(),
+                    point: format!("floor{f}_dpSet"),
+                    min: 50.0,
+                    max: 400.0,
+                    gate: None,
+                },
+            )
+        })
+        .collect()
+}
+
+/// Readings worth showing beside the static pressure setpoints: each floor's duct static
+/// pressure and supply fan power.
+pub fn pressure_watch_points() -> Vec<String> {
+    FLOORS
+        .iter()
+        .flat_map(|f| {
+            [
+                format!("floor{f}_reaAHU_dp_y"),
+                format!("floor{f}_reaAHU_PFanSup_y"),
+                format!("floor{f}_dpSet_u"),
+            ]
+        })
+        .collect()
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::indexing_slicing)]
+mod pressure_tests {
+    use super::*;
+
+    #[test]
+    fn every_bound_point_is_a_boptest_point() {
+        let points = include_str!("../../../docs/boptest-points.csv");
+        let known = |p: &str| points.lines().any(|l| l.split(',').next() == Some(p));
+        let mut bound = Vec::new();
+        for f in FLOORS {
+            for z in ZONES {
+                for b in zone_bindings(f, z) {
+                    if let Source::Measurement { point } = b.source {
+                        bound.push(point);
+                    }
+                }
+            }
+            for b in pressure_bindings(f) {
+                if let Source::MeasurementAbove { point, .. } = b.source {
+                    bound.push(point);
+                }
+            }
+        }
+        bound.extend(pressure_watch_points());
+        bound.extend(
+            pressure_outputs()
+                .into_iter()
+                .map(|(_, o)| format!("{}_u", o.point)),
+        );
+        assert_eq!(bound.len(), 15 * 3 + 3 + 9 + 3);
+        for p in &bound {
+            assert!(known(p), "{p} is not a BOPTEST point");
+        }
+    }
+
+    #[test]
+    fn each_floor_sums_its_own_five_zones() {
+        let b = pressure_bindings(2);
+        let Source::SumInt { of } = &b[0].source else {
+            panic!("nReqPre must be a sum")
+        };
+        let names: Vec<_> = of
+            .iter()
+            .map(|s| match s {
+                Source::Output { sequence, .. } => sequence.as_str(),
+                _ => "",
+            })
+            .collect();
+        assert_eq!(
+            names,
+            ["zone2cor", "zone2sou", "zone2eas", "zone2nor", "zone2wes"]
+        );
+    }
 }

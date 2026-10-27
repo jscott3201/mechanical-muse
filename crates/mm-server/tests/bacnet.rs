@@ -85,11 +85,13 @@ async fn a_live_run_updates_the_mirror() {
     let (status, body) = call(&state, "GET", "/api/bacnet", None).await;
     assert_eq!(status, StatusCode::OK);
     let points = body["points"].as_array().unwrap();
-    // 18 watched readings, 8 sequence outputs (3 floors x 2 + 2), 2 plant setpoints sent.
+    // 18 watched readings and 6 for the pressure resets (duct pressure and fan power per
+    // floor); 8 chilled-water sequence outputs (3 floors x 2 + 2) and 18 pressure ones (15
+    // zones + 3 floors); 2 plant setpoints and 3 floor static pressure setpoints sent.
     let count = |s: &str| points.iter().filter(|p| p["source"] == s).count();
     assert_eq!(
         (count("measured"), count("derived"), count("commanded")),
-        (18, 8, 2)
+        (24, 26, 5)
     );
 
     let (status, run) = call(&state, "POST", "/api/runs", Some(json!({"steps": 25}))).await;

@@ -16,6 +16,11 @@ baseline?: boolean,
  */
 requests?: boolean, 
 /**
+ * Also run the duct static pressure reset on every floor, fed by its zones' requests
+ * (default false).
+ */
+pressure?: boolean, 
+/**
  * Simulation start, seconds from January 1.
  */
 start_s?: number, warmup_s?: number, steps?: number, 

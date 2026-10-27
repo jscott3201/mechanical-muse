@@ -5,7 +5,11 @@ import type { ReplaySource } from "./ReplaySource";
 /**
  * The settings a run actually uses.
  */
-export type RunConfig = { baseline: boolean, requests: boolean, start_s: number, warmup_s: number, steps: number, step_s: number, case: string, 
+export type RunConfig = { baseline: boolean, requests: boolean, 
+/**
+ * The duct static pressure resets run (absent in records from before they existed).
+ */
+pressure: boolean, start_s: number, warmup_s: number, steps: number, step_s: number, case: string, 
 /**
  * Spec name to the content id of the drafted graph used for it.
  */
