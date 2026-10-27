@@ -184,6 +184,14 @@ async fn health(State(state): State<AppState>) -> Json<Health> {
         status: "ok".into(),
         engine_rev: ENGINE_REV.into(),
         specs: u32::try_from(state.inner.specs.len()).unwrap_or(u32::MAX),
+        live_model: state
+            .authoring()
+            .config
+            .spark
+            .is_some()
+            .then(|| crate::authoring::MODEL.to_owned()),
+        recorded_model: state.authoring().config.recordings.is_some(),
+        bacnet_device: state.bacnet().map(|b| b.info.device_instance),
     })
 }
 

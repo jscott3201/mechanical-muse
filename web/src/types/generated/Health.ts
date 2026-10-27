@@ -4,4 +4,16 @@ export type Health = { status: string,
 /**
  * open-control-engine commit every graph is checked against.
  */
-engine_rev: string, specs: number, };
+engine_rev: string, specs: number, 
+/**
+ * The model a live authoring session would call, when the server has a key for it.
+ */
+live_model?: string, 
+/**
+ * Recorded model sessions can be played back.
+ */
+recorded_model: boolean, 
+/**
+ * The BACnet mirror's device instance, when it is running.
+ */
+bacnet_device?: number, };

@@ -28,6 +28,16 @@ pub struct Health {
     /// open-control-engine commit every graph is checked against.
     pub engine_rev: String,
     pub specs: u32,
+    /// The model a live authoring session would call, when the server has a key for it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub live_model: Option<String>,
+    /// Recorded model sessions can be played back.
+    pub recorded_model: bool,
+    /// The BACnet mirror's device instance, when it is running.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub bacnet_device: Option<u32>,
 }
 
 /// One input, output or parameter of a spec's task card.
