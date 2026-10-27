@@ -1,6 +1,6 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml).
-.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live
+.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live docker-build docker-demo docker-demo-live docker-demo-down modal-demo
 
 check: fmt-check clippy test
 
@@ -92,6 +92,25 @@ demo-live: web-build
 	@set -a; . ./.env; set +a; \
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" MM_WEB_DIR=web/dist \
 	cargo run -q -p mm-server
+
+# The same app in Docker, no Rust or Node needed (docs/packaging.md): http://localhost:8080.
+# docker-demo-live adds live Muse Spark from MODEL_API_KEY in an env file (default .env).
+DEMO_COMPOSE = docker compose -f compose.demo.yaml
+docker-build:
+	$(DEMO_COMPOSE) build
+
+docker-demo:
+	$(DEMO_COMPOSE) up --build
+
+docker-demo-live:
+	$(DEMO_COMPOSE) -f compose.demo.live.yaml up --build
+
+docker-demo-down:
+	$(DEMO_COMPOSE) down
+
+# The same image on Modal as a temporary web endpoint (`modal deploy` keeps it up).
+modal-demo:
+	modal serve deploy/modal/mm_demo.py
 
 # The server with live Muse Spark authoring: maps the local .env key without printing it.
 server-live:
