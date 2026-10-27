@@ -12,7 +12,7 @@ Prepared 2026-10-26. All prose below is paraphrase; no ASHRAE Guideline 36 text 
 | MBL validation model | `.../Setpoints/Validation/PlantReset.mo` | same commit; identical to master |
 | TrimAndRespond.mo | engine `third_party/modelica-buildings-cdl/Buildings/Controls/OBC/ASHRAE/G36/Generic/TrimAndRespond.mo` | byte-identical to upstream at the pin (checked) |
 | MBL license | `Buildings/legal.html` (vendored in the engine, and upstream) | see section 2 |
-| Engine facts | clone at `.../scratchpad/repos/open-control-engine` (clean, `git status` empty) | `tools/reference-catalog/*`, `docs/cxf-composite-subset.md`, `TESTING.md`, `crates/oce-cxf/tests/*` |
+| Engine facts | a local clone of open-control-engine (clean, `git status` empty) | `tools/reference-catalog/*`, `docs/cxf-composite-subset.md`, `TESTING.md`, `crates/oce-cxf/tests/*` |
 | BOPTEST case | `ibpsa/project1-boptest` raw: `testcases/multizone_office_complex_air/doc/index.html`, `models/wrapped.mo`, `models/MultizoneOfficeComplexAir/{TestCases/TestCase.mo, BaseClasses/ChillerPlant.mo, BaseClasses/BoilerPlant.mo}` | master as of today |
 
 The MBL docs web page (simulationresearch.lbl.gov ... `Buildings_Templates_Plants_Controls_Setpoints.html`) matches the source;
@@ -136,18 +136,18 @@ Caveats that are not "missing classes" but matter:
 - **No HW plant reset sequence exists in MBL G36 packages today.** `Templates.Plants.Controls.Setpoints.PlantReset` is the only MBL block whose docs cover HW. That
   makes PlantReset the right single reference for both loops.
 
-### 1.6 Engine probe: does a `have_hol=true` TrimAndRespond load and behave? (done in scratch, repo untouched)
+### 1.6 Engine probe: does a `have_hol=true` TrimAndRespond load and behave? (a throwaway probe outside the repo)
 
-Method: copied the engine's `trim_and_respond_have_hol_false.jsonld` into scratch, flipped `have_hol` to true, set `dtHol` 300 (then 360),
+Method: copied the engine's `trim_and_respond_have_hol_false.jsonld` into a throwaway folder, flipped `have_hol` to true, set `dtHol` 300 (then 360),
 added the two connections that exist in the Modelica class only when `have_hol` is true (`uHol -> truHol.u`, `truHol.y -> notHol.u`), and removed the
 now-inactive driver connection `fal.y -> notHol.u` (the engine rejects an inactive node that still carries a connection, rule "inactive-conditional-node").
 Then drove it through `oce_api::Engine` with a 60 s frame cadence.
 
-Results (code in `support/probe_have_hol_main.rs`):
+Results (the probe code was throwaway and is not in the repository):
 
 - Loads warning-free: 44 blocks, 6 stateful (vs 5 for `have_hol=false`).
 - Trace with requests above the ignore count and a staging pulse: output freezes at the first tick inside the hold, resumes at the first tick after release.
-- My independent Python reference (`support/plant_reset_ref_model.py`, written from the `.mo` semantics, not from engine output) (not re-run since; see `specs/chw_plant_reset/` for the current validated reference) matches the engine on all 41 frames of the
+- A prototype independent Python reference (written from the `.mo` semantics, not from engine output; superseded by `specs/chw_plant_reset/reference.py`, the validated one) matched the engine on all 41 frames of the
   `have_hol=false` and `have_hol=true` traces, including the hold, with zero differences (1e-9).
 - Tie case (hold expires exactly on a sample tick, dtHol=360 with ticks every 120 s): both engine and reference apply that tick's update.
 - Takeaway: `have_hol=true` is a **hand-specialization of an existing fixture, not new engine work**. What is missing is an oracle row, not capability.
@@ -344,7 +344,7 @@ Natural ambiguity inventory (for the finder's checklist): A1 enable definition; 
 
 ## 6. Behavioral test scenarios (vectors)
 
-Numbers below come from `support/plant_reset_ref_model.py` driven by `support/plant_reset_scenarios.py`; the T&R portion matches the engine to 1e-9 (section 1.6). Parameters: realistic set
+Numbers below came from the prototype reference model of section 1.6 (not in the repository; the committed vectors come from `specs/chw_plant_reset/reference.py`); its T&R portion matched the engine to 1e-9. Parameters: realistic set
 (900/300/900, I=2, -0.02/+0.03/0.07), CHW and HW values from 4.2. `r` = reset value. Times in seconds from t=0 with the plant enabled at t=0 unless stated. All scenarios use tick-aligned times (multiples of 300 s).
 
 Reference mapping (static): CHW `r`=0, 0.25, 0.5, 0.75, 1.0 gives T = 282.15, 282.15, 282.15, 280.43, 278.71 K and dp = 95,650, 167,387.5, 239,125, 239,125, 239,125 Pa.
@@ -382,11 +382,10 @@ Notes for the harness:
 3. `dpSet_min` and the CHW/HW limits are engineering first guesses; one baseline BOPTEST run (peak cool day, typical cool day) should confirm no comfort regression before the demo.
 4. BOPTEST does not expose staging or a plant-enable signal; `u1Ena` and `u1StaPro` are design decisions (A1, A5).
 5. modelica-json run not performed (blocked fetch); option (a) numbers are estimates.
-6. This sandbox pinned the Rust 1.97.1 toolchain in rustup as a side effect of probing; no repo files were modified.
 
 ## Appendix: files
 
-- `support/plant_reset_ref_model.py`: independent reference (T&R with hold + two Line maps).
-- `support/plant_reset_scenarios.py`: regenerates every number in section 6.
-- `support/probe_have_hol_main.rs`: the engine probe (loads edited fixtures A/B, prints side-by-side traces).
-- Raw sources fetched: `../mbl-raw/` (PlantReset.mo, validation model, legal text), `../boptest/` (doc text, baseline Modelica).
+The prototype reference model, its scenario script and the engine probe were throwaway files
+outside the repository and are not committed. The validated reference and the vectors used by
+the tests are in `specs/chw_plant_reset/` (`reference.py`, `vectors.json`). Raw sources were
+fetched from the locations in section 0.
