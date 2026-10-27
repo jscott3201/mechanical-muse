@@ -3,7 +3,7 @@
 
 use std::future::Future;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// Reasoning effort. `none` is not offered: Muse models always reason and the API rejects it.
@@ -52,7 +52,7 @@ pub struct ModelRequest {
     pub max_output_tokens: u32,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Usage {
     pub input_tokens: u64,
     pub cached_tokens: u64,
@@ -79,7 +79,7 @@ pub struct ModelReply {
 }
 
 /// Why a call produced no usable text. Messages never contain the API key or request bodies.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, thiserror::Error)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum ModelError {
     #[error("HTTP {status}: {message}")]

@@ -8,6 +8,7 @@
 
 mod client;
 mod prompt;
+mod recorded;
 mod repair;
 mod responses;
 
@@ -15,8 +16,9 @@ pub use client::{Effort, ModelClient, ModelError, ModelReply, ModelRequest, Outp
 pub use prompt::{
     Exemplar, ParamHint, PointSpec, TaskSpec, palette_listing, system_instructions, task_message,
 };
+pub use recorded::{RecordedClient, RecordedReply, Recording};
 pub use repair::{
-    Attempt, AttemptOutcome, AuthorConfig, AuthoringTrace, Feedback, VerifiedDraft, author,
-    interface_problems,
+    Attempt, AttemptOutcome, AuthorConfig, AuthoringTrace, Feedback, Progress, VerifiedDraft,
+    author, author_observed, interface_problems,
 };
 pub use responses::{SparkClient, parse_response, request_body, retry_delay};

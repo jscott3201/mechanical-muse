@@ -95,6 +95,15 @@ pub struct AuthoringTrace {
     pub usage: Usage,
 }
 
+/// What the loop reports while it works, for live views.
+#[derive(Debug, Clone, Copy)]
+pub enum Progress<'a> {
+    /// A model call for draft `attempt` (of at most `of`) is about to start.
+    Drafting { attempt: u32, of: u32 },
+    /// A draft was checked (or its model call failed).
+    Checked(&'a Attempt),
+}
+
 /// Drafts `task`, checks each draft with `mm-graph` and `mm-bridge` against `vectors`, and
 /// feeds problems back until a draft passes or `config.max_attempts` is reached.
 pub async fn author<C: ModelClient>(
@@ -104,6 +113,19 @@ pub async fn author<C: ModelClient>(
     vectors: &VectorFile,
     exemplars: &[Exemplar],
     config: &AuthorConfig,
+) -> AuthoringTrace {
+    author_observed(client, palette, task, vectors, exemplars, config, |_| {}).await
+}
+
+/// [`author`], calling `observe` before each model call and after each checked attempt.
+pub async fn author_observed<C: ModelClient, F: FnMut(Progress<'_>) + Send>(
+    client: &C,
+    palette: &Palette,
+    task: &TaskSpec,
+    vectors: &VectorFile,
+    exemplars: &[Exemplar],
+    config: &AuthorConfig,
+    mut observe: F,
 ) -> AuthoringTrace {
     let mut trace = AuthoringTrace {
         task: task.name.clone(),
@@ -136,6 +158,10 @@ pub async fn author<C: ModelClient>(
     };
 
     for index in 1..=config.max_attempts {
+        observe(Progress::Drafting {
+            attempt: index,
+            of: config.max_attempts,
+        });
         let reply = match client.complete(&request).await {
             Ok(reply) => reply,
             Err(error) => {
@@ -148,6 +174,9 @@ pub async fn author<C: ModelClient>(
                     outcome: AttemptOutcome::ModelError { error },
                     usage: Usage::default(),
                 });
+                if let Some(last) = trace.attempts.last() {
+                    observe(Progress::Checked(last));
+                }
                 if truncated {
                     continue;
                 }
@@ -169,6 +198,9 @@ pub async fn author<C: ModelClient>(
             outcome,
             usage: reply.usage,
         });
+        if let Some(last) = trace.attempts.last() {
+            observe(Progress::Checked(last));
+        }
         if verified.is_some() {
             trace.verified = verified;
             break;
