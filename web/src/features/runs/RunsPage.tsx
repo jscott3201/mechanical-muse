@@ -1,4 +1,4 @@
-import { Activity, CircleCheck, CircleStop, CircleX, LoaderCircle, Play } from "lucide-react";
+import { Activity, CircleCheck, CircleStop, CircleX, History, LoaderCircle, Play, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAction, useResource } from "@/hooks/useResource";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { DraftInfo } from "@/types/generated/DraftInfo";
 import type { RunInfo } from "@/types/generated/RunInfo";
 import type { RunRequest } from "@/types/generated/RunRequest";
 import type { RunState } from "@/types/generated/RunState";
@@ -39,16 +40,81 @@ function StateIcon({ state }: { state: RunState }) {
   }
 }
 
+const GRAPHS = [
+  { spec: "chw_plant_reset", label: "Plant reset graph" },
+  { spec: "ahu_chw_requests", label: "Air handler requests graph" },
+] as const;
+
+/** Reference graph or one of the spec's verified drafts. */
+function GraphChoice({
+  label,
+  drafts,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  drafts: DraftInfo[];
+  value: string | null;
+  onChange: (contentId: string | null) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1" role="group" aria-label={label}>
+      <span className="text-sm">{label}</span>
+      <div className="flex flex-wrap gap-1">
+        <Button
+          size="sm"
+          variant={value === null ? "secondary" : "outline"}
+          aria-pressed={value === null}
+          disabled={disabled}
+          onClick={() => onChange(null)}
+        >
+          Hand-built
+        </Button>
+        {drafts.map((d) => (
+          <Button
+            key={d.content_id}
+            size="sm"
+            variant={value === d.content_id ? "secondary" : "outline"}
+            aria-pressed={value === d.content_id}
+            disabled={disabled}
+            onClick={() => onChange(d.content_id)}
+            title={d.content_id}
+          >
+            {d.source === "recorded" ? <History aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
+            Drafted …{d.content_id.slice(-6)}
+            {d.source === "recorded" ? " (recorded)" : ""}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
   const [baseline, setBaseline] = useState(false);
   const [requests, setRequests] = useState(true);
   const [day, setDay] = useState(DEFAULTS.day);
   const [hour, setHour] = useState(DEFAULTS.hour);
   const [steps, setSteps] = useState(DEFAULTS.steps);
-  const body = useMemo<RunRequest>(
-    () => ({ baseline, requests, steps, start_s: day * 86400 + hour * 3600 }),
-    [baseline, requests, steps, day, hour],
-  );
+  const stored = useResource<DraftInfo[]>("/api/drafts");
+  const [chosen, setChosen] = useState<Record<string, string | null>>({});
+  const body = useMemo<RunRequest>(() => {
+    const drafts: Record<string, string> = {};
+    for (const { spec } of GRAPHS) {
+      const id = chosen[spec];
+      const used = spec === "chw_plant_reset" || requests;
+      if (id && used && !baseline) drafts[spec] = id;
+    }
+    return {
+      baseline,
+      requests,
+      steps,
+      start_s: day * 86400 + hour * 3600,
+      ...(Object.keys(drafts).length > 0 ? { drafts } : {}),
+    };
+  }, [baseline, requests, steps, day, hour, chosen]);
   const start = useAction<RunInfo>("/api/runs", body);
   // Each started run is reported exactly once, however often this component re-renders.
   const reported = useRef<string | null>(null);
@@ -76,6 +142,21 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
           <Label htmlFor="run-requests">Air handler requests</Label>
           <Switch id="run-requests" checked={requests && !baseline} disabled={baseline} onCheckedChange={setRequests} />
         </div>
+        {stored.status === "ready" &&
+          GRAPHS.map(({ spec, label }) => {
+            const drafts = stored.data.filter((d) => d.spec === spec);
+            if (drafts.length === 0) return null;
+            return (
+              <GraphChoice
+                key={spec}
+                label={label}
+                drafts={drafts}
+                value={chosen[spec] ?? null}
+                onChange={(id) => setChosen((c) => ({ ...c, [spec]: id }))}
+                disabled={baseline || (spec === "ahu_chw_requests" && !requests)}
+              />
+            );
+          })}
         <div className="grid grid-cols-3 gap-2">
           <div className="flex flex-col gap-1">
             <Label htmlFor="run-day">Day</Label>

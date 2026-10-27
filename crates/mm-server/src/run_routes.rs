@@ -3,22 +3,20 @@
 //! live channel re-reads the log, so no event is skipped or repeated. The stream ends after the
 //! run's `ended` event.
 
-use std::collections::VecDeque;
-use std::convert::Infallible;
 use std::sync::Arc;
 
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
-use axum::response::sse::{Event, KeepAlive, Sse};
-use axum::response::{IntoResponse, Response};
+use axum::response::Response;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use tokio::sync::broadcast::{self, error::RecvError};
-use tokio::sync::watch;
 
+use mm_runtime::preset::{REQUESTS_SPEC, RESET_SPEC};
+
+use crate::journal;
 use crate::routes::{AppState, Failure};
-use crate::run_dto::{Envelope, RunEvent, RunInfo, RunRequest, RunState};
+use crate::run_dto::{RunInfo, RunRequest};
 use crate::runs::{RunHandle, StartError};
 
 pub fn routes() -> Router<AppState> {
@@ -46,6 +44,7 @@ async fn start_run(
 ) -> Result<(StatusCode, Json<RunInfo>), Failure> {
     let Json(request) =
         request.map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.body_text()))?;
+    check_drafts(&state, &request)?;
     let handle = state.runs().create(&request).map_err(|e| match e {
         StartError::Active(_) => Failure::new(StatusCode::CONFLICT, "run-active", e.to_string()),
         StartError::Invalid(_) => {
@@ -55,6 +54,25 @@ async fn start_run(
     let info = handle.info();
     tokio::spawn(crate::session::run(handle, state.clone()));
     Ok((StatusCode::CREATED, Json(info)))
+}
+
+/// Each requested draft must be a stored, verified draft of a spec this run uses. Its vectors
+/// are replayed again when the run loads it.
+fn check_drafts(state: &AppState, request: &RunRequest) -> Result<(), Failure> {
+    let bad = |m: String| Failure::new(StatusCode::BAD_REQUEST, "bad-request", m);
+    let requests = request.requests.unwrap_or(true);
+    for (spec, id) in request.drafts.iter().flatten() {
+        let used = spec == RESET_SPEC || (spec == REQUESTS_SPEC && requests);
+        if !used {
+            return Err(bad(format!("this run does not use {spec}")));
+        }
+        match state.authoring().drafts.get(id) {
+            Some(d) if d.info.spec == *spec => {}
+            Some(_) => return Err(bad(format!("draft {id} is not a draft of {spec}"))),
+            None => return Err(bad(format!("no verified draft {id}"))),
+        }
+    }
+    Ok(())
 }
 
 async fn run_info(
@@ -73,91 +91,15 @@ async fn stop_run(
     Ok((StatusCode::ACCEPTED, Json(handle.info())))
 }
 
-struct Feed {
-    handle: Arc<RunHandle>,
-    pending: VecDeque<Envelope>,
-    rx: broadcast::Receiver<Envelope>,
-    shutdown: watch::Receiver<bool>,
-    last: Option<u64>,
-    done: bool,
-}
-
-impl Feed {
-    async fn next(&mut self) -> Option<Envelope> {
-        loop {
-            if self.done {
-                return None;
-            }
-            if let Some(env) = self.pending.pop_front() {
-                if self.last.is_some_and(|l| env.seq <= l) {
-                    continue;
-                }
-                self.last = Some(env.seq);
-                self.done = matches!(env.event, RunEvent::Ended { .. });
-                return Some(env);
-            }
-            let received = tokio::select! {
-                r = self.rx.recv() => r,
-                _ = self.shutdown.wait_for(|stop| *stop) => return None,
-            };
-            match received {
-                Ok(env) => self.pending.push_back(env),
-                // Fell behind the live channel: refill from the log, which has everything.
-                Err(RecvError::Lagged(_)) => self.pending.extend(self.handle.since(self.last)),
-                Err(RecvError::Closed) => return None,
-            }
-        }
-    }
-}
-
-fn sse_event(env: &Envelope) -> Event {
-    let kind = match &env.event {
-        RunEvent::Started { .. } => "started",
-        RunEvent::Phase { .. } => "phase",
-        RunEvent::Tick { .. } => "tick",
-        RunEvent::Kpi { .. } => "kpi",
-        RunEvent::Ended { .. } => "ended",
-    };
-    let data = serde_json::to_string(env).unwrap_or_else(|_| "{}".into());
-    Event::default()
-        .id(env.seq.to_string())
-        .event(kind)
-        .data(data)
-}
-
 async fn run_events(
     State(state): State<AppState>,
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> Result<Response, Failure> {
     let handle = find(&state, &id)?;
-    let after = headers
-        .get("last-event-id")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.trim().parse::<u64>().ok());
-    let (backlog, rx) = handle.subscribe(after);
-    // A finished run with nothing left to send: 204 tells an EventSource not to reconnect
-    // (it would otherwise reconnect with the last id after every close, forever).
-    let finished = matches!(
-        handle.state(),
-        RunState::Completed | RunState::Stopped | RunState::Failed
-    );
-    if finished && backlog.is_empty() {
-        return Ok(StatusCode::NO_CONTENT.into_response());
-    }
-    let feed = Feed {
-        handle,
-        pending: backlog.into(),
-        rx,
-        shutdown: state.shutdown_signal(),
-        last: after,
-        done: false,
-    };
-    let stream = futures_util::stream::unfold(feed, |mut feed| async move {
-        let env = feed.next().await?;
-        Some((Ok::<_, Infallible>(sse_event(&env)), feed))
-    });
-    Ok(Sse::new(stream)
-        .keep_alive(KeepAlive::default())
-        .into_response())
+    Ok(journal::stream(
+        handle.journal(),
+        journal::last_event_id(&headers),
+        state.shutdown_signal(),
+    ))
 }

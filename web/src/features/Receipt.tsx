@@ -6,7 +6,8 @@ import { formatNumber, formatWire } from "@/lib/format";
 import type { Receipt as ReceiptDto } from "@/types/generated/Receipt";
 import type { ScenarioReport } from "@/types/generated/ScenarioReport";
 
-function Outcome({ s }: { s: ScenarioReport }) {
+/** One scenario's result in words. */
+export function Outcome({ s }: { s: ScenarioReport }) {
   switch (s.result) {
     case "pass":
       return <span className="text-muted-foreground">all expectations held</span>;

@@ -855,6 +855,7 @@ dependencies = [
  "axum",
  "futures-util",
  "http-body-util",
+ "mm-agent",
  "mm-bridge",
  "mm-graph",
  "mm-runtime",

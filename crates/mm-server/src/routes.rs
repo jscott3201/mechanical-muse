@@ -8,13 +8,11 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use mm_bridge::ScenarioOutcome;
 use mm_graph::Palette;
 use tokio::sync::Semaphore;
 
-use crate::dto::{
-    ApiError, GraphView, Health, Receipt, ScenarioReport, ScenarioResult, SpecDetail, SpecSummary,
-};
+use crate::authoring::{Authoring, AuthoringConfig};
+use crate::dto::{ApiError, GraphView, Health, Receipt, SpecDetail, SpecSummary};
 use crate::runs::{PlantSource, Runs, RunsConfig};
 use crate::specs::SpecStore;
 
@@ -34,6 +32,7 @@ struct Inner {
     palette: Palette,
     verify_slots: Arc<Semaphore>,
     runs: Runs,
+    authoring: Authoring,
     shutdown: tokio::sync::watch::Sender<bool>,
 }
 
@@ -52,16 +51,31 @@ impl AppState {
         )
     }
 
+    /// No live model and no recordings: authoring requests are refused.
     pub fn with_runs(specs: SpecStore, palette: Palette, runs: RunsConfig) -> Self {
+        Self::build(specs, palette, runs, AuthoringConfig::default())
+    }
+
+    pub fn build(
+        specs: SpecStore,
+        palette: Palette,
+        runs: RunsConfig,
+        authoring: AuthoringConfig,
+    ) -> Self {
         Self {
             inner: Arc::new(Inner {
                 specs,
                 palette,
                 verify_slots: Arc::new(Semaphore::new(VERIFY_SLOTS)),
                 runs: Runs::new(runs),
+                authoring: Authoring::new(authoring),
                 shutdown: tokio::sync::watch::channel(false).0,
             }),
         }
+    }
+
+    pub fn authoring(&self) -> &Authoring {
+        &self.inner.authoring
     }
 
     pub fn specs(&self) -> &SpecStore {
@@ -98,6 +112,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/specs/{name}/graph", get(spec_graph))
         .route("/api/specs/{name}/verify", post(verify_spec))
         .merge(crate::run_routes::routes())
+        .merge(crate::author_routes::routes())
         .fallback(not_found)
         .with_state(state)
 }
@@ -234,32 +249,7 @@ fn receipt(spec: String, report: mm_bridge::ReplayReport) -> Receipt {
         scenarios: report
             .scenarios
             .into_iter()
-            .map(|s| ScenarioReport {
-                name: s.name,
-                ticks: s.ticks,
-                result: match s.outcome {
-                    ScenarioOutcome::Pass => ScenarioResult::Pass,
-                    ScenarioOutcome::Fail {
-                        t,
-                        output,
-                        expected,
-                        actual,
-                        from_s,
-                        to_s,
-                    } => ScenarioResult::Fail {
-                        t,
-                        output,
-                        expected: serde_json::to_value(&expected)
-                            .unwrap_or(serde_json::Value::Null),
-                        actual: serde_json::to_value(&actual).unwrap_or(serde_json::Value::Null),
-                        from_s,
-                        to_s,
-                    },
-                    ScenarioOutcome::Error { code, detail, t } => {
-                        ScenarioResult::Error { code, detail, t }
-                    }
-                },
-            })
+            .map(crate::dto::scenario_report)
             .collect(),
     }
 }

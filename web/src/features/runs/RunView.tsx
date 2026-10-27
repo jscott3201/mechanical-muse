@@ -1,4 +1,4 @@
-import { CircleAlert, Info, OctagonX, TriangleAlert } from "lucide-react";
+import { CircleAlert, History, Info, OctagonX, Sparkles, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -115,6 +115,7 @@ function RunStream({
                   <TableRow>
                     <TableHead>Sequence</TableHead>
                     <TableHead>Spec</TableHead>
+                    <TableHead>Graph</TableHead>
                     <TableHead>Verified model (content id)</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -123,6 +124,21 @@ function RunStream({
                     <TableRow key={s.name}>
                       <TableCell className="font-mono text-xs">{s.name}</TableCell>
                       <TableCell>{s.spec}</TableCell>
+                      <TableCell>
+                        {s.origin === "drafted" ? (
+                          <span className="inline-flex items-center gap-1">
+                            {s.source === "recorded" ? (
+                              <History aria-hidden="true" className="size-4" />
+                            ) : (
+                              <Sparkles aria-hidden="true" className="size-4" />
+                            )}
+                            Drafted by {s.model ?? "the model"}
+                            {s.source === "recorded" ? " (recorded run)" : ""}
+                          </span>
+                        ) : (
+                          "Hand-built reference"
+                        )}
+                      </TableCell>
                       <TableCell className="font-mono text-xs break-all">{s.content_id}</TableCell>
                     </TableRow>
                   ))}

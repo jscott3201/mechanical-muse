@@ -2,6 +2,11 @@
 //! `MM_SPECS_DIR` (default `specs`). Runs drive BOPTEST at `MM_BOPTEST_URL` (default
 //! `http://127.0.0.1:80`) and write JSON-lines records to `MM_RUNS_DIR` (default `runs`, which
 //! is gitignored). Stops cleanly on Ctrl-C.
+//!
+//! Authoring calls Muse Spark when `MODEL_API_KEY` is set (`make server-live` maps it from the
+//! local `.env`; the key never leaves this process). Recorded runs for the "recorded" source are
+//! read from `MM_RECORDINGS_DIR` (default `fixtures/recordings`). Verified drafts are kept in
+//! `<MM_RUNS_DIR>/drafts` and session records in `MM_RUNS_DIR`.
 
 #![forbid(unsafe_code)]
 
@@ -10,7 +15,7 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use mm_graph::Palette;
-use mm_server::{AppState, PlantSource, RunsConfig, SpecStore, app};
+use mm_server::{AppState, AuthoringConfig, PlantSource, RunsConfig, SpecStore, app};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -29,15 +34,30 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .with_context(|| format!("binding {addr}"))?;
+    let records = PathBuf::from(std::env::var("MM_RUNS_DIR").unwrap_or_else(|_| "runs".into()));
     let runs = RunsConfig {
         plant: PlantSource::Boptest {
             url: std::env::var("MM_BOPTEST_URL").unwrap_or_else(|_| "http://127.0.0.1:80".into()),
         },
-        records: Some(PathBuf::from(
-            std::env::var("MM_RUNS_DIR").unwrap_or_else(|_| "runs".into()),
-        )),
+        records: Some(records.clone()),
     };
-    let state = AppState::with_runs(specs, palette, runs);
+    let spark = match std::env::var("MODEL_API_KEY") {
+        Ok(key) if !key.trim().is_empty() => Some(std::sync::Arc::new(
+            mm_agent::SparkClient::new(key).context("building the model client")?,
+        )),
+        _ => None,
+    };
+    tracing::info!(live_model = spark.is_some(), "authoring");
+    let authoring = AuthoringConfig {
+        spark,
+        recordings: Some(PathBuf::from(
+            std::env::var("MM_RECORDINGS_DIR").unwrap_or_else(|_| "fixtures/recordings".into()),
+        )),
+        records: Some(records.clone()),
+        drafts: Some(records.join("drafts")),
+        ..AuthoringConfig::default()
+    };
+    let state = AppState::build(specs, palette, runs, authoring);
     let on_signal = state.clone();
     axum::serve(listener, app(state.clone()))
         .with_graceful_shutdown(async move {

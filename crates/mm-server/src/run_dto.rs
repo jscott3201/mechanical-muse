@@ -32,6 +32,11 @@ pub struct RunRequest {
     #[serde(default)]
     #[ts(optional)]
     pub steps: Option<u32>,
+    /// Use a verified draft instead of a spec's reference graph: spec name to the draft's
+    /// content id (see `/api/drafts`). Its vectors are replayed again before it loads.
+    #[serde(default)]
+    #[ts(optional)]
+    pub drafts: Option<BTreeMap<String, String>>,
 }
 
 /// The settings a run actually uses.
@@ -45,6 +50,8 @@ pub struct RunConfig {
     pub steps: u32,
     pub step_s: f64,
     pub case: String,
+    /// Spec name to the content id of the drafted graph used for it.
+    pub drafts: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
@@ -78,6 +85,17 @@ pub struct RunInfo {
     pub events: u32,
 }
 
+/// Where a running sequence's graph came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "lowercase")]
+pub enum Origin {
+    /// Our hand-built reference graph.
+    Reference,
+    /// Written by the model and verified against the spec's vectors.
+    Drafted,
+}
+
 /// A sequence in the run and the receipt it was loaded with.
 #[derive(Debug, Clone, PartialEq, Serialize, TS)]
 #[ts(export)]
@@ -85,6 +103,15 @@ pub struct SequenceInfo {
     pub name: String,
     pub spec: String,
     pub content_id: String,
+    pub origin: Origin,
+    /// The model that drafted it, for drafted graphs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub model: Option<String>,
+    /// Whether that draft came from a live model call or a recorded run, for drafted graphs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub source: Option<crate::author_dto::ModelSource>,
 }
 
 /// A fail-safe or clamp event from the supervisor, flattened for the UI.

@@ -191,3 +191,31 @@ pub struct Receipt {
     pub passed: bool,
     pub scenarios: Vec<ScenarioReport>,
 }
+
+/// One replayed scenario, as the API shows it.
+pub(crate) fn scenario_report(s: mm_bridge::ScenarioReport) -> ScenarioReport {
+    use mm_bridge::ScenarioOutcome;
+    ScenarioReport {
+        name: s.name,
+        ticks: s.ticks,
+        result: match s.outcome {
+            ScenarioOutcome::Pass => ScenarioResult::Pass,
+            ScenarioOutcome::Fail {
+                t,
+                output,
+                expected,
+                actual,
+                from_s,
+                to_s,
+            } => ScenarioResult::Fail {
+                t,
+                output,
+                expected: serde_json::to_value(&expected).unwrap_or(serde_json::Value::Null),
+                actual: serde_json::to_value(&actual).unwrap_or(serde_json::Value::Null),
+                from_s,
+                to_s,
+            },
+            ScenarioOutcome::Error { code, detail, t } => ScenarioResult::Error { code, detail, t },
+        },
+    }
+}

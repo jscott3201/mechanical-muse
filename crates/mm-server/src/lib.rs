@@ -3,7 +3,12 @@
 
 #![forbid(unsafe_code)]
 
+pub mod author_dto;
+mod author_routes;
+pub mod authoring;
+pub mod drafts;
 pub mod dto;
+mod journal;
 mod routes;
 pub mod run_dto;
 mod run_routes;
@@ -11,6 +16,7 @@ pub mod runs;
 mod session;
 pub mod specs;
 
+pub use authoring::AuthoringConfig;
 pub use routes::{AppState, ENGINE_REV, app};
 pub use runs::{PlantSource, RunsConfig};
 pub use specs::{SpecError, SpecStore};
