@@ -1,6 +1,6 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml). Web targets arrive with web/.
-.PHONY: check ci fmt fmt-check clippy test doctest specs lint deny test-live live bench env-keys run fetch
+.PHONY: check ci fmt fmt-check clippy test doctest specs lint deny test-live live bench env-keys run fetch boptest-up boptest-down
 
 check: fmt-check clippy test
 
@@ -38,6 +38,14 @@ lint: fmt-check
 
 deny:
 	cargo deny --locked check
+
+# BOPTEST v0.9.0 on http://127.0.0.1:80 (compose.yaml; needs BOPTEST_DIR). provision uploads the
+# test cases once and exits; the first run builds the images.
+boptest-up:
+	docker compose up -d web worker provision
+
+boptest-down:
+	docker compose down
 
 # Needs BOPTEST up and/or MODEL_API_KEY.
 test-live:
