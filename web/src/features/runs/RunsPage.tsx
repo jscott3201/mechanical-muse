@@ -121,7 +121,7 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
       steps,
       start_s: day * 86400 + hour * 3600,
       ...(Object.keys(drafts).length > 0 ? { drafts } : {}),
-      ...(fault && !baseline ? { fault: { point: FAULT_POINT, from_step: faultStep, steps: FAULT_STEPS } } : {}),
+      ...(fault && !baseline && requests ? { fault: { point: FAULT_POINT, from_step: faultStep, steps: FAULT_STEPS } } : {}),
     };
   }, [baseline, requests, steps, day, hour, chosen, fault, faultStep]);
   const start = useAction<RunInfo>("/api/runs", body);
@@ -182,9 +182,14 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
         </div>
         <div className="flex items-center justify-between gap-2">
           <Label htmlFor="run-fault">Inject a test fault</Label>
-          <Switch id="run-fault" checked={fault && !baseline} disabled={baseline} onCheckedChange={setFault} />
+          <Switch
+            id="run-fault"
+            checked={fault && !baseline && requests}
+            disabled={baseline || !requests}
+            onCheckedChange={setFault}
+          />
         </div>
-        {fault && !baseline && (
+        {fault && !baseline && requests && (
           <div className="flex flex-col gap-1">
             <Label htmlFor="run-fault-step">From step</Label>
             <Input

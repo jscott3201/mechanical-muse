@@ -479,10 +479,45 @@ async fn bad_faults_are_refused() {
             json!({"baseline": true}),
             "baseline",
         ),
+        (
+            json!({"point": "floor1_reaAHU_TSup_y", "from_step": 20, "steps": 2}),
+            json!({"steps": 20}),
+            "starts after the run",
+        ),
+        (
+            json!({"point": "floor1_reaAHU_TSup_y", "from_step": 1, "steps": 2}),
+            json!({"requests": false}),
+            "unused without requests",
+        ),
     ] {
         let mut body = extra.clone();
         body["fault"] = fault;
         let (status, err) = call(&state, "POST", "/api/runs", Some(body)).await;
         assert_eq!(status, StatusCode::BAD_REQUEST, "{why}: {err}");
+    }
+}
+
+/// Without the request sequences, the reset reads occupancy: a NaN there degrades it too.
+#[tokio::test]
+async fn an_occupancy_fault_without_requests_degrades_the_reset() {
+    let state = state(None);
+    let body = json!({"steps": 6, "requests": false,
+        "fault": {"point": "floor2_reaAHU_occ_y", "from_step": 2, "steps": 2}});
+    let (status, info) = call(&state, "POST", "/api/runs", Some(body)).await;
+    assert_eq!(status, StatusCode::CREATED, "{info}");
+    let all = events(&state, info["id"].as_str().unwrap(), None).await;
+    let ticks: Vec<&Value> = all
+        .iter()
+        .filter(|(_, k, _)| k == "tick")
+        .map(|(_, _, d)| d)
+        .collect();
+    assert_eq!(ticks.len(), 6);
+    for (i, t) in ticks.iter().enumerate() {
+        let degraded = t["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|e| e["kind"] == "degraded" && e["sequence"] == "chw");
+        assert_eq!(degraded, (2..4).contains(&i), "step {i}: {}", t["events"]);
     }
 }

@@ -89,7 +89,13 @@ async fn list_replays(State(state): State<AppState>) -> Result<Json<Vec<ReplayIn
     let dir = state.runs().config.replays.clone().ok_or_else(no_replays)?;
     let list = tokio::task::spawn_blocking(move || crate::replay::list(&dir))
         .await
-        .unwrap_or_default();
+        .map_err(|e| {
+            Failure::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "replay-crashed",
+                e.to_string(),
+            )
+        })?;
     Ok(Json(list))
 }
 

@@ -186,6 +186,12 @@ describe("RunsPage replays", () => {
       await new Promise((r) => setTimeout(r, 5));
     });
     expect(screen.getByText("Replay of a recorded run")).toBeTruthy();
+    await act(async () => {
+      FakeSource.last?.emit(JSON.stringify({ run_id: "run-77", seq: 1, kind: "kpi", values: { ener_tot: 1.5 } }));
+      await new Promise((r) => setTimeout(r, 5));
+    });
+    expect(screen.getByText(/not recomputed by this replay/)).toBeTruthy();
+    expect(screen.queryByText(/Computed by BOPTEST for this run/)).toBeNull();
     expect(screen.getByText(/Nothing runs\s+against BOPTEST now/)).toBeTruthy();
   });
 });

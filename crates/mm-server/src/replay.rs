@@ -9,6 +9,9 @@ use std::sync::Arc;
 use crate::run_dto::{Envelope, ReplayInfo, ReplaySource, RunConfig, RunEvent, RunState};
 use crate::runs::{RunHandle, StartError};
 
+/// Records are read whole; a week of 120 s steps is about 30 MB.
+const MAX_RECORD_BYTES: u64 = 64 * 1024 * 1024;
+
 /// A record name is a file stem: letters, digits, `-`, `_` and `.`, nothing that walks paths.
 fn valid_name(name: &str) -> bool {
     !name.is_empty()
@@ -23,8 +26,15 @@ pub fn read(dir: &Path, name: &str) -> Result<Vec<Envelope>, String> {
     if !valid_name(name) {
         return Err(format!("{name:?} is not a record name"));
     }
-    let text = std::fs::read_to_string(dir.join(format!("{name}.jsonl")))
-        .map_err(|_| format!("no recorded run named {name}"))?;
+    let path = dir.join(format!("{name}.jsonl"));
+    let size = std::fs::metadata(&path)
+        .map_err(|_| format!("no recorded run named {name}"))?
+        .len();
+    if size > MAX_RECORD_BYTES {
+        return Err(format!("{name} is larger than {MAX_RECORD_BYTES} bytes"));
+    }
+    let text =
+        std::fs::read_to_string(&path).map_err(|_| format!("no recorded run named {name}"))?;
     let mut events = Vec::new();
     for (i, line) in text
         .lines()
@@ -106,9 +116,14 @@ pub fn config(name: &str, events: &[Envelope]) -> Result<RunConfig, StartError> 
             _ => None,
         })
         .ok_or_else(|| StartError::Invalid(format!("{name} has no started event")))?;
+    // A record of a replay keeps naming the run that was first recorded.
+    let recorded_run = config.replay.take().map_or_else(
+        || events.first().map(|e| e.run_id.clone()).unwrap_or_default(),
+        |r| r.recorded_run,
+    );
     config.replay = Some(ReplaySource {
         record: name.to_owned(),
-        recorded_run: events.first().map(|e| e.run_id.clone()).unwrap_or_default(),
+        recorded_run,
     });
     Ok(config)
 }
@@ -117,7 +132,12 @@ pub fn config(name: &str, events: &[Envelope]) -> Result<RunConfig, StartError> 
 /// `stopped` if a stop was asked for).
 pub async fn run(handle: Arc<RunHandle>, events: Vec<Envelope>, pace: std::time::Duration) {
     let stop = handle.stop_signal();
-    let mut outcome = (RunState::Completed, None);
+    // A record cut short (the server stopped mid-run) has no end: say so rather than
+    // claim the recorded run completed.
+    let mut outcome = (
+        RunState::Failed,
+        Some("the record has no end; the recorded run stopped without one".to_owned()),
+    );
     let mut stopped = false;
     for env in events {
         let event = match env.event {
@@ -150,6 +170,8 @@ pub async fn run(handle: Arc<RunHandle>, events: Vec<Envelope>, pace: std::time:
         }
         handle.publish(env.sim_time_s, event);
     }
+    // A stop that arrived after the last tick still counts.
+    stopped |= *stop.borrow();
     let (state, message) = if stopped {
         (RunState::Stopped, None)
     } else {

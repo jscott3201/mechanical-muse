@@ -172,7 +172,7 @@ function RunStream({
               {stop.state.status === "done" && (
                 <span className="text-xs text-muted-foreground">Stop requested.</span>
               )}
-              {stream.phase !== "running" && (
+              {stream.phase !== "running" && !cfg?.replay && (
                 <span className="text-xs text-muted-foreground">
                   A stop during BOPTEST's warm-up takes effect once it finishes.
                 </span>
@@ -197,7 +197,11 @@ function RunStream({
         <Card>
           <CardHeader>
             <CardTitle>KPIs</CardTitle>
-            <CardDescription>Computed by BOPTEST for this run. Compare with a baseline run of the same window.</CardDescription>
+            <CardDescription>
+              {cfg?.replay
+                ? `Recorded with run ${cfg.replay.recorded_run}, as BOPTEST computed them then; not recomputed by this replay.`
+                : "Computed by BOPTEST for this run. Compare with a baseline run of the same window."}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>

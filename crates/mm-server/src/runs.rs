@@ -248,8 +248,22 @@ fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
                 f.point
             )));
         }
+        if f.from_step >= steps {
+            return Err(StartError::Invalid(format!(
+                "the fault starts at step {} but the run has {steps}",
+                f.from_step
+            )));
+        }
         if f.steps == 0 || f.steps > 60 {
             return Err(StartError::Invalid("a fault lasts 1 to 60 steps".into()));
+        }
+        // Without the request sequences the reset reads only occupancy: a fault elsewhere would
+        // be logged as injected and change nothing.
+        if !r.requests.unwrap_or(true) && !f.point.ends_with("_reaAHU_occ_y") {
+            return Err(StartError::Invalid(format!(
+                "without air handler requests only occupancy readings are used, not {}",
+                f.point
+            )));
         }
     }
     if !(1..=MAX_STEPS).contains(&steps) {

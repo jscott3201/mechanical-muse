@@ -236,3 +236,35 @@ async fn the_committed_demo_record_is_replayable() {
     assert_eq!(demo["state"], "completed");
     assert_eq!(demo["baseline"], false);
 }
+
+/// A record cut short (no `ended` line) must not replay as completed.
+#[tokio::test]
+async fn a_record_without_an_end_replays_as_failed() {
+    let dir = replays();
+    let text = std::fs::read_to_string(dir.join("short.jsonl")).unwrap();
+    let cut: Vec<&str> = text
+        .lines()
+        .filter(|l| !l.contains("\"kind\":\"ended\""))
+        .collect();
+    std::fs::write(dir.join("cut.jsonl"), cut.join("\n")).unwrap();
+    let state = state(Some(dir), Duration::ZERO);
+    let (_, list) = call(&state, "GET", "/api/replays", None).await;
+    let cut_info = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["name"] == "cut")
+        .unwrap();
+    assert!(cut_info.get("state").is_none());
+    let (_, run) = call(
+        &state,
+        "POST",
+        "/api/runs/replay",
+        Some(json!({"record": "cut"})),
+    )
+    .await;
+    let all = events(&state, run["id"].as_str().unwrap()).await;
+    let ended = all.last().unwrap();
+    assert_eq!(ended["state"], "failed");
+    assert!(ended["message"].as_str().unwrap().contains("no end"));
+}
