@@ -70,9 +70,13 @@ async fn main() -> anyhow::Result<()> {
         explanations: Some(PathBuf::from(
             std::env::var("MM_EXPLANATIONS_DIR").unwrap_or_else(|_| "fixtures/explanations".into()),
         )),
+        readings: Some(PathBuf::from(
+            std::env::var("MM_READINGS_DIR").unwrap_or_else(|_| "fixtures/readings".into()),
+        )),
         ..AuthoringConfig::default()
     };
     let state = AppState::build(specs, palette, runs, authoring);
+    mm_server::workbench::restore(&state);
     if let Ok(dir) = std::env::var("MM_WEB_DIR") {
         tracing::info!(%dir, "serving the web app");
         state.set_web(PathBuf::from(dir));

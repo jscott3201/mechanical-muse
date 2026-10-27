@@ -50,9 +50,9 @@ fn state(drafts: Option<PathBuf>, pace: Duration) -> AppState {
             spark: None,
             recordings: Some(repo("fixtures/recordings")),
             pace,
-            records: None,
             drafts,
             explanations: Some(repo("fixtures/explanations")),
+            ..AuthoringConfig::default()
         },
     )
 }

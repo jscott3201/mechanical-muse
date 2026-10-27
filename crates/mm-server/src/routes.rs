@@ -29,6 +29,10 @@ pub struct AppState {
 
 struct Inner {
     specs: SpecStore,
+    /// Engineers' own sequences, added at run time from the workbench.
+    workbench: std::sync::RwLock<std::collections::BTreeMap<String, Arc<crate::specs::Spec>>>,
+    /// One model reading at a time.
+    workbench_slot: tokio::sync::Mutex<()>,
     palette: Palette,
     verify_slots: Arc<Semaphore>,
     runs: Runs,
@@ -70,6 +74,8 @@ impl AppState {
         Self {
             inner: Arc::new(Inner {
                 specs,
+                workbench: std::sync::RwLock::default(),
+                workbench_slot: tokio::sync::Mutex::new(()),
                 palette,
                 verify_slots: Arc::new(Semaphore::new(VERIFY_SLOTS)),
                 runs: Runs::new(runs),
@@ -95,6 +101,48 @@ impl AppState {
 
     pub fn specs(&self) -> &SpecStore {
         &self.inner.specs
+    }
+
+    /// A spec by name: one of ours, or an engineer's from the workbench.
+    pub fn spec(&self, name: &str) -> Option<crate::specs::Spec> {
+        if let Some(s) = self.inner.specs.get(name) {
+            return Some(s.clone());
+        }
+        let wb = self
+            .inner
+            .workbench
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        wb.get(name).map(|s| s.as_ref().clone())
+    }
+
+    /// Adds or replaces an engineer's sequence. Never shadows one of ours.
+    pub fn add_workbench_spec(&self, spec: crate::specs::Spec) -> Result<(), String> {
+        let name = spec.detail.summary.name.clone();
+        if self.inner.specs.get(&name).is_some() {
+            return Err(format!("`{name}` is the name of a built-in sequence"));
+        }
+        self.inner
+            .workbench
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(name, Arc::new(spec));
+        Ok(())
+    }
+
+    pub(crate) fn workbench_slot(&self) -> &tokio::sync::Mutex<()> {
+        &self.inner.workbench_slot
+    }
+
+    /// Engineers' sequences, sorted by name.
+    pub fn workbench_specs(&self) -> Vec<crate::dto::SpecSummary> {
+        self.inner
+            .workbench
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .values()
+            .map(|s| s.detail.summary.clone())
+            .collect()
     }
 
     pub fn palette(&self) -> &Palette {
@@ -145,6 +193,7 @@ pub fn app(state: AppState) -> Router {
         .merge(crate::author_routes::routes())
         .merge(crate::explain::routes())
         .merge(crate::run_explain::routes())
+        .merge(crate::workbench::routes())
         .fallback(fallback)
         .with_state(state)
 }
@@ -237,11 +286,9 @@ async fn spec_detail(
     Path(name): Path<String>,
 ) -> Result<Json<SpecDetail>, Failure> {
     let spec = state
-        .inner
-        .specs
-        .get(&name)
+        .spec(&name)
         .ok_or_else(|| Failure::unknown_spec(&name))?;
-    Ok(Json(spec.detail.clone()))
+    Ok(Json(spec.detail))
 }
 
 async fn spec_graph(
@@ -249,11 +296,15 @@ async fn spec_graph(
     Path(name): Path<String>,
 ) -> Result<Json<GraphView>, Failure> {
     let spec = state
-        .inner
-        .specs
-        .get(&name)
+        .spec(&name)
         .ok_or_else(|| Failure::unknown_spec(&name))?;
-    Ok(Json(spec.view.clone()))
+    spec.view.map(Json).ok_or_else(|| {
+        Failure::new(
+            StatusCode::NOT_FOUND,
+            "no-reference-graph",
+            "this sequence has no hand-built graph; see its verified drafts",
+        )
+    })
 }
 
 /// Emits the spec's reference graph and replays its vectors on a fresh engine per scenario.

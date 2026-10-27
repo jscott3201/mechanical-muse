@@ -10,6 +10,8 @@ BOPTEST simulation time; Spark is `muse-spark-1.3` unless stated.
 
 | When | Kind | What | Result | Where |
 | --- | --- | --- | --- | --- |
+| 2026-10-28 | Spark | Workbench: Spark reads the sample sequence sheet (pasted text; PNG through the server) and proposes scenarios | 6 and 7 scenarios, 8 open questions each, no check problems; °F converted; vs an independent reference 138/138 and 118/118 checked instants agree; drafts verified first try both times | `docs/workbench.md` |
+| 2026-10-28 | Feature | Bring your own sequence: read text/PDF/photo → review and accept scenarios → draft, verify, download CXF | works live and recorded (`make demo`) | `docs/workbench.md` |
 | 2026-10-28 | Feature | Muse Spark explains a run's events and its own verified drafts | fault demo: 5 event spans → 3 items, accurate; recorded copies committed | `fixtures/explanations/` |
 | 2026-10-28 | Rehearsal | `make demo` hero flow, recorded model | works; fixed live-without-key, draft-to-run path, fault shading, axis labels | demo-script |
 | 2026-10-27 | Feature | Muse Spark explains each reference graph in plain words | 4 graphs, 4–5 parts each, every named block exists | `fixtures/explanations/` |

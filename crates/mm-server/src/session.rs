@@ -73,10 +73,8 @@ async fn load(
     out: &mut Vec<SequenceInfo>,
 ) -> Result<Vec<RunningSequence>, String> {
     let found = state
-        .specs()
-        .get(spec)
-        .ok_or_else(|| format!("spec {spec} is not loaded"))?
-        .clone();
+        .spec(spec)
+        .ok_or_else(|| format!("spec {spec} is not loaded"))?;
     let draft = match config.drafts.get(spec) {
         Some(id) => Some(
             state

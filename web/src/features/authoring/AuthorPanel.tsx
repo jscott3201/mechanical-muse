@@ -1,4 +1,4 @@
-import { Ban, CircleX, History, LoaderCircle, Play, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
+import { Ban, CircleX, Download, History, LoaderCircle, Play, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -241,7 +241,7 @@ export function AuthorPanel({
         <CardDescription className="max-w-prose">
           Muse Spark reads this task and writes a block graph. Each draft is checked: interface,
           validator, engine load, then all {scenarios} scenarios. What fails goes back to the model,
-          up to {stream.config?.max_attempts ?? 5} attempts. A passing draft is stored with its receipt.
+          up to {stream.config?.max_attempts ?? 5} attempt{(stream.config?.max_attempts ?? 5) === 1 ? "" : "s"}. A passing draft is stored with its receipt.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -322,17 +322,25 @@ export function AuthorPanel({
               )}
               <span className="text-sm">{ENDED_TEXT[stream.ended.state]}</span>
             </div>
-            {stream.ended.state === "verified" && stream.ended.draft && onRunDraft && (
-              <Button
-                size="sm"
-                className="self-start"
-                onClick={() => {
-                  const d = stream.ended?.draft;
-                  if (d) onRunDraft(spec, d.content_id);
-                }}
-              >
-                <Play aria-hidden="true" /> Run this draft on BOPTEST
-              </Button>
+            {stream.ended.state === "verified" && stream.ended.draft && (
+              <div className="flex flex-wrap gap-2">
+                {onRunDraft && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const d = stream.ended?.draft;
+                      if (d) onRunDraft(spec, d.content_id);
+                    }}
+                  >
+                    <Play aria-hidden="true" /> Run this draft on BOPTEST
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" asChild>
+                  <a href={`/api/drafts/${encodeURIComponent(stream.ended.draft.content_id)}/cxf`} download>
+                    <Download aria-hidden="true" /> Download CXF
+                  </a>
+                </Button>
+              </div>
             )}
             {stream.ended.message && <p className="text-sm text-muted-foreground">{stream.ended.message}</p>}
             <p className="text-xs text-muted-foreground">

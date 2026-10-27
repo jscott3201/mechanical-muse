@@ -106,10 +106,12 @@ export function SpecDetail({
 }) {
   const spec = useResource<SpecDetailDto>(`/api/specs/${encodeURIComponent(name)}`);
   const verify = useAction<ReceiptDto>(`/api/specs/${encodeURIComponent(name)}/verify`);
-  const [section, setSection] = useState<Section>("interface");
+  const [chosen, setSection] = useState<Section | null>(null);
   if (spec.status === "loading") return <Skeleton className="h-64 w-full" />;
   if (spec.status === "error") return <ErrorNote error={spec.error} onRetry={spec.reload} />;
-  const { summary, about, description, params, scenarios } = spec.data;
+  const { summary, about, description, params, scenarios, reference } = spec.data;
+  // An engineer's own sequence has no hand-built graph: Muse Spark's drafts are the point.
+  const section: Section = chosen ?? (reference ? "interface" : "spark");
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -123,16 +125,23 @@ export function SpecDetail({
                 <Badge variant="secondary">{count(summary.outputs.length, "output")}</Badge>
                 <Badge variant="secondary">{count(params.length, "parameter")}</Badge>
                 <Badge variant="secondary">{count(scenarios.length, "test scenario")}</Badge>
+                {!reference && (
+                  <Badge variant="outline">
+                    <FileText aria-hidden="true" /> Your sequence
+                  </Badge>
+                )}
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setSection("spark")}>
                 <Sparkles aria-hidden="true" /> Draft with Muse Spark
               </Button>
-              <Button onClick={verify.run} disabled={verify.state.status === "running"}>
-                <ShieldCheck aria-hidden="true" />
-                {verify.state.status === "running" ? "Verifying…" : "Verify"}
-              </Button>
+              {reference && (
+                <Button onClick={verify.run} disabled={verify.state.status === "running"}>
+                  <ShieldCheck aria-hidden="true" />
+                  {verify.state.status === "running" ? "Verifying…" : "Verify"}
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -172,18 +181,34 @@ export function SpecDetail({
           </Card>
         </TabsContent>
         <TabsContent value="graph">
-          <ReferenceGraph name={name} />
+          {reference ? (
+            <ReferenceGraph name={name} />
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-start gap-3 pt-6 text-sm text-muted-foreground">
+                <p>
+                  This is your own sequence, so there is no hand-built graph. Have Muse Spark draft one: each verified
+                  draft's graph appears in the Muse Spark tab, with its explanation.
+                </p>
+                <Button variant="outline" onClick={() => setSection("spark")}>
+                  <Sparkles aria-hidden="true" /> Draft with Muse Spark
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         <TabsContent value="spark">
-          <AuthorPanel spec={name} scenarios={scenarios.length} onRunDraft={onRunDraft} />
+          {/* Only our own specs are bound to BOPTEST points; an engineer's sequence is not (yet). */}
+          <AuthorPanel spec={name} scenarios={scenarios.length} onRunDraft={reference ? onRunDraft : undefined} />
         </TabsContent>
         <TabsContent value="scenarios">
           <Card>
             <CardHeader>
               <CardTitle>Test scenarios</CardTitle>
               <CardDescription>
-                Written before any model saw this sequence, from an independent reference model. Every draft, and our own
-                graph, must pass all {scenarios.length} on the pinned engine; Verify replays them against our graph.
+                {reference
+                  ? `Written before any model saw this sequence, from an independent reference model. Every draft, and our own graph, must pass all ${scenarios.length} on the pinned engine; Verify replays them against our graph.`
+                  : `Proposed by Muse Spark from your document and reviewed and accepted by you. Every draft must pass all ${scenarios.length} on the pinned engine. They are only as right as that review: if a draft keeps failing one, check the scenario too.`}
               </CardDescription>
             </CardHeader>
             <CardContent>
