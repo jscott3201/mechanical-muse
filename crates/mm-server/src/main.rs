@@ -1,5 +1,7 @@
 //! `mm-server`: serves the API on `MM_ADDR` (default `127.0.0.1:8080`) from the specs in
-//! `MM_SPECS_DIR` (default `specs`). Stops cleanly on Ctrl-C.
+//! `MM_SPECS_DIR` (default `specs`). Runs drive BOPTEST at `MM_BOPTEST_URL` (default
+//! `http://127.0.0.1:80`) and write JSON-lines records to `MM_RUNS_DIR` (default `runs`, which
+//! is gitignored). Stops cleanly on Ctrl-C.
 
 #![forbid(unsafe_code)]
 
@@ -8,7 +10,7 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use mm_graph::Palette;
-use mm_server::{AppState, SpecStore, app};
+use mm_server::{AppState, PlantSource, RunsConfig, SpecStore, app};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -27,7 +29,15 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .with_context(|| format!("binding {addr}"))?;
-    axum::serve(listener, app(AppState::new(specs, palette)))
+    let runs = RunsConfig {
+        plant: PlantSource::Boptest {
+            url: std::env::var("MM_BOPTEST_URL").unwrap_or_else(|_| "http://127.0.0.1:80".into()),
+        },
+        records: Some(PathBuf::from(
+            std::env::var("MM_RUNS_DIR").unwrap_or_else(|_| "runs".into()),
+        )),
+    };
+    axum::serve(listener, app(AppState::with_runs(specs, palette, runs)))
         .with_graceful_shutdown(async {
             let _ = tokio::signal::ctrl_c().await;
             tracing::info!("stopping");

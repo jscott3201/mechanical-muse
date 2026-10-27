@@ -1,0 +1,255 @@
+//! Run sessions. One run at a time (BOPTEST has one worker). Each run is one task that owns its
+//! engines and its plant; it publishes events to a log (for late subscribers and reconnects), a
+//! broadcast channel (for live subscribers) and, if configured, a JSON-lines record on disk.
+
+use std::collections::BTreeMap;
+use std::io::Write;
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard};
+
+use mm_runtime::{FakePlant, Measurements};
+use tokio::sync::{broadcast, watch};
+
+use crate::run_dto::{Envelope, RunConfig, RunEvent, RunInfo, RunRequest, RunState};
+
+/// Largest run a client may ask for (about a week of 120 s steps).
+pub const MAX_STEPS: u32 = 5_040;
+const MAX_WARMUP_S: f64 = 7.0 * 86_400.0;
+const YEAR_S: f64 = 365.0 * 86_400.0;
+/// Live subscribers that fall this far behind re-read the log instead.
+const CHANNEL: usize = 256;
+
+/// Where a run's plant comes from.
+#[derive(Debug, Clone)]
+pub enum PlantSource {
+    Boptest {
+        url: String,
+    },
+    /// Scripted readings (tests, demo replays): the first is the initial state, then one per
+    /// advance, each after `pace` of wall time.
+    Scripted {
+        readings: Vec<Measurements>,
+        pace: std::time::Duration,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub struct RunsConfig {
+    pub plant: PlantSource,
+    /// Directory for JSON-lines run records; `None` keeps runs in memory only.
+    pub records: Option<PathBuf>,
+}
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+pub enum StartError {
+    #[error("a run is already active: {0}")]
+    Active(String),
+    #[error("{0}")]
+    Invalid(String),
+}
+
+pub struct RunHandle {
+    pub id: String,
+    pub config: RunConfig,
+    state: Mutex<RunState>,
+    log: Mutex<Vec<Envelope>>,
+    tx: broadcast::Sender<Envelope>,
+    stop: watch::Sender<bool>,
+    ticks: AtomicU32,
+    record: Mutex<Option<std::io::BufWriter<std::fs::File>>>,
+}
+
+fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
+    // A poisoned lock only means another thread panicked mid-update; the data is still usable.
+    m.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+impl RunHandle {
+    pub fn info(&self) -> RunInfo {
+        RunInfo {
+            id: self.id.clone(),
+            config: self.config.clone(),
+            state: *lock(&self.state),
+            ticks: self.ticks.load(Ordering::Relaxed),
+            events: u32::try_from(lock(&self.log).len()).unwrap_or(u32::MAX),
+        }
+    }
+
+    pub fn state(&self) -> RunState {
+        *lock(&self.state)
+    }
+
+    pub(crate) fn set_state(&self, state: RunState) {
+        *lock(&self.state) = state;
+    }
+
+    pub(crate) fn count_tick(&self) {
+        self.ticks.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Appends an event to the log, the record and the live channel, in that order.
+    pub(crate) fn publish(&self, sim_time_s: Option<f64>, event: RunEvent) {
+        let mut log = lock(&self.log);
+        let envelope = Envelope {
+            run_id: self.id.clone(),
+            seq: log.len() as u64,
+            sim_time_s,
+            event,
+        };
+        if let Some(writer) = lock(&self.record).as_mut() {
+            let line = serde_json::to_string(&envelope).unwrap_or_default();
+            if let Err(e) = writeln!(writer, "{line}").and_then(|()| writer.flush()) {
+                tracing::warn!(run = %self.id, error = %e, "run record write failed");
+            }
+        }
+        log.push(envelope.clone());
+        // No receivers is normal (nobody watching yet).
+        let _ = self.tx.send(envelope);
+    }
+
+    /// Events after `after` (all of them when `None`), and a live receiver subscribed before
+    /// the snapshot was taken, so nothing falls between the two.
+    pub fn subscribe(&self, after: Option<u64>) -> (Vec<Envelope>, broadcast::Receiver<Envelope>) {
+        let log = lock(&self.log);
+        let rx = self.tx.subscribe();
+        let backlog = log
+            .iter()
+            .filter(|e| after.is_none_or(|a| e.seq > a))
+            .cloned()
+            .collect();
+        (backlog, rx)
+    }
+
+    /// Events after `after` (all of them when `None`), for a subscriber that fell behind.
+    pub fn since(&self, after: Option<u64>) -> Vec<Envelope> {
+        lock(&self.log)
+            .iter()
+            .filter(|e| after.is_none_or(|a| e.seq > a))
+            .cloned()
+            .collect()
+    }
+
+    pub fn request_stop(&self) {
+        let _ = self.stop.send(true);
+    }
+
+    pub(crate) fn stop_signal(&self) -> watch::Receiver<bool> {
+        self.stop.subscribe()
+    }
+}
+
+#[derive(Default)]
+struct Registry {
+    next: u64,
+    runs: BTreeMap<String, Arc<RunHandle>>,
+}
+
+pub struct Runs {
+    pub config: RunsConfig,
+    registry: Mutex<Registry>,
+}
+
+impl Runs {
+    pub fn new(config: RunsConfig) -> Self {
+        Self {
+            config,
+            registry: Mutex::new(Registry::default()),
+        }
+    }
+
+    pub fn get(&self, id: &str) -> Option<Arc<RunHandle>> {
+        lock(&self.registry).runs.get(id).cloned()
+    }
+
+    pub fn list(&self) -> Vec<RunInfo> {
+        lock(&self.registry)
+            .runs
+            .values()
+            .map(|r| r.info())
+            .collect()
+    }
+
+    /// Registers a new run if none is active. The caller spawns its task.
+    pub fn create(&self, request: &RunRequest) -> Result<Arc<RunHandle>, StartError> {
+        let config = resolve(request)?;
+        let mut reg = lock(&self.registry);
+        if let Some(active) = reg
+            .runs
+            .values()
+            .find(|r| matches!(r.state(), RunState::Starting | RunState::Running))
+        {
+            return Err(StartError::Active(active.id.clone()));
+        }
+        reg.next += 1;
+        // Ids sort in start order; the prefix keeps them unique across server restarts.
+        let started = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or_default();
+        let id = format!("run-{started}-{}", reg.next);
+        let record = self.config.records.as_ref().and_then(|dir| {
+            std::fs::create_dir_all(dir)
+                .and_then(|()| std::fs::File::create(dir.join(format!("{id}.jsonl"))))
+                .map(std::io::BufWriter::new)
+                .map_err(|e| tracing::warn!(error = %e, "no run record"))
+                .ok()
+        });
+        let (tx, _) = broadcast::channel(CHANNEL);
+        let (stop, _) = watch::channel(false);
+        let handle = Arc::new(RunHandle {
+            id: id.clone(),
+            config,
+            state: Mutex::new(RunState::Starting),
+            log: Mutex::new(Vec::new()),
+            tx,
+            stop,
+            ticks: AtomicU32::new(0),
+            record: Mutex::new(record),
+        });
+        reg.runs.insert(id, Arc::clone(&handle));
+        Ok(handle)
+    }
+
+    pub(crate) fn fake_plant(&self) -> Option<(FakePlant, Measurements, std::time::Duration)> {
+        match &self.config.plant {
+            PlantSource::Scripted { readings, pace } => {
+                let mut script = readings.clone();
+                if script.is_empty() {
+                    return None;
+                }
+                let first = script.remove(0);
+                Some((FakePlant::new(script), first, *pace))
+            }
+            PlantSource::Boptest { .. } => None,
+        }
+    }
+}
+
+fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
+    let start_s = r.start_s.unwrap_or(185.0 * 86_400.0 + 12.0 * 3_600.0);
+    let warmup_s = r.warmup_s.unwrap_or(86_400.0);
+    let steps = r.steps.unwrap_or(300);
+    if !(start_s.is_finite() && (0.0..YEAR_S).contains(&start_s)) {
+        return Err(StartError::Invalid(
+            "start_s must be within the year".into(),
+        ));
+    }
+    if !(warmup_s.is_finite() && (0.0..=MAX_WARMUP_S).contains(&warmup_s)) {
+        return Err(StartError::Invalid("warmup_s must be 0 to 7 days".into()));
+    }
+    if !(1..=MAX_STEPS).contains(&steps) {
+        return Err(StartError::Invalid(format!(
+            "steps must be 1 to {MAX_STEPS}"
+        )));
+    }
+    Ok(RunConfig {
+        baseline: r.baseline.unwrap_or(false),
+        requests: r.requests.unwrap_or(true),
+        start_s,
+        warmup_s,
+        steps,
+        step_s: mm_runtime::preset::STEP_S,
+        case: mm_runtime::preset::CASE.into(),
+    })
+}

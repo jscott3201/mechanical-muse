@@ -8,13 +8,14 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use mm_bridge::{ReplayLimits, ScenarioOutcome, replay};
-use mm_graph::{EmitOptions, Palette, emit_cxf};
+use mm_bridge::ScenarioOutcome;
+use mm_graph::Palette;
 use tokio::sync::Semaphore;
 
 use crate::dto::{
     ApiError, GraphView, Health, Receipt, ScenarioReport, ScenarioResult, SpecDetail, SpecSummary,
 };
+use crate::runs::{PlantSource, Runs, RunsConfig};
 use crate::specs::SpecStore;
 
 /// open-control-engine commit pinned in the workspace (checked against `Cargo.lock` in tests).
@@ -32,17 +33,45 @@ struct Inner {
     specs: SpecStore,
     palette: Palette,
     verify_slots: Arc<Semaphore>,
+    runs: Runs,
 }
 
 impl AppState {
+    /// Runs go to BOPTEST on `http://127.0.0.1:80` and keep no records on disk.
     pub fn new(specs: SpecStore, palette: Palette) -> Self {
+        Self::with_runs(
+            specs,
+            palette,
+            RunsConfig {
+                plant: PlantSource::Boptest {
+                    url: "http://127.0.0.1:80".into(),
+                },
+                records: None,
+            },
+        )
+    }
+
+    pub fn with_runs(specs: SpecStore, palette: Palette, runs: RunsConfig) -> Self {
         Self {
             inner: Arc::new(Inner {
                 specs,
                 palette,
                 verify_slots: Arc::new(Semaphore::new(VERIFY_SLOTS)),
+                runs: Runs::new(runs),
             }),
         }
+    }
+
+    pub fn specs(&self) -> &SpecStore {
+        &self.inner.specs
+    }
+
+    pub fn palette(&self) -> &Palette {
+        &self.inner.palette
+    }
+
+    pub fn runs(&self) -> &Runs {
+        &self.inner.runs
     }
 }
 
@@ -53,6 +82,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/specs/{name}", get(spec_detail))
         .route("/api/specs/{name}/graph", get(spec_graph))
         .route("/api/specs/{name}/verify", post(verify_spec))
+        .merge(crate::run_routes::routes())
         .fallback(not_found)
         .with_state(state)
 }
@@ -64,7 +94,7 @@ pub struct Failure {
 }
 
 impl Failure {
-    fn new(status: StatusCode, code: &str, message: impl Into<String>) -> Self {
+    pub(crate) fn new(status: StatusCode, code: &str, message: impl Into<String>) -> Self {
         Self {
             status,
             body: ApiError {
@@ -162,12 +192,9 @@ async fn verify_spec(
     let spec_name = name.clone();
     let joined = tokio::task::spawn_blocking(move || {
         let _permit = permit;
-        let server_fault =
-            |code: &str, e: String| Failure::new(StatusCode::INTERNAL_SERVER_ERROR, code, e);
-        let cxf = emit_cxf(&spec.graph, &worker.inner.palette, &EmitOptions::default())
-            .map_err(|e| server_fault("emit-failed", e.to_string()))?;
-        let report = replay(&cxf, &spec.vectors, &ReplayLimits::default())
-            .map_err(|e| server_fault("replay-failed", e.to_string()))?;
+        let (_, report) = spec
+            .replay(&worker.inner.palette)
+            .map_err(|e| Failure::new(StatusCode::INTERNAL_SERVER_ERROR, "replay-failed", e))?;
         Ok::<_, Failure>(receipt(spec_name, report))
     })
     .await;
