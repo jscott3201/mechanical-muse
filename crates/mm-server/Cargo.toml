@@ -10,8 +10,10 @@ publish.workspace = true
 [dependencies]
 anyhow.workspace = true
 axum.workspace = true
+futures-util.workspace = true
 mm-bridge.workspace = true
 mm-graph.workspace = true
+mm-runtime.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

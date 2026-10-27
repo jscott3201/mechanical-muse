@@ -4,8 +4,8 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use mm_bridge::VectorFile;
-use mm_graph::{BlockGraph, Endpoint, Palette, PortKind, parse_edge};
+use mm_bridge::{ReplayLimits, ReplayReport, VectorFile, replay};
+use mm_graph::{BlockGraph, EmitOptions, Endpoint, Palette, PortKind, emit_cxf, parse_edge};
 use serde::Deserialize;
 
 use crate::dto::{
@@ -111,6 +111,18 @@ impl SpecStore {
 
     pub fn is_empty(&self) -> bool {
         self.specs.is_empty()
+    }
+}
+
+impl Spec {
+    /// Emits the reference graph and replays the vectors (fresh engine per scenario). Blocking:
+    /// call it from the blocking pool.
+    pub fn replay(&self, palette: &Palette) -> Result<(Vec<u8>, ReplayReport), String> {
+        let cxf = emit_cxf(&self.graph, palette, &EmitOptions::default())
+            .map_err(|e| format!("emit failed: {e}"))?;
+        let report = replay(&cxf, &self.vectors, &ReplayLimits::default())
+            .map_err(|e| format!("replay failed: {e}"))?;
+        Ok((cxf, report))
     }
 }
 

@@ -26,92 +26,18 @@
 mod common;
 
 use common::*;
-use mm_runtime::{
-    BoptestClient, Event, FailSafe, InputBinding, Plant, PlantError, RunningSequence, Scalar,
-    Source, Supervisor,
+use mm_runtime::preset::{
+    self, CASE, FLOORS, REQUESTS_SPEC, RESET, RESET_SPEC, STEP_S as STEP, request_bindings,
+    requests_name, reset_bindings,
 };
+use mm_runtime::{BoptestClient, Event, FailSafe, Plant, PlantError, RunningSequence, Supervisor};
 use serde_json::json;
-
-const CASE: &str = "multizone_office_complex_air";
-const STEP: f64 = 120.0;
-const WATCH: [&str; 12] = [
-    "reaChiWatSys_TCHWSup_y",
-    "reaChiWatSys_dp_y",
-    "reaChiWatSys_mCHWTot_y",
-    "reaChiWatSys_reaPChi_y",
-    "reaChiWatSys_reaPPum_y",
-    "floor2_reaAHU_occ_y",
-    "floor1_reaAHU_TSup_y",
-    "floor2_reaAHU_TSup_y",
-    "floor3_reaAHU_TSup_y",
-    "floor1_reaAHU_yCooVal_y",
-    "floor2_reaAHU_yCooVal_y",
-    "floor3_reaAHU_yCooVal_y",
-];
-const AHUS: [u8; 3] = [1, 2, 3];
-
-fn ahu(floor: u8) -> String {
-    format!("ahu{floor}")
-}
-
-/// One floor's air handler requests: its supply air temperature, the supply air setpoint in
-/// effect (BOPTEST echoes every `_u` value, baseline or overwritten), and its measured valve.
-fn request_bindings(floor: u8) -> Vec<InputBinding> {
-    let reading = |input: &str, point: String| InputBinding {
-        input: input.into(),
-        source: Source::Measurement { point },
-    };
-    vec![
-        reading("TAirSup", format!("floor{floor}_reaAHU_TSup_y")),
-        reading("TAirSupSet", format!("floor{floor}_TSupAirSet_u")),
-        reading("uCooCoi", format!("floor{floor}_reaAHU_yCooVal_y")),
-    ]
-}
 
 fn env_f64(name: &str, default: f64) -> f64 {
     std::env::var(name)
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(default)
-}
-
-fn live_bindings(requests: bool) -> Vec<InputBinding> {
-    let occupied = |floor: u8| Source::MeasurementAbove {
-        point: format!("floor{floor}_reaAHU_occ_y"),
-        threshold: 0.5,
-    };
-    vec![
-        InputBinding {
-            input: "nReqRes".into(),
-            source: if requests {
-                Source::SumInt {
-                    of: AHUS
-                        .iter()
-                        .map(|f| Source::Output {
-                            sequence: ahu(*f),
-                            output: "yChiWatResReq".into(),
-                        })
-                        .collect(),
-                }
-            } else {
-                Source::Constant {
-                    value: Scalar::Int(0),
-                }
-            },
-        },
-        InputBinding {
-            input: "u1Ena".into(),
-            source: Source::AnyTrue {
-                of: vec![occupied(1), occupied(2), occupied(3)],
-            },
-        },
-        InputBinding {
-            input: "u1StaPro".into(),
-            source: Source::Constant {
-                value: Scalar::Bool(false),
-            },
-        },
-    ]
 }
 
 #[tokio::test]
@@ -131,20 +57,25 @@ async fn chw_reset_drives_boptest() {
         let requests = std::env::var("MM_LIVE_REQUESTS").map_or(true, |v| v != "0");
         let mut sequences = Vec::new();
         if requests {
-            let (cxf, receipt) = verified("ahu_chw_requests");
-            for floor in AHUS {
+            let (cxf, receipt) = verified(REQUESTS_SPEC);
+            for floor in FLOORS {
                 sequences.push(
-                    RunningSequence::load(&ahu(floor), &cxf, &receipt, request_bindings(floor))
-                        .expect("verified request sequence loads"),
+                    RunningSequence::load(
+                        &requests_name(floor),
+                        &cxf,
+                        &receipt,
+                        request_bindings(floor),
+                    )
+                    .expect("verified request sequence loads"),
                 );
             }
         }
-        let cxf = cxf();
+        let (cxf, receipt) = verified(RESET_SPEC);
         sequences.push(
-            RunningSequence::load(SEQ, &cxf, &receipt(&cxf), live_bindings(requests))
+            RunningSequence::load(RESET, &cxf, &receipt, reset_bindings(requests))
                 .expect("verified sequence loads with live bindings"),
         );
-        Supervisor::new(sequences, outputs(None, 288.15), FailSafe::Release).unwrap()
+        Supervisor::new(sequences, preset::reset_outputs(), FailSafe::Release).unwrap()
     };
 
     let mut plant = BoptestClient::select(&url, CASE).await.expect("select");
@@ -191,9 +122,12 @@ async fn drive(
     let t1 = std::time::Instant::now();
     for _ in 0..steps {
         let report = sup.tick(&readings);
-        let seen: serde_json::Map<_, _> = WATCH
-            .iter()
-            .filter_map(|p| Some(((*p).to_owned(), json!(readings.get(*p)?))))
+        let seen: serde_json::Map<_, _> = preset::watch_points()
+            .into_iter()
+            .filter_map(|p| {
+                let v = *readings.get(&p)?;
+                Some((p, json!(v)))
+            })
             .collect();
         eprintln!(
             "t={:>9.0} out={:?} seen={}",

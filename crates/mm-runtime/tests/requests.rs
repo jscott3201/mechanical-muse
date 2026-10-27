@@ -100,3 +100,45 @@ fn warm_air_handlers_hold_the_reset_at_design() {
     assert_eq!(req, WireValue::Integer(3));
     assert!((tsup - 278.71).abs() < 1e-6, "{tsup}");
 }
+
+/// The shared demo wiring (`preset`) loads against the real specs and steps without events on
+/// plausible readings, so a renamed input or point fails here, not in a live run.
+#[test]
+fn preset_wiring_loads_and_steps() {
+    use mm_runtime::preset;
+    let (req_cxf, req_receipt) = verified(preset::REQUESTS_SPEC);
+    let mut seqs: Vec<_> = preset::FLOORS
+        .iter()
+        .map(|f| {
+            RunningSequence::load(
+                &preset::requests_name(*f),
+                &req_cxf,
+                &req_receipt,
+                preset::request_bindings(*f),
+            )
+            .unwrap()
+        })
+        .collect();
+    let (cxf, receipt) = verified(preset::RESET_SPEC);
+    seqs.push(
+        RunningSequence::load(preset::RESET, &cxf, &receipt, preset::reset_bindings(true)).unwrap(),
+    );
+    let mut sup = Supervisor::new(seqs, preset::reset_outputs(), FailSafe::Release).unwrap();
+    let mut m: Measurements = [("time".to_owned(), 0.0)].into_iter().collect();
+    for f in preset::FLOORS {
+        m.insert(format!("floor{f}_reaAHU_TSup_y"), 286.5);
+        m.insert(format!("floor{f}_TSupAirSet_u"), 285.95);
+        m.insert(format!("floor{f}_reaAHU_yCooVal_y"), 0.4);
+        m.insert(format!("floor{f}_reaAHU_occ_y"), 1.0);
+    }
+    let report = sup.tick(&m);
+    assert!(report.events.is_empty(), "{:?}", report.events);
+    assert_eq!(report.writes[&format!("{}_u", preset::TSUP_POINT)], 278.71);
+    assert_eq!(
+        report.writes[&format!("{}_activate", preset::DP_POINT)],
+        1.0
+    );
+    for p in preset::watch_points() {
+        assert!(p.ends_with("_y") || p.ends_with("_u"), "{p}");
+    }
+}

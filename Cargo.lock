@@ -853,9 +853,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "futures-util",
  "http-body-util",
  "mm-bridge",
  "mm-graph",
+ "mm-runtime",
  "serde",
  "serde_json",
  "thiserror",
