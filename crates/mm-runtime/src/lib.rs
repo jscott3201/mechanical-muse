@@ -9,6 +9,7 @@
 
 mod boptest;
 mod plant;
+pub mod preset;
 mod sequence;
 mod supervisor;
 mod wiring;
