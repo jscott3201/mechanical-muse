@@ -135,10 +135,15 @@ const PRESETS = [
   { id: "baseline", label: "Baseline", detail: "BOPTEST's own controllers over the demo window", day: 185, hour: 12, steps: 300, fault: false, baseline: true },
 ] as const;
 
-function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
+export type DraftChoice = { spec: string; contentId: string };
+
+function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => void; initialDraft?: DraftChoice | null }) {
   const [baseline, setBaseline] = useState(false);
   const [requests, setRequests] = useState(true);
-  const [pressure, setPressure] = useState(false);
+  // A draft handed over from the authoring panel turns on what it needs to run.
+  const [pressure, setPressure] = useState(
+    initialDraft?.spec === "ahu_static_pressure_reset" || initialDraft?.spec === "zone_pressure_requests",
+  );
   const [day, setDay] = useState(DEFAULTS.day);
   const [hour, setHour] = useState(DEFAULTS.hour);
   const [steps, setSteps] = useState(DEFAULTS.steps);
@@ -146,7 +151,9 @@ function StartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
   const bacnet = useResource<BacnetInfo>("/api/bacnet");
   const [fault, setFault] = useState(false);
   const [faultStep, setFaultStep] = useState(30);
-  const [chosen, setChosen] = useState<Record<string, string | null>>({});
+  const [chosen, setChosen] = useState<Record<string, string | null>>(
+    initialDraft ? { [initialDraft.spec]: initialDraft.contentId } : {},
+  );
   const body = useMemo<RunRequest>(() => {
     const drafts: Record<string, string> = {};
     for (const { spec } of GRAPHS) {
@@ -354,7 +361,7 @@ function ReplayList({ onStarted }: { onStarted: (run: RunInfo) => void }) {
   );
 }
 
-export function RunsPage() {
+export function RunsPage({ initialDraft = null }: { initialDraft?: DraftChoice | null } = {}) {
   const runs = useResource<RunInfo[]>("/api/runs");
   const [selected, setSelected] = useState<string | null>(null);
   const list = runs.status === "ready" ? [...runs.data].reverse() : [];
@@ -377,7 +384,7 @@ export function RunsPage() {
   return (
     <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
       <div className="flex flex-col gap-4">
-        <StartForm onStarted={onStarted} />
+        <StartForm key={initialDraft ? `${initialDraft.spec}:${initialDraft.contentId}` : "none"} onStarted={onStarted} initialDraft={initialDraft} />
         <ReplayList onStarted={onStarted} />
         {runs.status === "error" && <ErrorNote error={runs.error} onRetry={reload} />}
         {list.length > 0 && (

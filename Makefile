@@ -1,6 +1,6 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml).
-.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live
+.PHONY: web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live
 
 check: fmt-check clippy test
 
@@ -75,6 +75,23 @@ web:
 # The API on MM_ADDR (default 127.0.0.1:8080), serving specs/.
 server:
 	cargo run -p mm-server
+
+# One command, one address (http://127.0.0.1:8080): builds the web app and serves it from
+# mm-server. Without a key or BOPTEST it still verifies specs and plays back recorded sessions,
+# runs and explanations (all labelled). Set MM_BOPTEST_URL for live runs, MM_BACNET_ADDR for
+# the mirror; demo-live adds live Muse Spark from the local .env key.
+web-build:
+	cd web && { [ -d node_modules ] || npm ci --ignore-scripts; } && npm run build
+
+demo: web-build
+	@echo "Mechanical Muse on http://127.0.0.1:8080 (Ctrl-C to stop)"
+	MM_WEB_DIR=web/dist cargo run -q -p mm-server
+
+demo-live: web-build
+	@echo "Mechanical Muse on http://127.0.0.1:8080, live Muse Spark (Ctrl-C to stop)"
+	@set -a; . ./.env; set +a; \
+	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" MM_WEB_DIR=web/dist \
+	cargo run -q -p mm-server
 
 # The server with live Muse Spark authoring: maps the local .env key without printing it.
 server-live:

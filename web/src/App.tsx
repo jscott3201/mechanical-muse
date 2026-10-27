@@ -16,6 +16,8 @@ type Tab = "overview" | Destination;
 export function App() {
   const [tab, setTab] = useState<Tab>("overview");
   const [spec, setSpec] = useState<string | null>(null);
+  // A verified draft chosen from the authoring panel, handed to the run form.
+  const [runDraft, setRunDraft] = useState<{ spec: string; contentId: string } | null>(null);
   const health = useResource<Health>("/api/health");
   const [theme, toggleTheme] = useTheme();
   return (
@@ -38,7 +40,14 @@ export function App() {
               </aside>
               <section className="min-w-0">
                 {spec ? (
-                  <SpecDetail key={spec} name={spec} />
+                  <SpecDetail
+                    key={spec}
+                    name={spec}
+                    onRunDraft={(s, contentId) => {
+                      setRunDraft({ spec: s, contentId });
+                      setTab("runs");
+                    }}
+                  />
                 ) : (
                   <div className="grid min-h-64 place-items-center rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
                     Choose a sequence to see its interface and graph, verify it, or have Muse Spark draft it.
@@ -48,7 +57,7 @@ export function App() {
             </main>
           </TabsContent>
           <TabsContent value="runs">
-            <RunsPage />
+            <RunsPage initialDraft={runDraft} />
           </TabsContent>
         </Tabs>
       </div>

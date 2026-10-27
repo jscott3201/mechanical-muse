@@ -19,6 +19,7 @@ mod run_routes;
 pub mod runs;
 mod session;
 pub mod specs;
+mod web;
 
 pub use authoring::AuthoringConfig;
 pub use routes::{AppState, ENGINE_REV, app};

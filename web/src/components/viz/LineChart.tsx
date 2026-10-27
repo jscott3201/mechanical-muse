@@ -23,6 +23,8 @@ interface Props {
   /** A range the y-axis always covers (data outside it still widens it), e.g. [0, 100] %. */
   domain?: [number, number];
   height?: number;
+  /** Shaded spans of x (e.g. an injected test fault), drawn behind the data and labelled. */
+  bands?: { from: number; to: number; label: string }[];
 }
 
 const PAD = { top: 12, right: 76, bottom: 24, left: 48 };
@@ -50,6 +52,7 @@ export const LineChart = memo(function LineChart({
   step = false,
   height = 168,
   domain,
+  bands = [],
 }: Props) {
   const [ref, width] = useWidth();
   const [hover, setHover] = useState<number | null>(null);
@@ -95,6 +98,14 @@ export const LineChart = memo(function LineChart({
     };
   }, [series, domain]);
 
+  // Tick labels in the caller's format, unless a narrow range would make them repeat; then with
+  // just enough decimals to tell them apart.
+  const yTicks = niceTicks(y0, y1);
+  const formatted = yTicks.map((t) => formatY(t));
+  const tickStep = yTicks.length > 1 ? Math.abs((yTicks[1] as number) - (yTicks[0] as number)) : 1;
+  const decimals = Math.min(6, Math.max(0, -Math.floor(Math.log10(tickStep || 1)) + 1));
+  const tickLabel = (t: number) =>
+    new Set(formatted).size < formatted.length ? t.toFixed(decimals) : formatY(t);
   const plotW = Math.max(width - PAD.left - PAD.right, 10);
   const plotH = height - PAD.top - PAD.bottom;
   const sx = (x: number) => PAD.left + (x1 > x0 ? ((x - x0) / (x1 - x0)) * plotW : plotW / 2);
@@ -200,10 +211,21 @@ export const LineChart = memo(function LineChart({
       ) : (
         <div ref={ref} className="relative w-full">
           <svg width="100%" height={height} viewBox={`0 0 ${Math.max(width, 1)} ${height}`} role="img" aria-label={`${title}, ${unit}`}>
-            {niceTicks(y0, y1).map((t) => (
+            {bands.map((b) => {
+              const left = Math.max(sx(b.from), PAD.left);
+              const right = Math.min(sx(b.to), PAD.left + plotW);
+              if (!(right > left)) return null;
+              return (
+                <g key={`${b.from}-${b.to}`}>
+                  <rect x={left} y={PAD.top} width={right - left} height={plotH} className="fill-destructive/10" />
+                  <text x={left + 3} y={PAD.top + 9} className="fill-destructive text-[10px]">{b.label}</text>
+                </g>
+              );
+            })}
+            {yTicks.map((t) => (
               <g key={t}>
                 <line x1={PAD.left} x2={PAD.left + plotW} y1={sy(t)} y2={sy(t)} className="stroke-border" strokeWidth="1" />
-                <text x={PAD.left - 6} y={sy(t)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[10px]">{formatY(t)}</text>
+                <text x={PAD.left - 6} y={sy(t)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[10px]">{tickLabel(t)}</text>
               </g>
             ))}
             {hasData.size === 0 && (

@@ -88,6 +88,13 @@ function RunStream({
     if (ended) onEnded?.();
   }, [ended, onEnded]);
   const t = useMemo(() => trends(stream.ticks), [stream.ticks]);
+  const cfgForBands = stream.config;
+  const bands = useMemo(() => {
+    const f = cfgForBands?.fault;
+    if (!cfgForBands || !f) return [];
+    const at = (step: number) => cfgForBands.start_s + step * cfgForBands.step_s;
+    return [{ from: at(f.from_step), to: at(f.from_step + f.steps), label: "test fault" }];
+  }, [cfgForBands]);
   const age = now - lastEventAt;
   const staleS = stream.phase === "running" && !stream.ended && age > STALE_MS ? Math.round(age / 1000) : null;
   const cfg = stream.config;
@@ -157,15 +164,15 @@ function RunStream({
 
       {stream.ticks.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-2">
-          <LineChart title="Chilled-water supply temperature" unit="°C" series={t.supplyTemperature} formatX={formatSimTime} formatY={(v) => formatNumber(v, 2)} />
-          <LineChart title="Loop differential pressure" unit="kPa" series={t.pressure} formatX={formatSimTime} formatY={(v) => formatNumber(v, 1)} />
-          <LineChart title="Reset requests, all air handlers" unit="count" series={t.requests} step domain={REQUESTS_DOMAIN} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
-          <LineChart title="Cooling coil valves" unit="% open" series={t.valves} domain={PERCENT_DOMAIN} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
-          <LineChart title="Chiller power" unit="kW" series={t.chillerPower} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
+          <LineChart bands={bands} title="Chilled-water supply temperature" unit="°C" series={t.supplyTemperature} formatX={formatSimTime} formatY={(v) => formatNumber(v, 2)} />
+          <LineChart bands={bands} title="Loop differential pressure" unit="kPa" series={t.pressure} formatX={formatSimTime} formatY={(v) => formatNumber(v, 1)} />
+          <LineChart bands={bands} title="Reset requests, all air handlers" unit="count" series={t.requests} step domain={REQUESTS_DOMAIN} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
+          <LineChart bands={bands} title="Cooling coil valves" unit="% open" series={t.valves} domain={PERCENT_DOMAIN} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
+          <LineChart bands={bands} title="Chiller power" unit="kW" series={t.chillerPower} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
           {cfg?.pressure && (
             <>
-              <LineChart title="Duct static pressure setpoint sent" unit="Pa" series={t.ductSetpoints} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
-              <LineChart title="Supply fan power" unit="kW" series={t.fanPower} formatX={formatSimTime} formatY={(v) => formatNumber(v, 1)} />
+              <LineChart bands={bands} title="Duct static pressure setpoint sent" unit="Pa" series={t.ductSetpoints} formatX={formatSimTime} formatY={(v) => formatNumber(v, 0)} />
+              <LineChart bands={bands} title="Supply fan power" unit="kW" series={t.fanPower} formatX={formatSimTime} formatY={(v) => formatNumber(v, 1)} />
             </>
           )}
         </div>

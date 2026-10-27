@@ -36,6 +36,7 @@ struct Inner {
     explanations: crate::explain::Explanations,
     shutdown: tokio::sync::watch::Sender<bool>,
     bacnet: std::sync::OnceLock<Arc<crate::bacnet::BacnetMirror>>,
+    web: std::sync::OnceLock<std::path::PathBuf>,
 }
 
 impl AppState {
@@ -79,6 +80,7 @@ impl AppState {
                 authoring: Authoring::new(authoring),
                 shutdown: tokio::sync::watch::channel(false).0,
                 bacnet: std::sync::OnceLock::new(),
+                web: std::sync::OnceLock::new(),
             }),
         }
     }
@@ -106,6 +108,11 @@ impl AppState {
     /// Attaches the BACnet mirror that live runs update. Only the first call takes effect.
     pub fn set_bacnet(&self, mirror: crate::bacnet::BacnetMirror) {
         let _ = self.inner.bacnet.set(Arc::new(mirror));
+    }
+
+    /// Serves the built web app from `dir` on every path outside `/api`. First call wins.
+    pub fn set_web(&self, dir: std::path::PathBuf) {
+        let _ = self.inner.web.set(dir);
     }
 
     pub fn bacnet(&self) -> Option<&Arc<crate::bacnet::BacnetMirror>> {
@@ -137,7 +144,7 @@ pub fn app(state: AppState) -> Router {
         .merge(crate::run_routes::routes())
         .merge(crate::author_routes::routes())
         .merge(crate::explain::routes())
-        .fallback(not_found)
+        .fallback(fallback)
         .with_state(state)
 }
 
@@ -175,6 +182,14 @@ impl IntoResponse for Failure {
 
 async fn not_found() -> Failure {
     Failure::new(StatusCode::NOT_FOUND, "not-found", "no such route")
+}
+
+/// An unknown `/api` route is a JSON 404; anything else is the web app, when it is served.
+async fn fallback(State(state): State<AppState>, uri: axum::http::Uri) -> Response {
+    match state.inner.web.get() {
+        Some(dir) if !uri.path().starts_with("/api") => crate::web::serve(dir.clone(), uri).await,
+        _ => not_found().await.into_response(),
+    }
 }
 
 async fn bacnet_info(
