@@ -30,6 +30,10 @@ fn readings(time: f64) -> Measurements {
 }
 
 fn state() -> AppState {
+    with_replays(None)
+}
+
+fn with_replays(replays: Option<PathBuf>) -> AppState {
     let palette = Palette::pinned().unwrap();
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../specs");
     let specs = SpecStore::load(&dir, &palette).unwrap();
@@ -43,7 +47,7 @@ fn state() -> AppState {
                 pace: std::time::Duration::ZERO,
             },
             records: None,
-            replays: None,
+            replays,
             replay_pace: std::time::Duration::ZERO,
         },
     )
@@ -76,19 +80,7 @@ async fn a_live_run_updates_the_mirror() {
     let (status, _) = call(&state, "GET", "/api/bacnet", None).await;
     assert_eq!(status, StatusCode::NOT_FOUND, "off until started");
 
-    let map = point_map(state.specs()).unwrap();
-    let config = MirrorConfig {
-        device_instance: 599,
-        device_name: "MM-TEST".into(),
-        interface: Ipv4Addr::LOCALHOST,
-        port: 0,
-        broadcast: Ipv4Addr::LOCALHOST,
-    };
-    let mirror = Mirror::start(&config, map.clone()).await.unwrap();
-    state.set_bacnet(BacnetMirror {
-        mirror,
-        info: info(&map, 599, 0),
-    });
+    attach(&state).await;
 
     let (status, body) = call(&state, "GET", "/api/bacnet", None).await;
     assert_eq!(status, StatusCode::OK);
@@ -111,15 +103,64 @@ async fn a_live_run_updates_the_mirror() {
         tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     }
 
+    // After the run every point keeps its last value but reads as no data: nothing produces
+    // values any more.
     let mirror = &state.bacnet().unwrap().mirror;
     assert_eq!(
         mirror.value("reaChiWatSys_TCHWSup_y").await,
-        Some((quantize(278.7), true))
+        Some((quantize(278.7), false))
     );
     // The last tick (1440 s) still holds the first trim (1200 s); the next is at 1500 s.
     let (sent, reliable) = mirror.value("oveChiWatSys_TWSet_u").await.unwrap();
-    assert!(reliable);
+    assert!(!reliable);
     assert!((f64::from(sent) - 278.8476).abs() < 1e-4, "{sent}");
     assert_eq!(mirror.value("chw.TSupSet").await.map(|v| v.0), Some(sent));
-    assert_eq!(mirror.value("ahu1.yChiWatResReq").await, Some((0.0, true)));
+    assert_eq!(mirror.value("ahu1.yChiWatResReq").await, Some((0.0, false)));
+}
+
+async fn attach(state: &AppState) {
+    let map = point_map(state.specs()).unwrap();
+    let config = MirrorConfig {
+        device_instance: 599,
+        device_name: "MM-TEST".into(),
+        interface: Ipv4Addr::LOCALHOST,
+        port: 0,
+        broadcast: Ipv4Addr::LOCALHOST,
+    };
+    let mirror = Mirror::start(&config, map.clone()).await.unwrap();
+    state.set_bacnet(BacnetMirror {
+        mirror,
+        info: info(&map, 599, 0),
+    });
+}
+
+#[tokio::test]
+async fn a_replay_never_updates_the_mirror() {
+    let replays = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/replays");
+    let state = with_replays(Some(replays));
+    attach(&state).await;
+    let (status, run) = call(
+        &state,
+        "POST",
+        "/api/runs/replay",
+        Some(json!({"record": "day185-noon-live-spark-draft"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{run}");
+    let id = run["id"].as_str().unwrap().to_owned();
+    loop {
+        let (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
+        if info["state"] == "completed" {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+    let mirror = &state.bacnet().unwrap().mirror;
+    for name in [
+        "reaChiWatSys_TCHWSup_y",
+        "oveChiWatSys_TWSet_u",
+        "chw.TSupSet",
+    ] {
+        assert_eq!(mirror.value(name).await, Some((0.0, false)), "{name}");
+    }
 }

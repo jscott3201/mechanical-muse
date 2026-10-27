@@ -246,6 +246,10 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
         .catch_unwind()
         .await
         .unwrap_or_else(|_| Err("the control loop panicked".into()));
+    if let Some(bacnet) = bacnet {
+        // Nothing produces values once the run ends, whatever its outcome.
+        crate::bacnet::clear(bacnet).await;
+    }
     if let AnyPlant::Boptest(client) = &plant {
         match client.kpi().await {
             Ok(values) => handle.publish(None, RunEvent::Kpi { values }),
@@ -314,14 +318,7 @@ async fn steps(
             );
         }
         if let Some(bacnet) = bacnet {
-            // A mirror failure is logged, never fatal: BACnet is a view, not the control path.
-            if let Err(e) = bacnet
-                .mirror
-                .update(&crate::bacnet::tick_values(&event))
-                .await
-            {
-                tracing::warn!(error = %e, "BACnet mirror update failed");
-            }
+            crate::bacnet::update(bacnet, &event).await;
         }
         handle.publish(time, event);
         handle.count_tick();

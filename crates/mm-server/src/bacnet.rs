@@ -140,6 +140,32 @@ pub struct BacnetMirror {
     pub info: BacnetInfo,
 }
 
+/// A mirror update may not hold up the control loop for long: BACnet is a view, not the
+/// control path.
+const UPDATE_BUDGET: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// Updates the mirror from one live tick; problems are logged, never fatal to the run.
+pub async fn update(bacnet: &BacnetMirror, event: &RunEvent) {
+    let values = tick_values(event);
+    match tokio::time::timeout(UPDATE_BUDGET, bacnet.mirror.update(&values)).await {
+        Ok(report) if !report.errors.is_empty() => {
+            tracing::warn!(errors = ?report.errors, "BACnet mirror refused some points");
+        }
+        Ok(_) => {}
+        Err(_) => tracing::warn!("BACnet mirror update took too long; skipped this tick"),
+    }
+}
+
+/// Marks every point no data (a run ended).
+pub async fn clear(bacnet: &BacnetMirror) {
+    if tokio::time::timeout(UPDATE_BUDGET, bacnet.mirror.mark_all_no_data())
+        .await
+        .is_err()
+    {
+        tracing::warn!("BACnet mirror clear took too long");
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {

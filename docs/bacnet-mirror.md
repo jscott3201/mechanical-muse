@@ -6,35 +6,47 @@ README's dependency table) for the protocol; the point map, the updates and the 
 
 ## What it serves
 
-Device `599`, name `MECHANICAL-MUSE`, a placeholder vendor id (0, not one assigned to us).
+Device `599`, name `MECHANICAL-MUSE`. The project has no BACnet vendor id; the device reports
+65535 as a placeholder (not 0, which belongs to the standard body).
 
 | Points | Object type | Names | Updated from |
 | --- | --- | --- | --- |
-| 18 BOPTEST readings shown beside the setpoints (plant, three air handlers) | Analog Input | BOPTEST names, e.g. `reaChiWatSys_TCHWSup_y` | each tick's readings |
+| 18 BOPTEST values shown beside the setpoints (plant and air handler readings, and the AHU supply air setpoints BOPTEST reports in effect) | Analog Input | BOPTEST names, e.g. `reaChiWatSys_TCHWSup_y` | each tick's readings |
 | 8 sequence outputs (three AHU request instances, the plant reset) | Analog Value, read-only | `<instance>.<output>`, e.g. `chw.TSupSet`, `ahu2.yChiWatResReq` | each tick's engine outputs (booleans as 0 or 1) |
 | 2 plant setpoints the runtime sent | Analog Value, read-only | `oveChiWatSys_TWSet_u`, `oveChiWatSys_dpSet_u` | each tick's writes |
 
 - Instance numbers are the 1-based rank of the name among objects of the same type, so the same
-  specs always give the same objects (`crates/mm-bacnet/src/map.rs`, tested).
+  specs always give the same objects (`crates/mm-bacnet/src/map.rs`, tested). Adding a spec
+  renumbers the Analog Values; a peer that configured points by instance must re-read them.
 - Units come from BOPTEST's point list (`docs/boptest-points.csv`): K, Pa, W, kg/s; others are
   unitless.
 - Values are `f64` in the engine and BOPTEST and `f32` in BACnet; `mm_bacnet::quantize` is the
   only conversion.
-- A point with no finite value on a tick (a NaN reading, a setpoint not sent because the
-  sequence is degraded) keeps its last value and reads Reliability `NO_SENSOR` until a value
-  arrives; it never shows NaN or a stale value as good.
-- Only live runs update it. Replays of recorded runs do not (they are not live data).
+- Reliability `NO_SENSOR` means "nothing produced this value now", not a broken sensor. A
+  point reads it, keeping its last value, when its tick carries no finite value, and every point
+  reads it before the first run and after each run ends. So a setpoint the runtime did not send
+  (a degraded sequence handed back to BOPTEST, a baseline run, a released point) reads
+  `NO_SENSOR` during normal operation, and an injected test fault shows only as `NO_SENSOR`; the
+  web app's event log says which. A setpoint held by the fail-safe is sent, so it reads reliable.
+- One point the device refuses never leaves the others stale: it is flagged and the rest update.
+  An update is given 2 s; past that the tick goes on without it (BACnet is a view, not the
+  control path).
+- Only live runs update it. Replays of recorded runs do not (they are not live data); a test
+  checks this.
 
 ## What it refuses
 
-Every remote write is refused (`MutationPolicy::DenyAll`; the library default is permissive).
-A peer reading the device sees the sequences' decisions; it cannot change them. The tests write
-each object type over UDP with rusty-bacnet's own client and check the refusal and that the
-value is unchanged (`crates/mm-bacnet/tests/mirror.rs`).
+Every request that would change an object is refused (`MutationPolicy::DenyAll`; the library
+default is permissive): property writes, object creation and deletion, list changes, and COV
+subscriptions, so peers poll. A peer sees the sequences' decisions; it cannot change them. The
+tests write Out_Of_Service and Object_Name (which the objects would accept under the default
+policy) and Present_Value over UDP with rusty-bacnet's own client, check the deny-all error and
+the unchanged values, and fail if the policy is switched back to permissive
+(`crates/mm-bacnet/tests/mirror.rs`). Time synchronization is not an object change and is
+accepted as the library does by default; it changes no point.
 
 Not done: the 22-device layout and operator overrides proposed in `docs/bacnet-device-table.md`,
-COV subscriptions beyond what the library serves by default, BBMD or foreign-device
-registration. No conformance or certification is claimed.
+COV, BBMD or foreign-device registration. No conformance or certification is claimed.
 
 ## Run it
 

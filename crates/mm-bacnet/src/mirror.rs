@@ -20,8 +20,9 @@ use serde::Serialize;
 
 use crate::map::{PointMap, Source};
 
-/// A placeholder vendor id, not one assigned to this project.
-pub const VENDOR_ID: u16 = 0;
+/// A placeholder vendor id: this project has no assigned BACnet vendor id. Not 0, which is
+/// the standard body's own; the top of the range, so it reads as no vendor in particular.
+pub const VENDOR_ID: u16 = u16::MAX;
 
 #[derive(Debug, Clone)]
 pub struct MirrorConfig {
@@ -46,6 +47,8 @@ pub struct UpdateReport {
     /// Points with no finite value this time: they keep their last value and read as
     /// unreliable (no sensor) until a value arrives.
     pub no_data: Vec<String>,
+    /// Points the device refused to update (`name: error`); each also reads as no sensor.
+    pub errors: Vec<String>,
 }
 
 pub struct Mirror {
@@ -99,11 +102,14 @@ impl Mirror {
             .mutation_policy(MutationPolicy::DenyAll)
             .build()
             .await?;
-        Ok(Self {
+        let mirror = Self {
             server,
             map,
             device: config.device_instance,
-        })
+        };
+        // New objects start at 0.0 and reliable; nothing has produced a value yet.
+        mirror.mark_all_no_data().await;
+        Ok(mirror)
     }
 
     pub fn map(&self) -> &PointMap {
@@ -121,29 +127,56 @@ impl Mirror {
 
     /// Sets every mapped point found in `values`. A point that is absent or not finite keeps
     /// its last value and is flagged unreliable, so a peer never reads a stale value as good.
-    pub async fn update(
-        &self,
-        values: &BTreeMap<String, f64>,
-    ) -> Result<UpdateReport, MirrorError> {
+    /// Never fails as a whole: per-point problems are in the report.
+    pub async fn update(&self, values: &BTreeMap<String, f64>) -> UpdateReport {
         let mut report = UpdateReport::default();
         for point in &self.map.points {
-            let oid = ObjectIdentifier::new(point.source.object_type(), point.instance)?;
-            match values.get(&point.name).copied().filter(|v| v.is_finite()) {
-                Some(value) => {
-                    self.server
-                        .set_present_value_local(&oid, PropertyValue::Real(quantize(value)))
-                        .await?;
-                    self.reliability(&oid, Reliability::NO_FAULT_DETECTED)
-                        .await?;
-                    report.updated += 1;
-                }
-                None => {
-                    self.reliability(&oid, Reliability::NO_SENSOR).await?;
-                    report.no_data.push(point.name.clone());
+            // Checked after the conversion: a finite f64 beyond f32's range is not a value.
+            let value = values
+                .get(&point.name)
+                .map(|v| quantize(*v))
+                .filter(|v| v.is_finite());
+            match self.set(point.source, point.instance, value).await {
+                Ok(true) => report.updated += 1,
+                Ok(false) => report.no_data.push(point.name.clone()),
+                Err(e) => {
+                    // One point's failure never leaves the others stale: flag it and go on.
+                    let _ = self.set(point.source, point.instance, None).await;
+                    report.errors.push(format!("{}: {e}", point.name));
                 }
             }
         }
-        Ok(report)
+        report
+    }
+
+    /// Every point to no data: before the first run, and after each run ends, so a peer never
+    /// reads a value nothing is producing as good.
+    pub async fn mark_all_no_data(&self) -> UpdateReport {
+        self.update(&BTreeMap::new()).await
+    }
+
+    /// `Ok(true)` when `value` was set, `Ok(false)` when the point was flagged no sensor.
+    async fn set(
+        &self,
+        source: Source,
+        instance: u32,
+        value: Option<f32>,
+    ) -> Result<bool, MirrorError> {
+        let oid = ObjectIdentifier::new(source.object_type(), instance)?;
+        match value {
+            Some(v) => {
+                self.server
+                    .set_present_value_local(&oid, PropertyValue::Real(v))
+                    .await?;
+                self.reliability(&oid, Reliability::NO_FAULT_DETECTED)
+                    .await?;
+                Ok(true)
+            }
+            None => {
+                self.reliability(&oid, Reliability::NO_SENSOR).await?;
+                Ok(false)
+            }
+        }
     }
 
     /// Reliability is the object's own assessment, set through its internal evaluation hook
