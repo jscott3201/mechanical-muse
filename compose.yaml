@@ -5,8 +5,9 @@
 #   export BOPTEST_DIR=<dir>
 #   make boptest-up          # builds on first run; web on http://127.0.0.1:80
 #
-# The minio images come from quay.io (the same releases BOPTEST names), because Docker Hub may
-# refuse anonymous pulls of minio/mc. BOPTEST's own .env supplies its local dev settings.
+# minio and mc are built from source at the releases BOPTEST names (deploy/minio; the published
+# images are gone); `make boptest-up` builds that image first. BOPTEST's own .env supplies its
+# local dev settings. For a faster, native x86 BOPTEST, see docs/boptest-on-modal.md.
 # On arm64 the worker runs under x86 emulation; see docs/DECISIONS.md for measured speeds.
 # Built images are reused; after pointing BOPTEST_DIR at another version, `docker compose build`.
 # The project name matches BOPTEST's own default (its directory name), so images built from the
