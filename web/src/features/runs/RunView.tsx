@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LineChart } from "@/components/viz/LineChart";
+import { useBaselineKpis } from "@/hooks/useBaselineKpis";
 import { useAction } from "@/hooks/useResource";
 import { useRunStream } from "@/hooks/useRunStream";
 import { formatNumber } from "@/lib/format";
 import type { RunInfo } from "@/types/generated/RunInfo";
 
 import { ErrorNote } from "../ErrorNote";
+import { change } from "./baseline";
 import { RunStatus } from "./RunStatus";
 import { formatSimTime, trends } from "./trends";
 
@@ -88,6 +90,7 @@ function RunStream({
   const age = now - lastEventAt;
   const staleS = stream.phase === "running" && !stream.ended && age > STALE_MS ? Math.round(age / 1000) : null;
   const cfg = stream.config;
+  const base = useBaselineKpis(cfg ?? null, stream.kpi !== null && stream.kpi !== undefined);
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -200,18 +203,45 @@ function RunStream({
             <CardDescription>
               {cfg?.replay
                 ? `Recorded with run ${cfg.replay.recorded_run}, as BOPTEST computed them then; not recomputed by this replay.`
-                : "Computed by BOPTEST for this run. Compare with a baseline run of the same window."}
+                : "Computed by BOPTEST for this run."}{" "}
+              {base
+                ? `Beside the ${base.source}: BOPTEST's own controllers over the same window, nothing written.`
+                : cfg?.baseline
+                  ? "This is a baseline run: BOPTEST's own controllers, nothing written."
+                  : "No baseline run of the same window yet; run one (Baseline only) to compare."}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
-              <TableBody>
-                {Object.entries(stream.kpi).map(([k, v]) => (
-                  <TableRow key={k}>
-                    <TableCell>{KPI_LABELS[k] ?? k}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatNumber(v, 4)}</TableCell>
+              {base && (
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>KPI</TableHead>
+                    <TableHead className="text-right">Baseline</TableHead>
+                    <TableHead className="text-right">This run</TableHead>
+                    <TableHead className="text-right">Change</TableHead>
                   </TableRow>
-                ))}
+                </TableHeader>
+              )}
+              <TableBody>
+                {Object.entries(stream.kpi).map(([k, v]) => {
+                  const b = base?.kpis[k];
+                  const pct = change(v, b);
+                  return (
+                    <TableRow key={k}>
+                      <TableCell>{KPI_LABELS[k] ?? k}</TableCell>
+                      {base && (
+                        <TableCell className="text-right tabular-nums">{b === undefined ? "no data" : formatNumber(b, 4)}</TableCell>
+                      )}
+                      <TableCell className="text-right tabular-nums">{formatNumber(v, 4)}</TableCell>
+                      {base && (
+                        <TableCell className="text-right tabular-nums">
+                          {pct === null ? "—" : `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${formatNumber(Math.abs(pct), 1)} %`}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>

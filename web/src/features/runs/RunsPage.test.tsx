@@ -90,6 +90,36 @@ describe("RunsPage", () => {
     expect(screen.getByText(/Air handler requests feeding the plant reset/)).toBeTruthy();
   });
 
+  it("sets the KPIs beside a recorded baseline run of the same window", async () => {
+    const info = {
+      id: runId,
+      config: { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 30, step_s: 120, case: "multizone_office_complex_air" },
+      state: "running",
+      ticks: 3,
+      events: 8,
+    };
+    const baseline = { name: "base", recorded_run: "run-b", ticks: 30, baseline: true, start_s: 16027200, drafted: false, state: "completed", kpis: { ener_tot: 0.03 } };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/bacnet") return bacnetOff();
+        const body = url === "/api/runs" ? [info] : url === "/api/replays" ? [baseline] : [];
+        return new Response(JSON.stringify(body), { status: 200 });
+      }),
+    );
+    render(<RunsPage />);
+    await screen.findAllByText(runId);
+    await vi.waitFor(() => expect(FakeSource.last?.url).toBe(`/api/runs/${runId}/events`), { timeout: 5000 });
+    await act(async () => {
+      for (const line of lines) FakeSource.last?.emit(line);
+      await new Promise((r) => setTimeout(r, 10));
+    });
+    expect(await screen.findByText(/Beside the recorded baseline run run-b/)).toBeTruthy();
+    // 0.02966 against 0.03; KPIs the baseline lacks read "no data", never 0.
+    expect(screen.getByText("−1.1 %")).toBeTruthy();
+    expect(screen.getAllByText("no data").length).toBeGreaterThan(0);
+  });
+
   it("re-subscribes from the start when events are missing", async () => {
     render(<RunsPage />);
     await screen.findAllByText(runId);

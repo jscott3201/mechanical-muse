@@ -235,6 +235,23 @@ async fn the_committed_demo_record_is_replayable() {
     assert_eq!(demo["ticks"], 300);
     assert_eq!(demo["state"], "completed");
     assert_eq!(demo["baseline"], false);
+    // The record's BOPTEST KPIs are listed, so the web app can set a run beside a baseline.
+    let ener = demo["kpis"]["ener_tot"].as_f64().unwrap();
+    assert!((ener - 0.3101).abs() < 1e-4, "{ener}");
+    // Its baseline (same window, BOPTEST's own controllers) is committed beside it.
+    let base = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["name"] == "day185-noon-baseline")
+        .expect("the baseline record is listed");
+    assert_eq!(base["baseline"], true);
+    assert_eq!(
+        (base["ticks"].clone(), base["start_s"].clone()),
+        (demo["ticks"].clone(), demo["start_s"].clone())
+    );
+    let ener = base["kpis"]["ener_tot"].as_f64().unwrap();
+    assert!((ener - 0.3255).abs() < 1e-4, "{ener}");
 }
 
 /// A record cut short (no `ended` line) must not replay as completed.

@@ -45,12 +45,14 @@ opening.
 
 ## Gaps to close before the Nov 3 freeze
 
-1. KPIs beside a baseline run in the web app (today the panel says "compare with a baseline
-   run"): show the baseline run of the same window next to the run's KPIs, and record a baseline
-   replay for rung 3.
+1. ~~KPIs beside a baseline run in the web app~~ Done: the run view sets a run's KPIs beside a
+   baseline run of the same window (on the server, or the recorded
+   `fixtures/replays/day185-noon-baseline.jsonl`, `ener_tot` 0.3255).
 2. A recorded model session (rung 2) from the current prompt, so the recorded fallback shows
    today's behaviour.
-3. One manual BACnet read with a desktop client during a live Modal run.
+3. One manual BACnet read with a desktop client during a live Modal run. (A raw-packet check over
+   UDP 47808 during a Modal baseline run passed: I-Am 599, live readings reliable, sequence
+   outputs no sensor in a baseline run, a write refused with service-request-denied.)
 4. A rehearsal from a clean checkout following the README's "Run it" steps, timed.
 
 ## Capture checklist

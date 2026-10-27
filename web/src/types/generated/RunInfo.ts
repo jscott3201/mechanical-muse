@@ -2,4 +2,8 @@
 import type { RunConfig } from "./RunConfig";
 import type { RunState } from "./RunState";
 
-export type RunInfo = { id: string, config: RunConfig, state: RunState, ticks: number, events: number, };
+export type RunInfo = { id: string, config: RunConfig, state: RunState, ticks: number, events: number, 
+/**
+ * BOPTEST's KPIs for the run, once it has reported them (at the end).
+ */
+kpis?: { [key in string]: number }, };

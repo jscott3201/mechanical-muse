@@ -100,6 +100,27 @@ impl BoptestClient {
         Ok(Self { http, base, testid })
     }
 
+    /// `select`, retried while BOPTEST answers 404: the test case is not uploaded yet (a fresh
+    /// deployment is still provisioning). A 404 creates no test, so a retry cannot leave an
+    /// orphan; any other error is returned at once.
+    pub async fn select_when_ready(
+        base: &str,
+        testcase: &str,
+        attempts: u32,
+        delay: Duration,
+    ) -> Result<Self, PlantError> {
+        let mut left = attempts.max(1);
+        loop {
+            left -= 1;
+            match Self::select(base, testcase).await {
+                Err(PlantError::Refused { status: 404, .. }) if left > 0 => {
+                    tokio::time::sleep(delay).await;
+                }
+                other => return other,
+            }
+        }
+    }
+
     pub fn testid(&self) -> &str {
         &self.testid
     }
