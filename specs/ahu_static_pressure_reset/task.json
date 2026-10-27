@@ -1,0 +1,82 @@
+{
+ "name": "ahu_static_pressure_reset",
+ "description": "Duct static pressure reset for one air handler, by trim and respond. Keep one setpoint dpSet in Pa between lowest_setpoint and highest_setpoint. While the supply fan is off, dpSet is initial_setpoint, effective immediately. After the fan starts, dpSet stays at initial_setpoint until start_delay plus one update_period has passed; this delay starts again at every fan start. After that the setpoint only changes at multiples of update_period counted from time 0. At each update read the number of requests: if it is greater than ignored_requests, the change is trim plus respond_amount for each request above ignored_requests, with that respond part limited to respond_cap; otherwise the change is just trim. Add the change to the setpoint from the previous update and keep the result between lowest_setpoint and highest_setpoint. Timing at the edges, with the default values: if the fan starts at 0 s, the first change is applied by the update at 720 s itself. The request count used at an update is the count present at that update instant, including a change that happens at that same instant; a count that rises and falls again between two updates is never used. The setpoint carried from one update to the next is the value after that update's clamp, so it needs a stored copy that only changes at updates; computing it in a direct loop without that stored copy is not allowed. While the fan is off the stored copy is also initial_setpoint, so a restart begins from initial_setpoint.",
+ "inputs": [
+  {
+   "name": "nReqPre",
+   "type": "int",
+   "unit": "1",
+   "meaning": "Number of static pressure reset requests from the zones served by this air handler"
+  },
+  {
+   "name": "u1FanOn",
+   "type": "bool",
+   "unit": "bool",
+   "meaning": "The supply fan is running"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "dpSet",
+   "type": "real",
+   "unit": "Pa",
+   "meaning": "Duct static pressure setpoint"
+  }
+ ],
+ "params": [
+  {
+   "name": "initial_setpoint",
+   "value": 400.0,
+   "unit": "Pa",
+   "meaning": "Setpoint while the fan is off and during the start delay"
+  },
+  {
+   "name": "lowest_setpoint",
+   "value": 50.0,
+   "unit": "Pa",
+   "meaning": "Lowest allowed setpoint"
+  },
+  {
+   "name": "highest_setpoint",
+   "value": 400.0,
+   "unit": "Pa",
+   "meaning": "Highest allowed setpoint"
+  },
+  {
+   "name": "start_delay",
+   "value": 600.0,
+   "unit": "s",
+   "meaning": "Wait after the fan starts before the first update period begins"
+  },
+  {
+   "name": "update_period",
+   "value": 120.0,
+   "unit": "s",
+   "meaning": "Time between updates; updates fall on multiples of it from time 0"
+  },
+  {
+   "name": "ignored_requests",
+   "value": 2,
+   "unit": "1",
+   "meaning": "Request counts up to this do not count"
+  },
+  {
+   "name": "trim",
+   "value": -12.0,
+   "unit": "Pa",
+   "meaning": "Change per update when not responding"
+  },
+  {
+   "name": "respond_amount",
+   "value": 15.0,
+   "unit": "Pa",
+   "meaning": "Added per request above ignored_requests"
+  },
+  {
+   "name": "respond_cap",
+   "value": 32.0,
+   "unit": "Pa",
+   "meaning": "Most the respond part may add in one update"
+  }
+ ]
+}
