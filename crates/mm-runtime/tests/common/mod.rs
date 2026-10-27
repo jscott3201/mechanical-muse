@@ -43,6 +43,22 @@ pub fn cxf() -> Vec<u8> {
     emit(&graph())
 }
 
+/// Any spec under `specs/<name>`: its reference graph emitted, and a real receipt from replaying
+/// its vectors on that CXF.
+pub fn verified(name: &str) -> (Vec<u8>, ReplayReport) {
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../specs")
+        .join(name);
+    let graph: BlockGraph =
+        serde_json::from_slice(&std::fs::read(dir.join("graph.json")).unwrap()).unwrap();
+    let vectors: VectorFile =
+        serde_json::from_slice(&std::fs::read(dir.join("vectors.json")).unwrap()).unwrap();
+    let cxf = emit(&graph);
+    let report = replay(&cxf, &vectors, &ReplayLimits::default()).unwrap();
+    assert!(report.passed(), "{name}: reference must pass its vectors");
+    (cxf, report)
+}
+
 /// A real receipt: the spec's vectors replayed on the emitted model.
 pub fn receipt(cxf: &[u8]) -> ReplayReport {
     let report = replay(cxf, &vectors(), &ReplayLimits::default()).unwrap();
