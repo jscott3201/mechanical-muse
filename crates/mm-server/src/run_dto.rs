@@ -9,7 +9,8 @@ use ts_rs::TS;
 
 /// What a client may ask for. Everything is optional; the server fills in the demo defaults
 /// and refuses values outside its limits.
-#[derive(Debug, Clone, Default, PartialEq, Deserialize, Serialize, TS)]
+/// Send `{}` for all defaults; an empty body is refused.
+#[derive(Debug, Clone, Default, PartialEq, Deserialize, TS)]
 #[ts(export)]
 #[serde(deny_unknown_fields)]
 pub struct RunRequest {

@@ -3,6 +3,7 @@
 /**
  * What a client may ask for. Everything is optional; the server fills in the demo defaults
  * and refuses values outside its limits.
+ * Send `{}` for all defaults; an empty body is refused.
  */
 export type RunRequest = { 
 /**

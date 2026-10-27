@@ -77,8 +77,22 @@ async fn call(
     )
 }
 
-/// The SSE body as (id, event, data) triples; the stream ends after `ended`.
+/// The SSE body as (id, event, data) triples; the stream ends after `ended`. Bounded, so a
+/// run that never ends fails the test instead of hanging it.
 async fn events(state: &AppState, id: &str, last: Option<u64>) -> Vec<(u64, String, Value)> {
+    tokio::time::timeout(
+        std::time::Duration::from_secs(60),
+        events_unbounded(state, id, last),
+    )
+    .await
+    .expect("event stream did not end within 60 s")
+}
+
+async fn events_unbounded(
+    state: &AppState,
+    id: &str,
+    last: Option<u64>,
+) -> Vec<(u64, String, Value)> {
     let mut req = Request::builder().uri(format!("/api/runs/{id}/events"));
     if let Some(l) = last {
         req = req.header("last-event-id", l.to_string());
@@ -200,6 +214,10 @@ async fn a_baseline_run_writes_nothing() {
     for (_, _, d) in all.iter().filter(|(_, k, _)| k == "tick") {
         assert!(d["writes"].as_object().unwrap().is_empty());
     }
+    assert_eq!(
+        started["config"]["requests"], false,
+        "a baseline uses no requests"
+    );
 }
 
 #[tokio::test]
@@ -210,6 +228,7 @@ async fn refuses_bad_requests_and_a_second_active_run() {
         json!({"steps": 999_999}),
         json!({"start_s": -1.0}),
         json!({"warmup_s": 1e9}),
+        json!({"start_s": 3600.0, "warmup_s": 86400.0}),
         json!({"nope": 1}),
     ] {
         let (status, err) = call(&state, "POST", "/api/runs", Some(body.clone())).await;
@@ -233,14 +252,18 @@ async fn stop_ends_the_run_between_steps() {
     let state = paced(None, std::time::Duration::from_millis(50));
     let (_, info) = call(&state, "POST", "/api/runs", Some(json!({"steps": 30}))).await;
     let id = info["id"].as_str().unwrap().to_owned();
-    // Wait for the first tick, then stop.
-    for _ in 0..200 {
-        let (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
-        if info["ticks"].as_u64().unwrap() >= 1 {
-            break;
+    // Wait for the first tick (verification comes first and can be slow on CI), then stop.
+    tokio::time::timeout(std::time::Duration::from_secs(60), async {
+        loop {
+            let (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
+            if info["ticks"].as_u64().unwrap() >= 1 {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         }
-        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-    }
+    })
+    .await
+    .expect("no tick within 60 s");
     let (status, _) = call(&state, "POST", &format!("/api/runs/{id}/stop"), None).await;
     assert_eq!(status, StatusCode::ACCEPTED);
     let all = events(&state, &id, None).await;
@@ -250,4 +273,78 @@ async fn stop_ends_the_run_between_steps() {
     // Once it has stopped, another run may start.
     let (status, _) = call(&state, "POST", "/api/runs", Some(json!({"steps": 1}))).await;
     assert_eq!(status, StatusCode::CREATED);
+}
+
+#[tokio::test]
+async fn a_reconnect_after_the_end_gets_no_content() {
+    let state = state(None);
+    let (_, info) = call(&state, "POST", "/api/runs", Some(json!({"steps": 2}))).await;
+    let id = info["id"].as_str().unwrap().to_owned();
+    let all = events(&state, &id, None).await;
+    let last = all.last().unwrap().0;
+    let response = app(state.clone())
+        .oneshot(
+            Request::builder()
+                .uri(format!("/api/runs/{id}/events"))
+                .header("last-event-id", last.to_string())
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+}
+
+#[tokio::test]
+async fn a_mid_run_subscriber_gets_backlog_then_live_without_gaps() {
+    let state = paced(None, std::time::Duration::from_millis(20));
+    let (_, info) = call(&state, "POST", "/api/runs", Some(json!({"steps": 15}))).await;
+    let id = info["id"].as_str().unwrap().to_owned();
+    tokio::time::timeout(std::time::Duration::from_secs(60), async {
+        loop {
+            let (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
+            if info["ticks"].as_u64().unwrap() >= 3 {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .unwrap();
+    let all = events(&state, &id, None).await;
+    for (i, (seq, _, _)) in all.iter().enumerate() {
+        assert_eq!(*seq, i as u64);
+    }
+    assert_eq!(all.iter().filter(|(_, k, _)| k == "tick").count(), 15);
+    assert_eq!(all.last().unwrap().2["state"], "completed");
+}
+
+#[tokio::test]
+async fn shutdown_ends_open_streams_and_stops_the_run() {
+    let state = paced(None, std::time::Duration::from_millis(50));
+    let (_, info) = call(&state, "POST", "/api/runs", Some(json!({"steps": 30}))).await;
+    let id = info["id"].as_str().unwrap().to_owned();
+    let reader = {
+        let state = state.clone();
+        let id = id.clone();
+        tokio::spawn(async move { events(&state, &id, None).await })
+    };
+    tokio::time::sleep(std::time::Duration::from_millis(400)).await;
+    state.shutdown();
+    // The stream closes promptly, whether or not it saw the ended event.
+    let seen = tokio::time::timeout(std::time::Duration::from_secs(10), reader)
+        .await
+        .expect("stream still open after shutdown")
+        .unwrap();
+    assert!(!seen.is_empty());
+    // The run itself stops at its next step.
+    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        while state.runs().active().is_some() {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("run still active after shutdown");
+    let (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
+    assert_eq!(info["state"], "stopped");
 }

@@ -37,12 +37,25 @@ async fn main() -> anyhow::Result<()> {
             std::env::var("MM_RUNS_DIR").unwrap_or_else(|_| "runs".into()),
         )),
     };
-    axum::serve(listener, app(AppState::with_runs(specs, palette, runs)))
-        .with_graceful_shutdown(async {
+    let state = AppState::with_runs(specs, palette, runs);
+    let on_signal = state.clone();
+    axum::serve(listener, app(state.clone()))
+        .with_graceful_shutdown(async move {
             let _ = tokio::signal::ctrl_c().await;
-            tracing::info!("stopping");
+            tracing::info!("stopping: closing event streams and asking the active run to stop");
+            on_signal.shutdown();
         })
         .await
         .context("serving")?;
+    // Give an active run time to finish its step and stop its BOPTEST test, so the worker is
+    // not left holding an orphan. An initializing run cannot be stopped safely; say so.
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(600);
+    while let Some(run) = state.runs().active() {
+        if tokio::time::Instant::now() >= deadline {
+            tracing::warn!(run = %run.id, "run still active at exit; its BOPTEST test may need stopping");
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    }
     Ok(())
 }

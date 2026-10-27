@@ -97,10 +97,16 @@ impl RunHandle {
             sim_time_s,
             event,
         };
+        // About one event per 120 s simulated step: a buffered write and flush (no fsync)
+        // under the lock is cheap at this rate and keeps the record in log order.
         if let Some(writer) = lock(&self.record).as_mut() {
-            let line = serde_json::to_string(&envelope).unwrap_or_default();
-            if let Err(e) = writeln!(writer, "{line}").and_then(|()| writer.flush()) {
-                tracing::warn!(run = %self.id, error = %e, "run record write failed");
+            match serde_json::to_string(&envelope) {
+                Ok(line) => {
+                    if let Err(e) = writeln!(writer, "{line}").and_then(|()| writer.flush()) {
+                        tracing::warn!(run = %self.id, error = %e, "run record write failed");
+                    }
+                }
+                Err(e) => tracing::warn!(run = %self.id, error = %e, "event not recorded"),
             }
         }
         log.push(envelope.clone());
@@ -156,6 +162,15 @@ impl Runs {
             config,
             registry: Mutex::new(Registry::default()),
         }
+    }
+
+    /// The run that is starting or running, if any.
+    pub fn active(&self) -> Option<Arc<RunHandle>> {
+        lock(&self.registry)
+            .runs
+            .values()
+            .find(|r| matches!(r.state(), RunState::Starting | RunState::Running))
+            .cloned()
     }
 
     pub fn get(&self, id: &str) -> Option<Arc<RunHandle>> {
@@ -238,14 +253,21 @@ fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
     if !(warmup_s.is_finite() && (0.0..=MAX_WARMUP_S).contains(&warmup_s)) {
         return Err(StartError::Invalid("warmup_s must be 0 to 7 days".into()));
     }
+    if start_s < warmup_s {
+        return Err(StartError::Invalid(
+            "start_s must be at least warmup_s (the warm-up runs before the start)".into(),
+        ));
+    }
     if !(1..=MAX_STEPS).contains(&steps) {
         return Err(StartError::Invalid(format!(
             "steps must be 1 to {MAX_STEPS}"
         )));
     }
+    let baseline = r.baseline.unwrap_or(false);
     Ok(RunConfig {
-        baseline: r.baseline.unwrap_or(false),
-        requests: r.requests.unwrap_or(true),
+        baseline,
+        // A baseline runs no sequence, so it uses no requests either.
+        requests: !baseline && r.requests.unwrap_or(true),
         start_s,
         warmup_s,
         steps,

@@ -1,9 +1,16 @@
 //! The task behind one run: verify the specs, load the demo wiring, drive the plant, publish
-//! every tick. A live BOPTEST test is always stopped at the end, whatever happened, so the
-//! single worker is freed.
+//! every tick. A live BOPTEST test is stopped at the end whatever happened (a panic in the
+//! loop included), so the single worker is freed, and every run ends with an `ended` event.
+//!
+//! A stop request is honoured before `select` and between steps. It is deferred while BOPTEST
+//! initializes (minutes under emulation): stopping a test that is still starting crashed the
+//! v0.9.0 web service, so the run waits for the warm-up to finish, then stops.
 
 use std::collections::BTreeMap;
+use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
+
+use futures_util::FutureExt;
 
 use mm_runtime::preset::{self, FLOORS, REQUESTS_SPEC, RESET, RESET_SPEC};
 use mm_runtime::{
@@ -34,7 +41,11 @@ impl Plant for AnyPlant {
 
 /// Runs to the end and publishes the final `ended` event.
 pub async fn run(handle: Arc<RunHandle>, state: AppState) {
-    let (final_state, message) = match drive(&handle, &state).await {
+    let outcome = AssertUnwindSafe(drive(&handle, &state))
+        .catch_unwind()
+        .await
+        .unwrap_or_else(|_| Err("the run task panicked".into()));
+    let (final_state, message) = match outcome {
         Ok(s) => (s, None),
         Err(message) => {
             tracing::warn!(run = %handle.id, %message, "run failed");
@@ -128,6 +139,9 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
             sequences,
         },
     );
+    if *handle.stop_signal().borrow() {
+        return Ok(RunState::Stopped);
+    }
     let (mut plant, first) = match state.runs().fake_plant() {
         Some((fake, first, pace)) => (AnyPlant::Fake(fake, pace), first),
         None => {
@@ -142,7 +156,11 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
             );
             let client = BoptestClient::select(url, preset::CASE)
                 .await
-                .map_err(|e| format!("selecting the test case: {e}"))?;
+                .map_err(|e| {
+                    // An abandoned select can still create a test, which then holds the worker.
+                    tracing::error!(error = %e, "select failed; BOPTEST may hold an orphaned test");
+                    format!("selecting the test case: {e}")
+                })?;
             handle.publish(
                 None,
                 RunEvent::Phase {
@@ -158,13 +176,28 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
             match first {
                 Ok(first) => (AnyPlant::Boptest(client), first),
                 Err(e) => {
-                    stop_quietly(&client).await;
+                    // After a timeout or a server error the worker may still be initializing,
+                    // and stopping it then crashes v0.9.0's web service: leave it to BOPTEST's
+                    // idle timeout and say which test it was.
+                    let still_starting = matches!(
+                        e,
+                        PlantError::Transport { .. } | PlantError::Refused { status: 500.., .. }
+                    );
+                    if still_starting {
+                        tracing::error!(testid = client.testid(), error = %e,
+                            "initialize failed; not stopping a test that may still be starting");
+                    } else {
+                        stop_quietly(&client).await;
+                    }
                     return Err(format!("initializing BOPTEST: {e}"));
                 }
             }
         }
     };
-    let outcome = steps(handle, &mut sup, &mut plant, first).await;
+    let outcome = AssertUnwindSafe(steps(handle, &mut sup, &mut plant, first))
+        .catch_unwind()
+        .await
+        .unwrap_or_else(|_| Err("the control loop panicked".into()));
     if let AnyPlant::Boptest(client) = &plant {
         match client.kpi().await {
             Ok(values) => handle.publish(None, RunEvent::Kpi { values }),
@@ -203,7 +236,8 @@ async fn steps(
             return Ok(RunState::Stopped);
         }
         let report = sup.tick(&readings);
-        handle.publish(Some(report.time), tick(&report, &readings, &watch));
+        let time = report.time.is_finite().then_some(report.time);
+        handle.publish(time, tick(&report, &readings, &watch));
         handle.count_tick();
         readings = match plant.advance(&report.writes).await {
             Ok(next) => next,
@@ -246,7 +280,7 @@ fn flatten(event: &Event) -> SupervisorEvent {
         },
         Event::Clamped { point, value, sent } => SupervisorEvent {
             point: Some(point.clone()),
-            value: value.is_finite().then_some(*value),
+            value: Some(*value),
             sent: Some(*sent),
             ..base("clamped")
         },

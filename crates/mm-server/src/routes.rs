@@ -34,6 +34,7 @@ struct Inner {
     palette: Palette,
     verify_slots: Arc<Semaphore>,
     runs: Runs,
+    shutdown: tokio::sync::watch::Sender<bool>,
 }
 
 impl AppState {
@@ -58,6 +59,7 @@ impl AppState {
                 palette,
                 verify_slots: Arc::new(Semaphore::new(VERIFY_SLOTS)),
                 runs: Runs::new(runs),
+                shutdown: tokio::sync::watch::channel(false).0,
             }),
         }
     }
@@ -72,6 +74,18 @@ impl AppState {
 
     pub fn runs(&self) -> &Runs {
         &self.inner.runs
+    }
+
+    /// Ends every open event stream and asks the active run to stop at its next step.
+    pub fn shutdown(&self) {
+        let _ = self.inner.shutdown.send(true);
+        if let Some(run) = self.inner.runs.active() {
+            run.request_stop();
+        }
+    }
+
+    pub(crate) fn shutdown_signal(&self) -> tokio::sync::watch::Receiver<bool> {
+        self.inner.shutdown.subscribe()
     }
 }
 

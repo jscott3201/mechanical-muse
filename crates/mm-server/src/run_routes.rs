@@ -11,13 +11,14 @@ use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::sse::{Event, KeepAlive, Sse};
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use futures_util::Stream;
 use tokio::sync::broadcast::{self, error::RecvError};
+use tokio::sync::watch;
 
 use crate::routes::{AppState, Failure};
-use crate::run_dto::{Envelope, RunEvent, RunInfo, RunRequest};
+use crate::run_dto::{Envelope, RunEvent, RunInfo, RunRequest, RunState};
 use crate::runs::{RunHandle, StartError};
 
 pub fn routes() -> Router<AppState> {
@@ -76,6 +77,7 @@ struct Feed {
     handle: Arc<RunHandle>,
     pending: VecDeque<Envelope>,
     rx: broadcast::Receiver<Envelope>,
+    shutdown: watch::Receiver<bool>,
     last: Option<u64>,
     done: bool,
 }
@@ -94,7 +96,11 @@ impl Feed {
                 self.done = matches!(env.event, RunEvent::Ended { .. });
                 return Some(env);
             }
-            match self.rx.recv().await {
+            let received = tokio::select! {
+                r = self.rx.recv() => r,
+                _ = self.shutdown.wait_for(|stop| *stop) => return None,
+            };
+            match received {
                 Ok(env) => self.pending.push_back(env),
                 // Fell behind the live channel: refill from the log, which has everything.
                 Err(RecvError::Lagged(_)) => self.pending.extend(self.handle.since(self.last)),
@@ -123,23 +129,35 @@ async fn run_events(
     State(state): State<AppState>,
     Path(id): Path<String>,
     headers: HeaderMap,
-) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, Failure> {
+) -> Result<Response, Failure> {
     let handle = find(&state, &id)?;
     let after = headers
         .get("last-event-id")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.trim().parse::<u64>().ok());
     let (backlog, rx) = handle.subscribe(after);
+    // A finished run with nothing left to send: 204 tells an EventSource not to reconnect
+    // (it would otherwise reconnect with the last id after every close, forever).
+    let finished = matches!(
+        handle.state(),
+        RunState::Completed | RunState::Stopped | RunState::Failed
+    );
+    if finished && backlog.is_empty() {
+        return Ok(StatusCode::NO_CONTENT.into_response());
+    }
     let feed = Feed {
         handle,
         pending: backlog.into(),
         rx,
+        shutdown: state.shutdown_signal(),
         last: after,
         done: false,
     };
     let stream = futures_util::stream::unfold(feed, |mut feed| async move {
         let env = feed.next().await?;
-        Some((Ok(sse_event(&env)), feed))
+        Some((Ok::<_, Infallible>(sse_event(&env)), feed))
     });
-    Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
+    Ok(Sse::new(stream)
+        .keep_alive(KeepAlive::default())
+        .into_response())
 }
