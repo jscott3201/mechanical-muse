@@ -10,6 +10,12 @@ Built solo by Justin Scott for the Meta Global AI Developer Hackathon (Indie tra
 
 ## Run it
 
+Quickest: `make demo`, then open http://127.0.0.1:8080. It builds the web app and serves it from
+the API on one address. With no model key and no BOPTEST it still verifies every spec, plays back
+a recorded Muse Spark session, recorded BOPTEST runs and recorded explanations, all labelled as
+recorded. `make demo-live` adds live Muse Spark from a key in `.env`; set `MM_BOPTEST_URL` for
+live runs and `MM_BACNET_ADDR` for the BACnet mirror. The full setup:
+
 You need Rust (see `rust-toolchain.toml`), Node (`web/.nvmrc`) and a BOPTEST v0.9.0 checkout
 (`git clone --branch v0.9.0 --depth 1 https://github.com/ibpsa/project1-boptest`).
 

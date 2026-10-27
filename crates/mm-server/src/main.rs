@@ -73,6 +73,10 @@ async fn main() -> anyhow::Result<()> {
         ..AuthoringConfig::default()
     };
     let state = AppState::build(specs, palette, runs, authoring);
+    if let Ok(dir) = std::env::var("MM_WEB_DIR") {
+        tracing::info!(%dir, "serving the web app");
+        state.set_web(PathBuf::from(dir));
+    }
     if let Ok(bacnet) = std::env::var("MM_BACNET_ADDR") {
         start_bacnet(&state, &bacnet).await?;
     }

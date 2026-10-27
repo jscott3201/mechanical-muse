@@ -9,9 +9,9 @@ before recording. Spoken lines are guides, not a teleprompter.
 
 | Rung | Model | Plant | How |
 | --- | --- | --- | --- |
-| 1 live | Muse Spark via the Meta Model API | BOPTEST on Modal | `make boptest-modal`, then `MM_BOPTEST_URL=… MM_BACNET_ADDR=0.0.0.0:47808 make server-live`, web dev server |
-| 2 recorded model | recorded replies (`fixtures/recordings/`), labelled "recorded" | BOPTEST on Modal, live | same server; choose "Recorded" in the authoring panel |
-| 3 recorded run | — | recorded run events (`fixtures/replays/`), labelled "replay" | `make server`, "Replay" in the run form |
+| 1 live | Muse Spark via the Meta Model API | BOPTEST on Modal | `make boptest-modal`, then `MM_BOPTEST_URL=… MM_BACNET_ADDR=0.0.0.0:47808 make demo-live` |
+| 2 recorded model | recorded replies (`fixtures/recordings/`), labelled "recorded" | BOPTEST on Modal, live | same; choose "Recorded run" in the authoring panel |
+| 3 recorded run | — | recorded run events (`fixtures/replays/`), labelled "replay" | `make demo` (no key, no BOPTEST), "Replay" in the run form |
 | 4 | screen recording of rung 1 or 2 | | made during rehearsal |
 
 Decide the rung per scene the day before recording. Never call rung 2 to 4 "live".
@@ -57,7 +57,11 @@ opening.
 3. One manual BACnet read with a desktop client during a live Modal run. (A raw-packet check over
    UDP 47808 during a Modal baseline run passed: I-Am 599, live readings reliable, sequence
    outputs no sensor in a baseline run, a write refused with service-request-denied.)
-4. A rehearsal from a clean checkout following the README's "Run it" steps, timed.
+4. ~~A rehearsal from a clean checkout~~ Done 2026-10-28 with `make demo` (rung 3, recorded model):
+   overview, recorded Spark session (refused as a loop, 8 of 10, 10 of 10, verified), run this
+   draft, replays of the live-draft and fault runs, KPI tiles beside the baseline. Fixed on the
+   way: live model offered without a key, no path from a verified draft to a run, the fault not
+   marked on the charts, repeated axis labels on narrow ranges.
 
 ## Capture checklist
 

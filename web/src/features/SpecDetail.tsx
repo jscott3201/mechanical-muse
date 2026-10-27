@@ -97,7 +97,13 @@ const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
 
 type Section = "interface" | "graph" | "spark" | "scenarios" | "task";
 
-export function SpecDetail({ name }: { name: string }) {
+export function SpecDetail({
+  name,
+  onRunDraft,
+}: {
+  name: string;
+  onRunDraft?: (spec: string, contentId: string) => void;
+}) {
   const spec = useResource<SpecDetailDto>(`/api/specs/${encodeURIComponent(name)}`);
   const verify = useAction<ReceiptDto>(`/api/specs/${encodeURIComponent(name)}/verify`);
   const [section, setSection] = useState<Section>("interface");
@@ -169,7 +175,7 @@ export function SpecDetail({ name }: { name: string }) {
           <ReferenceGraph name={name} />
         </TabsContent>
         <TabsContent value="spark">
-          <AuthorPanel spec={name} scenarios={scenarios.length} />
+          <AuthorPanel spec={name} scenarios={scenarios.length} onRunDraft={onRunDraft} />
         </TabsContent>
         <TabsContent value="scenarios">
           <Card>

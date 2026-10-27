@@ -1,4 +1,4 @@
-import { Ban, CircleX, History, LoaderCircle, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
+import { Ban, CircleX, History, LoaderCircle, Play, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AttemptEntry } from "@/hooks/authorStream";
 import { useAuthorStream } from "@/hooks/useAuthorStream";
-import { useAction } from "@/hooks/useResource";
+import { useAction, useResource } from "@/hooks/useResource";
+import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
 import type { AttemptView } from "@/types/generated/AttemptView";
+import type { Health } from "@/types/generated/Health";
 import type { AuthorInfo } from "@/types/generated/AuthorInfo";
 import type { AuthorRequest } from "@/types/generated/AuthorRequest";
 import type { ModelSource } from "@/types/generated/ModelSource";
@@ -200,8 +202,23 @@ const ENDED_TEXT = {
 } as const;
 
 /** Start an authoring session for `spec` and follow it attempt by attempt. */
-export function AuthorPanel({ spec, scenarios }: { spec: string; scenarios: number }) {
-  const [source, setSource] = useState<ModelSource>("live");
+export function AuthorPanel({
+  spec,
+  scenarios,
+  onRunDraft,
+}: {
+  spec: string;
+  scenarios: number;
+  /** Opens the run form with this verified draft chosen. */
+  onRunDraft?: (spec: string, contentId: string) => void;
+}) {
+  const health = useResource<Health>("/api/health");
+  const live = health.status === "ready" && health.data.live_model !== undefined;
+  const recordedOk = health.status !== "ready" || health.data.recorded_model;
+  const [chosen, setChosen] = useState<ModelSource | null>(null);
+  // Default to what the server can do: live when it has a key, else the recorded session.
+  const source: ModelSource = chosen ?? (live || health.status !== "ready" ? "live" : "recorded");
+  const setSource = setChosen;
   const body = useMemo<AuthorRequest>(() => ({ source }), [source]);
   const start = useAction<AuthorInfo>(`/api/specs/${encodeURIComponent(spec)}/author`, body);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -222,29 +239,38 @@ export function AuthorPanel({ spec, scenarios }: { spec: string; scenarios: numb
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Model source">
-          <Button
-            variant={source === "live" ? "secondary" : "outline"}
-            size="sm"
-            aria-pressed={source === "live"}
-            onClick={() => setSource("live")}
-            disabled={running}
-          >
-            <Sparkles aria-hidden="true" /> Live model call
-          </Button>
-          <Button
-            variant={source === "recorded" ? "secondary" : "outline"}
-            size="sm"
-            aria-pressed={source === "recorded"}
-            onClick={() => setSource("recorded")}
-            disabled={running}
-          >
-            <History aria-hidden="true" /> Recorded run
-          </Button>
-          <Button onClick={start.run} disabled={running}>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-lg bg-muted p-1" role="group" aria-label="Model source">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={source === "live"}
+              onClick={() => setSource("live")}
+              disabled={running || !live}
+              title={live ? "Call Muse Spark now" : "This server has no model key"}
+              className={cn(source === "live" && "bg-background shadow-sm")}
+            >
+              <Sparkles aria-hidden="true" /> Live model call
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={source === "recorded"}
+              onClick={() => setSource("recorded")}
+              disabled={running || !recordedOk}
+              title="Play back an earlier live session; every check still runs now"
+              className={cn(source === "recorded" && "bg-background shadow-sm")}
+            >
+              <History aria-hidden="true" /> Recorded run
+            </Button>
+          </div>
+          <Button onClick={start.run} disabled={running || (source === "live" && !live && health.status === "ready")}>
             {running ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Sparkles aria-hidden="true" />}
             {running ? "Authoring…" : "Draft"}
           </Button>
+          {health.status === "ready" && !live && (
+            <span className="text-xs text-muted-foreground">No model key on this server: recorded sessions only.</span>
+          )}
         </div>
         {start.state.status === "error" && <ErrorNote error={start.state.error} />}
         {stream.config && (
@@ -290,6 +316,18 @@ export function AuthorPanel({ spec, scenarios }: { spec: string; scenarios: numb
               )}
               <span className="text-sm">{ENDED_TEXT[stream.ended.state]}</span>
             </div>
+            {stream.ended.state === "verified" && stream.ended.draft && onRunDraft && (
+              <Button
+                size="sm"
+                className="self-start"
+                onClick={() => {
+                  const d = stream.ended?.draft;
+                  if (d) onRunDraft(spec, d.content_id);
+                }}
+              >
+                <Play aria-hidden="true" /> Run this draft on BOPTEST
+              </Button>
+            )}
             {stream.ended.message && <p className="text-sm text-muted-foreground">{stream.ended.message}</p>}
             <p className="text-xs text-muted-foreground">
               {formatNumber(stream.ended.usage.input, 0)} input and {formatNumber(stream.ended.usage.output, 0)} output
