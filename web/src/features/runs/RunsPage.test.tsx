@@ -106,3 +106,50 @@ describe("RunsPage", () => {
     expect(gets).toBeLessThanOrEqual(3);
   });
 });
+
+describe("RunsPage with drafts", () => {
+  it("starts a run on a chosen verified draft and labels it in the run", async () => {
+    const draft = {
+      content_id: "cxf:fnv1a128:61dcdb7e3856008f78c5a1439451caee",
+      spec: "chw_plant_reset",
+      scenarios: 10,
+      model: "muse-spark-1.3",
+      source: "recorded",
+      session: "author-1",
+      attempts_used: 3,
+    };
+    const started = {
+      id: "run-9",
+      config: { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 300, step_s: 120, case: "c", drafts: {} },
+      state: "starting",
+      ticks: 0,
+      events: 0,
+    };
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/drafts") return new Response(JSON.stringify([draft]), { status: 200 });
+      if (init?.method === "POST") return new Response(JSON.stringify(started), { status: 201 });
+      return new Response("[]", { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetch);
+    render(<RunsPage />);
+    const choice = await screen.findByRole("button", { name: /Drafted …51caee/ });
+    expect(choice.textContent).toContain("(recorded)");
+    act(() => choice.click());
+    act(() => screen.getByRole("button", { name: /Start/ }).click());
+    await vi.waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true));
+    const post = fetch.mock.calls.find(([, i]) => i?.method === "POST");
+    expect(JSON.parse(String(post?.[1]?.body))).toMatchObject({ drafts: { chw_plant_reset: draft.content_id } });
+
+    await vi.waitFor(() => expect(FakeSource.last?.url).toBe("/api/runs/run-9/events"));
+    const sequences = [
+      { name: "chw", spec: "chw_plant_reset", content_id: draft.content_id, origin: "drafted", model: "muse-spark-1.3", source: "recorded" },
+      { name: "ahu1", spec: "ahu_chw_requests", content_id: "cxf:x", origin: "reference" },
+    ];
+    await act(async () => {
+      FakeSource.last?.emit(JSON.stringify({ run_id: "run-9", seq: 0, kind: "started", config: started.config, sequences }));
+      await new Promise((r) => setTimeout(r, 5));
+    });
+    expect(screen.getByText(/Drafted by muse-spark-1.3 \(recorded run\)/)).toBeTruthy();
+    expect(screen.getByText("Hand-built reference")).toBeTruthy();
+  });
+});

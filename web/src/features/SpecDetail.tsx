@@ -10,6 +10,7 @@ import type { Receipt as ReceiptDto } from "@/types/generated/Receipt";
 import type { SpecDetail as SpecDetailDto } from "@/types/generated/SpecDetail";
 import type { TaskPoint } from "@/types/generated/TaskPoint";
 
+import { AuthorPanel } from "./authoring/AuthorPanel";
 import { ErrorNote } from "./ErrorNote";
 import { Receipt } from "./Receipt";
 
@@ -71,12 +72,13 @@ export function SpecDetail({ name }: { name: string }) {
           <PointTable title="Parameter" second="Value" points={params} />
         </CardContent>
       </Card>
+      <AuthorPanel spec={name} scenarios={scenarios.length} />
       <Card>
         <CardHeader>
           <CardTitle>Verification</CardTitle>
           <CardDescription>
-            Replays all {scenarios.length} scenarios on the pinned engine against the reference
-            graph. Only a passing receipt lets a sequence run on the emulated building (BOPTEST).
+            Replays all {scenarios.length} scenarios on the pinned engine against our hand-built
+            reference graph. Only a passing receipt lets a sequence run on the emulated building (BOPTEST).
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
