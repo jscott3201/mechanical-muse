@@ -108,6 +108,10 @@ pub struct SequenceInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub model: Option<String>,
+    /// Whether that draft came from a live model call or a recorded run, for drafted graphs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub source: Option<crate::author_dto::ModelSource>,
 }
 
 /// A fail-safe or clamp event from the supervisor, flattened for the UI.

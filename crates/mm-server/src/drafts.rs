@@ -1,6 +1,7 @@
 //! Drafts that passed every scenario, keyed by content id. Kept in memory and, when a directory
 //! is configured, one JSON file each so they survive a restart. A stored draft is a claim, not a
-//! licence: a run replays its vectors again before loading it (AGENTS.md hard rule 5).
+//! licence: a run checks and replays it again before loading it (AGENTS.md hard rule 5). The
+//! labels in `info` (model, source, attempts) are not verified on load; only the graph is.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -86,7 +87,17 @@ fn read_dir(dir: &Path) -> Vec<Draft> {
             continue;
         }
         match std::fs::read(&path).map(|b| serde_json::from_slice::<Draft>(&b)) {
-            Ok(Ok(draft)) => out.push(draft),
+            // One file per content id, named after it: a copy under another name is ignored, so
+            // two files never compete for one id.
+            Ok(Ok(draft))
+                if path.file_name().and_then(|n| n.to_str())
+                    == Some(file_name(&draft.info.content_id).as_str()) =>
+            {
+                out.push(draft);
+            }
+            Ok(Ok(_)) => {
+                tracing::warn!(file = %path.display(), "skipping a draft filed under another name")
+            }
             Ok(Err(e)) => {
                 tracing::warn!(file = %path.display(), error = %e, "skipping a bad draft")
             }

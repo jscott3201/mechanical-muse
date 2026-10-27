@@ -148,7 +148,10 @@ async fn a_recorded_session_goes_red_amber_green_and_stores_the_draft() {
         assert_eq!(data["session_id"], id.as_str());
     }
     assert_eq!(all[1].1["attempt"], 1);
-    assert_eq!(all[1].1["of"], 5);
+    // A playback has only as many attempts as recorded replies, at the effort it ran at.
+    assert_eq!(all[1].1["of"], 3);
+    assert_eq!(info["config"]["max_attempts"], 3);
+    assert_eq!(info["config"]["effort"], "as recorded");
 
     // 1: the engine refuses an algebraic loop, and each problem names a block of the draft.
     let first = &all[2].1["attempt"];
@@ -409,6 +412,16 @@ async fn a_run_can_use_the_verified_draft_and_says_so() {
             Some(json!("muse-spark-1.3"))
         )
     );
+    let chw = started["sequences"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["name"] == "chw")
+        .unwrap();
+    assert_eq!(
+        chw["source"], "recorded",
+        "a run says when its draft was a playback"
+    );
     assert_eq!(origin("ahu1").0, json!("reference"));
     assert_eq!(origin("ahu1").2, None);
     assert_eq!(all.last().unwrap()["state"], "completed");
@@ -477,4 +490,51 @@ async fn run_requests_with_bad_drafts_are_refused() {
     }
     let (_, runs) = call(&state, "GET", "/api/runs", None).await;
     assert_eq!(runs, json!([]), "a refused request starts nothing");
+}
+
+#[tokio::test]
+async fn a_draft_that_no_longer_validates_is_refused_before_replay() {
+    let state = with_plant();
+    let mut bad = reference();
+    // An extra block nothing reads: the validator refuses it.
+    bad.blocks.push(mm_graph::Block {
+        id: "orphan".into(),
+        class: "Reals.Add".into(),
+        params: Vec::new(),
+    });
+    stored(&state, "sha256:orphan", bad);
+    let body = json!({"steps": 3, "drafts": {"chw_plant_reset": "sha256:orphan"}});
+    let (_, run) = call(&state, "POST", "/api/runs", Some(body)).await;
+    let all = run_events(&state, run["id"].as_str().unwrap()).await;
+    assert!(all.iter().all(|e| e["kind"] != "tick"));
+    let ended = all.last().unwrap();
+    assert_eq!(ended["state"], "failed");
+    assert!(
+        ended["message"]
+            .as_str()
+            .unwrap()
+            .contains("fails validation"),
+        "{ended}"
+    );
+}
+
+#[tokio::test]
+async fn only_drafts_filed_under_their_own_content_id_are_loaded() {
+    let dir = scratch("filed");
+    std::fs::create_dir_all(&dir).unwrap();
+    let draft = json!({
+        "info": {"content_id": "sha256:abc", "spec": "chw_plant_reset", "scenarios": 10,
+                 "model": "muse-spark-1.3", "source": "live", "session": "s", "attempts_used": 1},
+        "graph": serde_json::to_value(reference()).unwrap()
+    });
+    std::fs::write(dir.join("sha256_abc.json"), draft.to_string()).unwrap();
+    // The same id under another name, claiming another source: ignored.
+    let mut copy = draft.clone();
+    copy["info"]["source"] = json!("recorded");
+    std::fs::write(dir.join("copy.json"), copy.to_string()).unwrap();
+    std::fs::write(dir.join("broken.json"), "{not json").unwrap();
+    let state = state(Some(dir), Duration::ZERO);
+    let (_, listed) = call(&state, "GET", "/api/drafts", None).await;
+    assert_eq!(listed.as_array().unwrap().len(), 1, "{listed}");
+    assert_eq!(listed[0]["source"], "live");
 }

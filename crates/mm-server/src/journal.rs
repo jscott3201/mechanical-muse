@@ -98,12 +98,23 @@ impl<T: Entry> Journal<T> {
         let log = lock(&self.log);
         let rx = self.tx.subscribe();
         let ended = log.last().is_some_and(Entry::is_last);
-        (after_seq(&log, after), rx, ended)
+        (after_seq(&log, clamp(after, log.len())), rx, ended)
     }
 
     /// Events after `after` (all of them when `None`), for a subscriber that fell behind.
     pub fn since(&self, after: Option<u64>) -> Vec<T> {
         after_seq(&lock(&self.log), after)
+    }
+}
+
+/// An id the log has not reached yet (a client from another server life, or a forged header)
+/// would make the stream skip every future event: treat it as "after the newest one".
+fn clamp(after: Option<u64>, len: usize) -> Option<u64> {
+    let newest = (len as u64).checked_sub(1);
+    match (after, newest) {
+        (Some(a), Some(n)) => Some(a.min(n)),
+        (Some(_), None) => None,
+        (None, _) => None,
     }
 }
 
@@ -177,6 +188,8 @@ pub fn stream<T: Entry>(
     after: Option<u64>,
     shutdown: watch::Receiver<bool>,
 ) -> Response {
+    // The feed skips everything up to `after`, so it must use the clamped id as well.
+    let after = clamp(after, journal.len());
     let (backlog, rx, ended) = journal.subscribe(after);
     if ended && backlog.is_empty() {
         return StatusCode::NO_CONTENT.into_response();
@@ -259,5 +272,26 @@ mod tests {
             StatusCode::NO_CONTENT
         );
         assert_eq!(stream(journal, Some(0), shutdown).status(), StatusCode::OK);
+    }
+
+    /// An id past the end of a live log must not make the stream skip what comes next.
+    #[tokio::test]
+    async fn an_id_from_the_future_still_gets_the_last_event() {
+        let journal = Arc::new(Journal::<Note>::new("t", None));
+        journal.append(note(false));
+        let (_tx, shutdown) = watch::channel(false);
+        let response = stream(Arc::clone(&journal), Some(99), shutdown);
+        assert_eq!(response.status(), StatusCode::OK);
+        journal.append(note(true));
+        let mut body = response.into_body().into_data_stream();
+        let mut text = String::new();
+        while let Some(chunk) = tokio::time::timeout(std::time::Duration::from_secs(5), body.next())
+            .await
+            .expect("the stream ends after the last event")
+        {
+            text.push_str(&String::from_utf8_lossy(&chunk.unwrap()));
+        }
+        assert!(text.contains("id: 1"), "{text}");
+        assert!(!text.contains("id: 0"), "{text}");
     }
 }

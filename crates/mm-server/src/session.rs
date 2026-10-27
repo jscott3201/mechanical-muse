@@ -88,6 +88,20 @@ async fn load(
         ),
         None => None,
     };
+    if let Some(d) = &draft {
+        // The same static checks authoring ran, in case the stored file changed since.
+        let problems = mm_agent::interface_problems(&d.graph, &found.task);
+        if let Some(p) = problems.first() {
+            return Err(format!("the draft for {spec} no longer fits the task: {p}"));
+        }
+        if let Some(f) = mm_graph::validate(&d.graph, state.palette()).first() {
+            return Err(format!(
+                "the draft for {spec} fails validation: {} at {}",
+                f.code.as_str(),
+                f.subject
+            ));
+        }
+    }
     let worker = state.clone();
     let graph = draft.as_ref().map(|d| d.graph.clone());
     let (cxf, report) = tokio::task::spawn_blocking(move || match &graph {
@@ -121,6 +135,7 @@ async fn load(
                 Origin::Reference
             },
             model: draft.as_ref().map(|d| d.info.model.clone()),
+            source: draft.as_ref().map(|d| d.info.source),
         });
         loaded.push(
             RunningSequence::load(&name, &cxf, &report, bindings)

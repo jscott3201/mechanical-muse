@@ -30,6 +30,8 @@ use crate::specs::graph_view;
 pub const MODEL: &str = "muse-spark-1.3";
 const MAX_ATTEMPTS: u32 = 5;
 const MAX_OUTPUT_TOKENS: u32 = 32_000;
+/// A session that has not finished by then ends as failed and frees the slot.
+const DEADLINE: Duration = Duration::from_secs(30 * 60);
 
 #[derive(Clone)]
 pub struct AuthoringConfig {
@@ -170,7 +172,7 @@ impl Authoring {
                 "attempts must be 1 to {MAX_ATTEMPTS}"
             )));
         }
-        let (model, recording) = match source {
+        let (model, recording, effort_name, max_attempts) = match source {
             ModelSource::Live => {
                 if self.config.spark.is_none() {
                     return Err(StartError::Invalid(
@@ -178,11 +180,19 @@ impl Authoring {
                             .into(),
                     ));
                 }
-                (MODEL.to_owned(), None)
+                (MODEL.to_owned(), None, effort_name, max_attempts)
             }
             ModelSource::Recorded => {
+                // A playback replays what the model said then: the effort it ran at is part of
+                // the recording, and there are only as many attempts as recorded replies.
                 let recording = self.recording(spec)?;
-                (recording.model.clone(), Some(recording))
+                let replies = u32::try_from(recording.replies.len()).unwrap_or(u32::MAX);
+                (
+                    recording.model.clone(),
+                    Some(recording),
+                    "as recorded".to_owned(),
+                    max_attempts.min(replies.max(1)),
+                )
             }
         };
         let mut reg = lock(&self.registry);
@@ -254,10 +264,13 @@ pub async fn run(session: Arc<AuthorSession>, state: AppState) {
     session.publish(AuthorEvent::Started {
         config: session.config.clone(),
     });
-    let outcome = AssertUnwindSafe(author(&session, &state))
-        .catch_unwind()
-        .await
-        .unwrap_or_else(|_| Err("the authoring task panicked".into()));
+    let outcome = tokio::time::timeout(
+        DEADLINE,
+        AssertUnwindSafe(author(&session, &state)).catch_unwind(),
+    )
+    .await
+    .map_err(|_| "the session ran past its 30-minute deadline".to_owned())
+    .and_then(|r| r.unwrap_or_else(|_| Err("the authoring task panicked".into())));
     let (final_state, draft, message, usage) = match outcome {
         Ok(done) => done,
         Err(message) => {
