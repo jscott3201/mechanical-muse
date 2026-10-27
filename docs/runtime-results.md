@@ -4,6 +4,48 @@ Live runs of verified sequences against BOPTEST. Each entry states the setup, wh
 what it does not show. Run records (JSON) stay local in the gitignored `runs/`; the numbers
 below are copied from them.
 
+## 2026-10-27: a Muse Spark draft running the plant, on BOPTEST hosted on Modal
+
+**Setup.** The plant reset graph that Muse Spark drafted in the recorded authoring session
+(`fixtures/recordings/chw_plant_reset.json`: refused by the engine, then 8 of 10 scenarios, then
+10 of 10; content id `cxf:fnv1a128:61dcdb7e…`) ran in place of our hand-built graph, with the
+three verified air handler request sequences feeding it. Before loading it, `mm-server`
+re-checked its interface, ran the validator and replayed its vectors again. Same window as the
+reference run below: day 185 from 12:00, 300 steps of 120 s, one-day warm-up. BOPTEST v0.9.0
+ran on Modal (native x86), reached from `mm-server` on a laptop.
+
+**Result.** All 300 setpoint writes were identical to the hand-built reference graph's run of
+the same window (the local run of this morning, record `fixtures/replays/day185-noon-requests.jsonl`),
+and so were the BOPTEST KPIs (`ener_tot` 0.3101, `cost_tot` 0.0213, `tdis_tot` 0.1564). No
+fail-safe event fired. Record: `fixtures/replays/day185-noon-spark-draft.jsonl`.
+
+**What it does not show.** Identical behaviour on this window, where the draft and the reference
+receive the same inputs; not equivalence in general (the vectors are the stronger evidence of
+that, and they are conformance tests, not proof). The draft came from a recorded session: the
+model call happened earlier the same day; the checks and the run were live.
+
+**Fault, live.** A 60-step run from day 186 00:00 on the same draft, with floor 1's supply air
+temperature replaced by NaN for steps 20 to 24 (an injected test fault). On each faulted step the
+reading showed as no data, the floor 1 request sequence and the plant reset were degraded, and
+both chilled-water setpoints were handed back to BOPTEST's own controllers; from step 25 the
+reset wrote again. Record: `fixtures/replays/day186-midnight-fault-demo.jsonl`.
+
+### BOPTEST on Modal: timings
+
+BOPTEST's four services (web, worker, redis, minio) in one x86 container on Modal (4 cores,
+16 GiB), reached through a Modal tunnel. Same test case and window as the local runs.
+
+| Step | Local Docker on Apple silicon (x86 emulated) | Modal (native x86) |
+| --- | --- | --- |
+| select | not timed separately | 34 s |
+| initialize, day 185 noon, one-day warm-up | 939 to 1,555 s | 170 s |
+| one 120 s step (advance) | 0.84 to 9.4 s | 0.24 s, tunnel round trip included |
+
+The first readings after initialize matched the local run to every digit, as did the whole
+300-step run above. Cost at Modal's list prices is about $0.32 per hour for this size. Notes: the
+minio release BOPTEST names is no longer published as a binary or public image, so the image
+builds it from source at that release tag; the deployment files are not in the repository yet.
+
 ## 2026-10-27: plant reset with air handler requests, 10 hours
 
 Setup as above, with the request side wired: three instances of the verified
