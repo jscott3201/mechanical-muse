@@ -38,7 +38,7 @@ without the Stop hook or skills; run the checks yourself before merging their wo
   ```
 
 - The sandbox makes `$HOME` and `.git` read-only and proxies network per host: run `cargo fetch`
-  and the web install yourself first. Loopback ports (BOPTEST on 8000) are governed by
+  and the web install yourself first. Loopback ports (BOPTEST on 80) are governed by
   `network.local_ports`. `.claude/` is not sandbox-protected in Muse, so `AGENTS.md` tells agents
   not to edit it.
 - Useful: `/goal` with a test command as the finish line, `/plan` (saves to `.agents/plans/`),

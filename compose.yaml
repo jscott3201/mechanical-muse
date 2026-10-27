@@ -8,6 +8,9 @@
 # The minio images come from quay.io (the same releases BOPTEST names), because Docker Hub may
 # refuse anonymous pulls of minio/mc. BOPTEST's own .env supplies its local dev settings.
 # On arm64 the worker runs under x86 emulation; see docs/DECISIONS.md for measured speeds.
+# Built images are reused; after pointing BOPTEST_DIR at another version, `docker compose build`.
+# The project name matches BOPTEST's own default (its directory name), so images built from the
+# checkout are reused; do not run another stack named boptest alongside (both bind port 80).
 name: boptest
 
 include:

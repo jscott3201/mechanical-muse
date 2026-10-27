@@ -39,8 +39,9 @@ lint: fmt-check
 deny:
 	cargo deny --locked check
 
-# BOPTEST v0.9.0 on http://127.0.0.1:80 (compose.yaml; needs BOPTEST_DIR). provision uploads the
-# test cases once and exits; the first run builds the images.
+# BOPTEST v0.9.0 on http://127.0.0.1:80 (compose.yaml; both targets need BOPTEST_DIR). provision
+# uploads the test cases once and exits; the first run builds the images (after switching
+# BOPTEST versions, rebuild with `docker compose build`).
 boptest-up:
 	docker compose up -d web worker provision
 
