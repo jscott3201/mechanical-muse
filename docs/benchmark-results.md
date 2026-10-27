@@ -101,6 +101,30 @@ is "repaired against the scoring vectors", not a blind score.
   can show this run without a model call (labelled "recorded").
 - Tokens: 28,001 / 111,874 / 55,963 input and 31,164 / 63,206 / 41,321 output per run.
 
+### Live sessions through the server, and loop-aware feedback (2026-10-27)
+
+The same task, effort and budget, now run as authoring sessions in `mm-server` (what the web app
+shows). The first two sessions used the repair message above; the next three used a sharper one
+(`crates/mm-agent/src/feedback.rs`):
+
+- An `algebraic-loop` refusal reads as a chain of block ids (`addPrev -> limitReset ->
+  samplerReset -> addPrev`) and names the fix: break the cycle with `Discrete.UnitDelay` (Real)
+  or `Logical.Pre` (Boolean). We checked on the pinned engine that these two are the only
+  authorable classes that break a loop; Sampler, ZeroOrderHold, TriggeredSampler, Latch,
+  TrueDelay and TrueFalseHold pass the current value through (`crates/mm-agent/tests/feedback.rs`).
+  The drafts that looped had used exactly those.
+- A failing scenario also lists each input's value at the failing instant and when it last
+  changed, so a timing miss points at the edge that caused it.
+
+| Repair message | Sessions | Verified | Attempts per session |
+| --- | --- | --- | --- |
+| as above | 2 | 0 of 2 | loop, loop, 8/10, 8/10, loop · loop, 8/10, loop, 8/10, filtered (HTTP 400) |
+| loop-aware | 3 | **3 of 3** | loop, 8/10, 8/10, pass · loop, 1/10, pass · loop, 8/10, pass |
+
+Every first draft still had an algebraic loop; with the new message each was fixed on the next
+attempt. Three sessions are a small sample: we report the count, not a rate. Tokens per verified
+session: 126k / 49k / 85k input and 56k / 34k / 69k output.
+
 ## Control sequence: air handler chilled-water requests (run of 2026-10-26)
 
 Our own spec (`specs/ahu_chw_requests/`): one air handler's chilled-water reset requests (0 to
