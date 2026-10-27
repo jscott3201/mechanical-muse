@@ -178,7 +178,7 @@
   },
   {
    "name": "three_release_band",
-   "description": "3 requests from 420 s. At 900 s the error falls to 2.9375 K: still above 2.9 K, so 3 requests continue. At 1200 s it is 2.875 K: the 3-request condition releases and the 2-request condition, met all along, gives 2 at once. At 1500 s, 1.875 K: 0.",
+   "description": "3 requests from 420 s. At 900 s the error falls to 2.90625 K: still above 2.9 K, so 3 requests continue. At 1200 s it is 2.890625 K: the 3-request condition releases and the 2-request condition, met all along, gives 2 at once. At 1500 s, 1.875 K: 0.",
    "inputs": {
     "TAirSup": [
      {
@@ -191,11 +191,11 @@
      },
      {
       "t": 900.0,
-      "value": 288.9375
+      "value": 288.90625
      },
      {
       "t": 1200.0,
-      "value": 288.875
+      "value": 288.890625
      },
      {
       "t": 1500.0,
@@ -235,6 +235,148 @@
      "from_s": 0.0,
      "to_s": 1800.0,
      "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "two_from_below",
+   "description": "The error rises to exactly 2 K at 300 s: not above 2 K, so nothing starts. At 900 s it is 2.0625 K and 2 requests follow 120 s later. At 1500 s it eases to 1.90625 K, still above 1.9 K, so they continue; at 1800 s, 1.890625 K, they stop.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 300.0,
+      "value": 288.0
+     },
+     {
+      "t": 900.0,
+      "value": 288.0625
+     },
+     {
+      "t": 1500.0,
+      "value": 287.90625
+     },
+     {
+      "t": 1800.0,
+      "value": 287.890625
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 960.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1020.0,
+     "to_s": 1740.0,
+     "equals": 2
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1800.0,
+     "to_s": 2100.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 2100.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "starts_two",
+   "description": "The error is 2.5 K from the first frame: 2 requests at 0 s, as a condition already met at the start counts as having lasted.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 288.5
+     },
+     {
+      "t": 600.0,
+      "value": 286.5
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.5
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 540.0,
+     "equals": 2
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 600.0,
+     "to_s": 900.0,
+     "equals": 0
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 900.0,
+     "equals": 0
+    }
+   ]
+  },
+  {
+   "name": "two_beats_valve",
+   "description": "Valve latched from the start (1 request); the error rises to 2.5 K at 600 s, giving 2 requests from 720 s; when it clears at 1200 s the latched 1 request remains.",
+   "inputs": {
+    "TAirSup": [
+     {
+      "t": 0.0,
+      "value": 286.5
+     },
+     {
+      "t": 600.0,
+      "value": 288.5
+     },
+     {
+      "t": 1200.0,
+      "value": 286.5
+     }
+    ],
+    "TAirSupSet": 286.0,
+    "uCooCoi": 0.97
+   },
+   "expect": [
+    {
+     "output": "yChiWatResReq",
+     "from_s": 0.0,
+     "to_s": 660.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 720.0,
+     "to_s": 1140.0,
+     "equals": 2
+    },
+    {
+     "output": "yChiWatResReq",
+     "from_s": 1200.0,
+     "to_s": 1500.0,
+     "equals": 1
+    },
+    {
+     "output": "yChiPlaReq",
+     "from_s": 0.0,
+     "to_s": 1500.0,
+     "equals": 1
     }
    ]
   },

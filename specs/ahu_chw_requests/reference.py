@@ -162,11 +162,28 @@ def scenarios():
             temp(steps([(600, 3.0), (1200, 2.0), (1500, 1.875)], 0.5)), 1800,
             {660: (0, 0), 720: (2, 0), 1200: (2, 0), 1440: (2, 0), 1500: (0, 0)}),
         "three_release_band": (
-            "3 requests from 420 s. At 900 s the error falls to 2.9375 K: still above 2.9 K, so "
-            "3 requests continue. At 1200 s it is 2.875 K: the 3-request condition releases and "
-            "the 2-request condition, met all along, gives 2 at once. At 1500 s, 1.875 K: 0.",
-            temp(steps([(300, 3.5), (900, 2.9375), (1200, 2.875), (1500, 1.875)], 0.5)), 1800,
-            {360: (0, 0), 420: (3, 0), 900: (3, 0), 1140: (3, 0), 1200: (2, 0), 1500: (0, 0)}),
+            "3 requests from 420 s. At 900 s the error falls to 2.90625 K: still above 2.9 K, so "
+            "3 requests continue. At 1200 s it is 2.890625 K: the 3-request condition releases "
+            "and the 2-request condition, met all along, gives 2 at once. At 1500 s, 1.875 K: 0.",
+            temp(steps([(300, 3.5), (900, 2.90625), (1200, 2.890625), (1500, 1.875)], 0.5)),
+            1800, {360: (0, 0), 420: (3, 0), 900: (3, 0), 1140: (3, 0), 1200: (2, 0),
+                   1500: (0, 0)}),
+        "two_from_below": (
+            "The error rises to exactly 2 K at 300 s: not above 2 K, so nothing starts. At 900 s "
+            "it is 2.0625 K and 2 requests follow 120 s later. At 1500 s it eases to 1.90625 K, "
+            "still above 1.9 K, so they continue; at 1800 s, 1.890625 K, they stop.",
+            temp(steps([(300, 2.0), (900, 2.0625), (1500, 1.90625), (1800, 1.890625)], 0.5)),
+            2100, {300: (0, 0), 840: (0, 0), 900: (0, 0), 960: (0, 0), 1020: (2, 0),
+                   1500: (2, 0), 1740: (2, 0), 1800: (0, 0)}),
+        "starts_two": (
+            "The error is 2.5 K from the first frame: 2 requests at 0 s, as a condition already "
+            "met at the start counts as having lasted.",
+            temp(steps([(600, 0.5)], 2.5)), 900, {0: (2, 0), 540: (2, 0), 600: (0, 0)}),
+        "two_beats_valve": (
+            "Valve latched from the start (1 request); the error rises to 2.5 K at 600 s, giving "
+            "2 requests from 720 s; when it clears at 1200 s the latched 1 request remains.",
+            temp(steps([(600, 2.5), (1200, 0.5)], 0.5), lambda t: 0.97), 1500,
+            {0: (1, 1), 660: (1, 1), 720: (2, 1), 1140: (2, 1), 1200: (1, 1)}),
         "timer_restarts": (
             "The error jumps to 3.5 K at 600 s, drops to 1 K at 660 s and returns to 3.5 K at "
             "720 s. The 120 s count starts again at 720 s, so requests begin at 840 s.",

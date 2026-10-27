@@ -69,16 +69,21 @@ Edge instants, stated in the task because the prose above leaves them open:
 ## Validation (done before any model sees this spec)
 
 - `reference.py` is an independent model of the behaviour (stdlib Python, no engine code). Its
-  self-check compares it with checkpoints worked out by hand, and it writes `vectors.json`: 12
-  scenarios covering steady state, 3 and 2 requests, exact thresholds and release bands, the
-  persistence timer and its restart, a condition true at the start, the valve latch through
+  self-check compares it with checkpoints worked out by hand, and it writes `vectors.json`: 15
+  scenarios covering steady state, 3 and 2 requests, exact thresholds approached from below,
+  release bands pinned on both sides, the persistence timer and its restart, 3 and 2 requests
+  true at the start, the valve latch through
   partial closing and reopening, the latch boundaries, the plant request's separate clear, a
-  clear and set in the same frame, and temperature requests overriding the valve request.
+  clear and set in the same frame, and 3 and 2 requests each overriding the valve request.
   Supply temperatures are chosen so every error is exact in binary floating point.
 - `graph.json` is a hand-built block graph (18 blocks) mirroring the library block's structure.
   `crates/mm-bridge/tests/specs.rs` checks that it passes every scenario on the pinned engine,
-  and that each of these mistakes fails at least one: wrong 3- or 2-request threshold, ">= 3 K"
-  instead of "> 3 K", no release band on either temperature condition, 60 s persistence, the
-  delay applied to a condition true at the start, 2 checked before 3, the valve request without
+  and that each of these 22 mistakes fails at least one: wrong 3- or 2-request threshold (either
+  side), ">=" instead of ">" on either, missing, narrow or wide release bands on either
+  temperature condition, 60 s persistence, the delay applied to a 3 or 2 condition true at the
+  start, 2 checked before 3, 1 checked before 2, the valve request without
   the latch, the valve opening at 0.90, the reset latch clearing at 0.90, the plant latch
   clearing with the reset latch, the plant latch clearing at 0.15, and the error reversed.
+- The valve release bands cannot change either output: a valve above 0.95 (held down to 0.90)
+  and one below 0.85 (held up to 0.90) are never both on, so removing the bands gives the same
+  latches. They are kept to mirror the library block; no vector can, or needs to, test them.

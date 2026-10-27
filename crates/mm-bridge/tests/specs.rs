@@ -212,6 +212,45 @@ fn ahu_chw_requests_vectors_catch_common_mistakes() {
             }),
         ),
         (
+            "1 checked before 2",
+            Box::new(|g| {
+                rewire(g, "resetLatch.y -> req1.u2", "high2Long.y -> req1.u2");
+                rewire(g, "one.y -> req1.u1", "two.y -> req1.u1");
+                rewire(g, "high2Long.y -> req2.u2", "resetLatch.y -> req2.u2");
+                rewire(g, "two.y -> req2.u1", "one.y -> req2.u1");
+            }),
+        ),
+        (
+            "2-request delay counted from the first frame",
+            Box::new(|g| {
+                set_param(g, "high2Long", "delayOnInit", ParamValue::Bool(true));
+            }),
+        ),
+        (
+            "2-request compared with >=",
+            Box::new(move |g| set_param(g, "high2", "t", n(1.999))),
+        ),
+        (
+            "2-request threshold of 2.05 K",
+            Box::new(move |g| set_param(g, "high2", "t", n(2.05))),
+        ),
+        (
+            "2-request band of 0.05 K",
+            Box::new(move |g| set_param(g, "high2", "h", n(0.05))),
+        ),
+        (
+            "2-request band of 0.12 K",
+            Box::new(move |g| set_param(g, "high2", "h", n(0.12))),
+        ),
+        (
+            "3-request band of 0.08 K",
+            Box::new(move |g| set_param(g, "high3", "h", n(0.08))),
+        ),
+        (
+            "3-request band of 0.12 K",
+            Box::new(move |g| set_param(g, "high3", "h", n(0.12))),
+        ),
+        (
             "valve request without the latch",
             Box::new(|g| rewire(g, "resetLatch.y -> req1.u2", "valveOpen.y -> req1.u2")),
         ),

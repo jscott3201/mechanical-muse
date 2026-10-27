@@ -80,23 +80,25 @@ went undetected. On those weaker vectors it reported after-repair passes of 2 of
 (engine #340). The repair message dropped the engine's explanation in the earliest runs; it is
 passed on in all runs reported here.
 
-## Control sequence: air handler chilled-water requests (run of 2026-10-27)
+## Control sequence: air handler chilled-water requests (run of 2026-10-26)
 
 Our own spec (`specs/ahu_chw_requests/`): one air handler's chilled-water reset requests (0 to
 3) and chiller plant request, from the supply air temperature error and the cooling valve
 position, with persistence timers, release bands and set/clear latches.
 
-**Validation before any model saw it:** an 18-block reference graph passes all 12 scenarios on
-the pinned engine; fourteen deliberate mistakes each fail at least one scenario; the vectors come
+**Validation before any model saw it:** an 18-block reference graph passes all 15 scenarios on
+the pinned engine; 22 deliberate mistakes each fail at least one scenario; the vectors come
 from an independent reference model.
 
 **Run setup:** as for the plant reset, medium effort, 3 runs.
 
 | Task version | Effort | First try | After repair | Best scenarios per run |
 | --- | --- | --- | --- | --- |
-| v1 (edge instants stated) | medium | 3 of 3 | 3 of 3 | 12, 12, 12 of 12 |
+| v1 (edge instants stated) | medium | 3 of 3 | 3 of 3 | 15, 15, 15 of 15 |
 
-Constant baselines pass 1 of 12 scenarios.
+Constant baselines pass 1 of 15 scenarios. (A first batch on an earlier 12-scenario version also
+passed 3 of 3; review then found wrong graphs those 12 let through, and the vectors were
+strengthened before this run.)
 
 - **Every run passed on the first try.** The task states every edge instant (strict thresholds,
   a condition true at the first frame, a latch's set and clear in one frame), and the sequence
