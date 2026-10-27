@@ -2,7 +2,9 @@ import { LoaderCircle, Server, ServerOff } from "lucide-react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SpecDetail } from "@/features/SpecDetail";
+import { RunsPage } from "@/features/runs/RunsPage";
 import { SpecList } from "@/features/SpecList";
 import { useResource } from "@/hooks/useResource";
 import type { Health } from "@/types/generated/Health";
@@ -30,18 +32,29 @@ export function App() {
           </Badge>
         )}
       </header>
-      <main className="grid gap-4 p-4 md:grid-cols-[16rem_minmax(0,1fr)]">
-        <aside>
-          <SpecList selected={spec} onSelect={setSpec} />
-        </aside>
-        <section className="min-w-0">
-          {spec ? (
-            <SpecDetail key={spec} name={spec} />
-          ) : (
-            <p className="text-sm text-muted-foreground">Choose a sequence to see its interface and verify it.</p>
-          )}
-        </section>
-      </main>
+      <Tabs defaultValue="sequences" className="p-4">
+        <TabsList>
+          <TabsTrigger value="sequences">Sequences</TabsTrigger>
+          <TabsTrigger value="runs">Runs</TabsTrigger>
+        </TabsList>
+        <TabsContent value="sequences">
+          <main className="grid gap-4 pt-2 md:grid-cols-[16rem_minmax(0,1fr)]">
+            <aside>
+              <SpecList selected={spec} onSelect={setSpec} />
+            </aside>
+            <section className="min-w-0">
+              {spec ? (
+                <SpecDetail key={spec} name={spec} />
+              ) : (
+                <p className="text-sm text-muted-foreground">Choose a sequence to see its interface and verify it.</p>
+              )}
+            </section>
+          </main>
+        </TabsContent>
+        <TabsContent value="runs" className="pt-2">
+          <RunsPage />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

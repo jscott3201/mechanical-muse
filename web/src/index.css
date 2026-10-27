@@ -128,3 +128,16 @@
     @apply font-sans;
     }
 }
+/* Chart series colors: the first three slots of a validated categorical palette (checked for
+   colour-vision deficiency and contrast against these surfaces in both modes). The third slot
+   is under 3:1 on white, so every chart also carries direct labels and a table view. */
+:root {
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+}
+.dark {
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-3: #199e70;
+}
