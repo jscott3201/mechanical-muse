@@ -10,6 +10,7 @@ pub mod bacnet;
 pub mod drafts;
 pub mod dto;
 mod journal;
+mod recording;
 mod replay;
 mod routes;
 pub mod run_dto;

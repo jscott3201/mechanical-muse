@@ -48,8 +48,12 @@ opening.
 1. ~~KPIs beside a baseline run in the web app~~ Done: the run view sets a run's KPIs beside a
    baseline run of the same window (on the server, or the recorded
    `fixtures/replays/day185-noon-baseline.jsonl`, `ener_tot` 0.3255).
-2. A recorded model session (rung 2) from the current prompt, so the recorded fallback shows
-   today's behaviour.
+2. Rung 2 today plays back a recorded session with a real red-to-green (the engine refuses a
+   loop, then 8 of 10, then 10 of 10), from before the loop rule was in the prompt; it is
+   labelled "recorded". The server now keeps every live session's replies
+   (`runs/recordings/<session>.json`); to switch the fallback to a session on the current
+   prompt, copy one to `fixtures/recordings/chw_plant_reset.json` and update the tests that
+   pin its outcomes.
 3. One manual BACnet read with a desktop client during a live Modal run. (A raw-packet check over
    UDP 47808 during a Modal baseline run passed: I-Am 599, live readings reliable, sequence
    outputs no sensor in a baseline run, a write refused with service-request-denied.)

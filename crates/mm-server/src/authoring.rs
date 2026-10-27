@@ -341,6 +341,9 @@ async fn author(session: &AuthorSession, state: &AppState) -> Result<Done, Strin
         },
     )
     .await;
+    if session.recording.is_none() {
+        crate::recording::save(authoring.config.records.as_deref(), &session.id, &trace);
+    }
     let usage = tokens(trace.usage);
     if let Some(error) = trace.setup_error {
         return Ok((AuthorState::Failed, None, Some(error), usage));
