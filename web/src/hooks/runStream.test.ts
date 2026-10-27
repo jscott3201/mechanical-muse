@@ -91,3 +91,24 @@ describe("reduceRun", () => {
     expect(reduceRun(bad, [tick(2, [])]).degraded).toBeNull();
   });
 });
+
+describe("injected faults", () => {
+  it("logs an injected fault and shows the step as degraded", () => {
+    const tick = {
+      run_id: "r",
+      seq: 0,
+      sim_time_s: 100,
+      kind: "tick" as const,
+      outputs: {},
+      writes: {},
+      readings: {},
+      events: [
+        { kind: "injected", point: "floor1_reaAHU_TSup_y", reason: "test fault: reading replaced with NaN" },
+        { kind: "degraded", sequence: "ahu1", reason: "floor1_reaAHU_TSup_y is not finite" },
+      ],
+    };
+    const s = reduceRun(initialRunStream, [tick]);
+    expect(s.log.map((l) => l.text)).toContain("floor1_reaAHU_TSup_y: test fault injected (reading replaced with NaN)");
+    expect(s.degraded).toContain("ahu1");
+  });
+});

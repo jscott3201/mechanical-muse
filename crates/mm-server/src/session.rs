@@ -276,15 +276,42 @@ async fn steps(
             phase: Phase::Running,
         },
     );
-    for _ in 0..handle.config.steps {
+    for step in 0..handle.config.steps {
         // A stop is honoured between steps: an advance already sent is one state transition
         // of the plant and is never abandoned halfway.
         if *stop.borrow() {
             return Ok(RunState::Stopped);
         }
-        let report = sup.tick(&readings);
+        let fault = handle
+            .config
+            .fault
+            .as_ref()
+            .filter(|f| (f.from_step..f.from_step.saturating_add(f.steps)).contains(&step));
+        let seen = match fault {
+            Some(f) => {
+                let mut faulty = readings.clone();
+                faulty.insert(f.point.clone(), f64::NAN);
+                faulty
+            }
+            None => readings.clone(),
+        };
+        let report = sup.tick(&seen);
         let time = report.time.is_finite().then_some(report.time);
-        handle.publish(time, tick(&report, &readings, &watch));
+        let mut event = tick(&report, &seen, &watch);
+        if let (Some(f), RunEvent::Tick { events, .. }) = (fault, &mut event) {
+            events.insert(
+                0,
+                SupervisorEvent {
+                    kind: "injected".into(),
+                    sequence: None,
+                    point: Some(f.point.clone()),
+                    value: None,
+                    sent: None,
+                    reason: Some("test fault: reading replaced with NaN".into()),
+                },
+            );
+        }
+        handle.publish(time, event);
         handle.count_tick();
         readings = match plant.advance(&report.writes).await {
             Ok(next) => next,

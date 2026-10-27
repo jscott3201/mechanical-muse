@@ -47,6 +47,8 @@ fn paced(records: Option<PathBuf>, pace: std::time::Duration) -> AppState {
                 pace,
             },
             records,
+            replays: None,
+            replay_pace: std::time::Duration::ZERO,
         },
     )
 }
@@ -380,4 +382,107 @@ async fn shutdown_before_anyone_listens_still_stops_the_run() {
     .expect("run still active after shutdown");
     let (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
     assert_eq!(info["state"], "stopped");
+}
+
+/// A NaN on one air handler's supply temperature degrades that handler's sequence, the reset
+/// loses its request input, and both setpoints are handed back to BOPTEST; when the fault
+/// ends, the sequences write again. Every faulted step says it was injected.
+#[tokio::test]
+async fn an_injected_fault_degrades_releases_and_recovers() {
+    let state = state(None);
+    let body = json!({"steps": 14, "fault": {"point": "floor1_reaAHU_TSup_y", "from_step": 4, "steps": 3}});
+    let (status, info) = call(&state, "POST", "/api/runs", Some(body)).await;
+    assert_eq!(status, StatusCode::CREATED, "{info}");
+    assert_eq!(info["config"]["fault"]["point"], "floor1_reaAHU_TSup_y");
+    let all = events(&state, info["id"].as_str().unwrap(), None).await;
+    let ticks: Vec<&Value> = all
+        .iter()
+        .filter(|(_, k, _)| k == "tick")
+        .map(|(_, _, d)| d)
+        .collect();
+    assert_eq!(ticks.len(), 14);
+    let kinds = |t: &Value| -> Vec<String> {
+        t["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|e| {
+                format!(
+                    "{} {}",
+                    e["kind"].as_str().unwrap(),
+                    e.get("sequence")
+                        .or(e.get("point"))
+                        .and_then(Value::as_str)
+                        .unwrap_or("")
+                )
+            })
+            .collect()
+    };
+    for (i, t) in ticks.iter().enumerate() {
+        let k = kinds(t);
+        let faulted = (4..7).contains(&i);
+        assert_eq!(
+            k.contains(&"injected floor1_reaAHU_TSup_y".to_owned()),
+            faulted,
+            "step {i}: {k:?}"
+        );
+        if faulted {
+            assert!(k.contains(&"degraded ahu1".to_owned()), "step {i}: {k:?}");
+            assert!(k.contains(&"degraded chw".to_owned()), "step {i}: {k:?}");
+            assert!(
+                k.iter()
+                    .any(|e| e.starts_with("released oveChiWatSys_TWSet")),
+                "step {i}: {k:?}"
+            );
+            assert!(
+                t["readings"].get("floor1_reaAHU_TSup_y").is_none(),
+                "a NaN shows as no data"
+            );
+            assert_eq!(t["writes"]["oveChiWatSys_TWSet_activate"], 0.0, "step {i}");
+        }
+    }
+    // After the fault the reset writes again.
+    assert_eq!(ticks[8]["writes"]["oveChiWatSys_TWSet_activate"], 1.0);
+    assert!(
+        kinds(ticks[8]).iter().all(|e| !e.starts_with("degraded")),
+        "{:?}",
+        kinds(ticks[8])
+    );
+}
+
+#[tokio::test]
+async fn bad_faults_are_refused() {
+    let state = state(None);
+    for (fault, extra, why) in [
+        (
+            json!({"point": "reaChiWatSys_dp_y", "from_step": 1, "steps": 2}),
+            json!({}),
+            "not a sequence input",
+        ),
+        (
+            json!({"point": "floor1_reaAHU_TSup_y", "from_step": 1, "steps": 0}),
+            json!({}),
+            "zero steps",
+        ),
+        (
+            json!({"point": "floor1_reaAHU_TSup_y", "from_step": 1, "steps": 61}),
+            json!({}),
+            "too long",
+        ),
+        (
+            json!({"point": "floor1_reaAHU_TSup_y", "from_step": 1, "steps": 2, "value": 5}),
+            json!({}),
+            "unknown field",
+        ),
+        (
+            json!({"point": "floor1_reaAHU_TSup_y", "from_step": 1, "steps": 2}),
+            json!({"baseline": true}),
+            "baseline",
+        ),
+    ] {
+        let mut body = extra.clone();
+        body["fault"] = fault;
+        let (status, err) = call(&state, "POST", "/api/runs", Some(body)).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{why}: {err}");
+    }
 }

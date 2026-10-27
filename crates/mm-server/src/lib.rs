@@ -9,6 +9,7 @@ pub mod authoring;
 pub mod drafts;
 pub mod dto;
 mod journal;
+mod replay;
 mod routes;
 pub mod run_dto;
 mod run_routes;

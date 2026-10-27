@@ -44,6 +44,9 @@ class FakeSource {
 }
 
 beforeEach(() => {
+  // The run view opens its stream in an effect, after the list has rendered: tests wait for
+  // it rather than assume it, and never see a source left over from an earlier test.
+  FakeSource.last = null;
   vi.stubGlobal("EventSource", FakeSource);
   vi.stubGlobal("requestAnimationFrame", (cb: () => void) => setTimeout(cb, 0));
   const info = {
@@ -53,7 +56,10 @@ beforeEach(() => {
     ticks: 3,
     events: 8,
   };
-  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([info]), { status: 200 })));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => new Response(JSON.stringify(url === "/api/runs" ? [info] : []), { status: 200 })),
+  );
 });
 
 afterEach(() => {
@@ -65,7 +71,7 @@ describe("RunsPage", () => {
   it("follows the newest run into charts, receipts and KPIs", async () => {
     render(<RunsPage />);
     expect(await screen.findAllByText(runId)).toBeTruthy();
-    expect(FakeSource.last?.url).toBe(`/api/runs/${runId}/events`);
+    await vi.waitFor(() => expect(FakeSource.last?.url).toBe(`/api/runs/${runId}/events`), { timeout: 5000 });
     await act(async () => {
       for (const line of lines) FakeSource.last?.emit(line);
       await new Promise((r) => setTimeout(r, 10));
@@ -80,6 +86,7 @@ describe("RunsPage", () => {
   it("re-subscribes from the start when events are missing", async () => {
     render(<RunsPage />);
     await screen.findAllByText(runId);
+    await vi.waitFor(() => expect(FakeSource.last).not.toBeNull(), { timeout: 5000 });
     const first = FakeSource.last;
     await act(async () => {
       for (const line of gapped) first?.emit(line);
@@ -102,7 +109,10 @@ describe("RunsPage", () => {
       screen.getByRole("button", { name: /Start/ }).click();
       await new Promise((r) => setTimeout(r, 200));
     });
-    const gets = fetchMock.mock.calls.filter(([, init]) => (init?.method ?? "GET") === "GET").length;
+    // The run list (not the drafts or replay lists) is what a reload loop would hammer.
+    const gets = fetchMock.mock.calls.filter(
+      ([url, init]) => url === "/api/runs" && (init?.method ?? "GET") === "GET",
+    ).length;
     expect(gets).toBeLessThanOrEqual(3);
   });
 });
@@ -136,11 +146,11 @@ describe("RunsPage with drafts", () => {
     expect(choice.textContent).toContain("(recorded)");
     act(() => choice.click());
     act(() => screen.getByRole("button", { name: /Start/ }).click());
-    await vi.waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true));
+    await vi.waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true), { timeout: 5000 });
     const post = fetch.mock.calls.find(([, i]) => i?.method === "POST");
     expect(JSON.parse(String(post?.[1]?.body))).toMatchObject({ drafts: { chw_plant_reset: draft.content_id } });
 
-    await vi.waitFor(() => expect(FakeSource.last?.url).toBe("/api/runs/run-9/events"));
+    await vi.waitFor(() => expect(FakeSource.last?.url).toBe("/api/runs/run-9/events"), { timeout: 5000 });
     const sequences = [
       { name: "chw", spec: "chw_plant_reset", content_id: draft.content_id, origin: "drafted", model: "muse-spark-1.3", source: "recorded" },
       { name: "ahu1", spec: "ahu_chw_requests", content_id: "cxf:x", origin: "reference" },
@@ -151,5 +161,31 @@ describe("RunsPage with drafts", () => {
     });
     expect(screen.getByText(/Drafted by muse-spark-1.3 \(recorded run\)/)).toBeTruthy();
     expect(screen.getByText("Hand-built reference")).toBeTruthy();
+  });
+});
+
+describe("RunsPage replays", () => {
+  it("replays a recorded run and labels it as a replay", async () => {
+    const replay = { name: "day185-noon-requests", recorded_run: "run-1", ticks: 300, baseline: false, start_s: 16027200, drafted: false, state: "completed" };
+    const config = { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 300, step_s: 120, case: "c", drafts: {}, replay: { record: replay.name, recorded_run: "run-1" } };
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/replays") return new Response(JSON.stringify([replay]), { status: 200 });
+      if (url === "/api/runs/replay" && init?.method === "POST")
+        return new Response(JSON.stringify({ id: "run-77", config, state: "starting", ticks: 0, events: 0 }), { status: 201 });
+      return new Response("[]", { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetch);
+    render(<RunsPage />);
+    const button = await screen.findByRole("button", { name: /Replay/ });
+    act(() => button.click());
+    await vi.waitFor(() => expect(FakeSource.last?.url).toBe("/api/runs/run-77/events"), { timeout: 5000 });
+    const post = fetch.mock.calls.find(([u, i]) => u === "/api/runs/replay" && i?.method === "POST");
+    expect(JSON.parse(String(post?.[1]?.body))).toEqual({ record: replay.name });
+    await act(async () => {
+      FakeSource.last?.emit(JSON.stringify({ run_id: "run-77", seq: 0, kind: "started", config, sequences: [] }));
+      await new Promise((r) => setTimeout(r, 5));
+    });
+    expect(screen.getByText("Replay of a recorded run")).toBeTruthy();
+    expect(screen.getByText(/Nothing runs\s+against BOPTEST now/)).toBeTruthy();
   });
 });

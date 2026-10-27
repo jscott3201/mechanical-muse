@@ -16,12 +16,14 @@ use mm_runtime::preset::{REQUESTS_SPEC, RESET_SPEC};
 
 use crate::journal;
 use crate::routes::{AppState, Failure};
-use crate::run_dto::{RunInfo, RunRequest};
+use crate::run_dto::{ReplayInfo, ReplayRequest, RunInfo, RunRequest};
 use crate::runs::{RunHandle, StartError};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/runs", get(list_runs).post(start_run))
+        .route("/api/runs/replay", post(start_replay))
+        .route("/api/replays", get(list_replays))
         .route("/api/runs/{id}", get(run_info))
         .route("/api/runs/{id}/events", get(run_events))
         .route("/api/runs/{id}/stop", post(stop_run))
@@ -73,6 +75,56 @@ fn check_drafts(state: &AppState, request: &RunRequest) -> Result<(), Failure> {
         }
     }
     Ok(())
+}
+
+fn no_replays() -> Failure {
+    Failure::new(
+        StatusCode::NOT_FOUND,
+        "no-replays",
+        "this server has no recorded runs to replay",
+    )
+}
+
+async fn list_replays(State(state): State<AppState>) -> Result<Json<Vec<ReplayInfo>>, Failure> {
+    let dir = state.runs().config.replays.clone().ok_or_else(no_replays)?;
+    let list = tokio::task::spawn_blocking(move || crate::replay::list(&dir))
+        .await
+        .unwrap_or_default();
+    Ok(Json(list))
+}
+
+/// Plays a recorded run back through a normal run's event stream (one run at a time, like a
+/// live one), with a config that names the record.
+async fn start_replay(
+    State(state): State<AppState>,
+    request: Result<Json<ReplayRequest>, JsonRejection>,
+) -> Result<(StatusCode, Json<RunInfo>), Failure> {
+    let Json(request) =
+        request.map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.body_text()))?;
+    let dir = state.runs().config.replays.clone().ok_or_else(no_replays)?;
+    let name = request.record.clone();
+    let events = tokio::task::spawn_blocking(move || crate::replay::read(&dir, &name))
+        .await
+        .map_err(|e| {
+            Failure::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "replay-crashed",
+                e.to_string(),
+            )
+        })?
+        .map_err(|e| Failure::new(StatusCode::NOT_FOUND, "unknown-record", e))?;
+    let config = crate::replay::config(&request.record, &events)
+        .map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string()))?;
+    let handle = state.runs().register(config).map_err(|e| match e {
+        StartError::Active(_) => Failure::new(StatusCode::CONFLICT, "run-active", e.to_string()),
+        StartError::Invalid(_) => {
+            Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string())
+        }
+    })?;
+    let info = handle.info();
+    let pace = state.runs().config.replay_pace;
+    tokio::spawn(crate::replay::run(handle, events, pace));
+    Ok((StatusCode::CREATED, Json(info)))
 }
 
 async fn run_info(

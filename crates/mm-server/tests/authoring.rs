@@ -43,6 +43,8 @@ fn state(drafts: Option<PathBuf>, pace: Duration) -> AppState {
                 pace: Duration::ZERO,
             },
             records: None,
+            replays: None,
+            replay_pace: Duration::ZERO,
         },
         AuthoringConfig {
             spark: None,
@@ -313,6 +315,8 @@ fn with_plant() -> AppState {
                 pace: Duration::ZERO,
             },
             records: None,
+            replays: None,
+            replay_pace: Duration::ZERO,
         },
         AuthoringConfig {
             recordings: Some(repo("fixtures/recordings")),

@@ -5,7 +5,8 @@
  */
 export type SupervisorEvent = { 
 /**
- * `stale`, `degraded`, `clamped`, `rejected`, `held`, `released` or `no-such-output`.
+ * `stale`, `degraded`, `clamped`, `rejected`, `held`, `released`, `no-such-output`, or
+ * `injected` (a test fault replaced `point`'s reading this step).
  */
 kind: string, sequence?: string, point?: string, value?: number, 
 /**

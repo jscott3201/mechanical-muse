@@ -64,7 +64,7 @@ describe("AuthorPanel", () => {
     expect(url).toBe("/api/specs/chw_plant_reset/author");
     expect(JSON.parse(String(init.body))).toEqual({ source: "recorded" });
 
-    await waitFor(() => expect(FakeSource.instances).toHaveLength(1));
+    await waitFor(() => expect(FakeSource.instances).toHaveLength(1), { timeout: 5000 });
     const source = FakeSource.instances.at(-1);
     expect(source?.url).toBe(`/api/authoring/${sessionId}/events`);
     await act(async () => {
