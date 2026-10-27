@@ -15,19 +15,25 @@ import type { RunStreamState } from "@/hooks/runStream";
 
 export type Connection = "idle" | "connecting" | "open" | "reconnecting" | "closed";
 
-/**
- * What the run is doing, always as icon plus text. `staleS` is the seconds since the last event
- * while running, or null when updates are current.
- */
-export function RunStatus({
-  stream,
-  connection,
-  staleS,
-}: {
+type StatusProps = {
   stream: RunStreamState;
   connection: Connection;
   staleS: number | null;
-}) {
+};
+
+/**
+ * What the run is doing, always as icon plus text. `staleS` is the seconds since the last event
+ * while running, or null when updates are current. Changes are announced politely.
+ */
+export function RunStatus(props: StatusProps) {
+  return (
+    <span role="status" aria-live="polite" className="inline-flex">
+      <StatusBadge {...props} />
+    </span>
+  );
+}
+
+function StatusBadge({ stream, connection, staleS }: StatusProps) {
   const ended = stream.ended;
   if (ended?.state === "completed")
     return <Badge><CircleCheck aria-hidden="true" /> completed</Badge>;

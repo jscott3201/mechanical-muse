@@ -14,6 +14,7 @@ import type { RunInfo } from "@/types/generated/RunInfo";
 
 import { ErrorNote } from "../ErrorNote";
 import { change } from "./baseline";
+import { configFacts, describe } from "./describe";
 import { RunExplanationPanel } from "./RunExplanationPanel";
 import { RunStatus } from "./RunStatus";
 import { KpiTiles, RunProgress, SequenceGroups } from "./RunSummary";
@@ -107,7 +108,8 @@ function RunStream({
       <Card>
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-sm">{runId}</span>
+            <span>{cfg ? describe(configFacts(cfg)) : "Run"}</span>
+            <span className="font-mono text-xs font-normal text-muted-foreground">{runId}</span>
             <RunStatus stream={stream} connection={stream.connection} staleS={staleS} />
             {cfg?.replay && (
               <Badge variant="outline">

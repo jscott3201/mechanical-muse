@@ -254,6 +254,29 @@ async fn the_committed_demo_record_is_replayable() {
     assert!((ener - 0.3255).abs() < 1e-4, "{ener}");
 }
 
+/// A replay of an engineer's sequence names which graphs were drafted, so the web app does
+/// not call its hand-built plant reset a Spark draft.
+#[tokio::test]
+async fn replays_name_the_specs_they_drafted() {
+    let state = state(Some(repo("fixtures/replays")), Duration::ZERO);
+    let (_, list) = call(&state, "GET", "/api/replays", None).await;
+    let find = |name: &str| {
+        list.as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["name"] == name)
+            .cloned()
+            .unwrap_or_else(|| panic!("{name} is listed"))
+    };
+    let own = find("day185-noon-your-sequence");
+    assert_eq!(own["drafted"], true);
+    assert_eq!(own["drafts"], json!(["ahu1_sat_stpt"]));
+    assert_eq!(own["own"], json!(["ahu1_sat_stpt"]));
+    let plant = find("day185-noon-spark-draft");
+    assert_eq!(plant["drafts"], json!(["chw_plant_reset"]));
+    assert_eq!(find("day185-noon-baseline")["drafts"], json!([]));
+}
+
 /// A record cut short (no `ended` line) must not replay as completed.
 #[tokio::test]
 async fn a_record_without_an_end_replays_as_failed() {

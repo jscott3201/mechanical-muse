@@ -1,5 +1,5 @@
 import { CircleAlert, FileUp, History, LoaderCircle, MessageCircleQuestion, RotateCcw, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import type { SequenceDraft } from "@/types/generated/SequenceDraft";
 import type { WorkbenchAttachment } from "@/types/generated/WorkbenchAttachment";
 
 import { ErrorNote } from "../ErrorNote";
+import { JourneyBar } from "./JourneyBar";
 import { ScenarioTimeline } from "./ScenarioTimeline";
 
 const SAMPLES = [
@@ -235,8 +236,13 @@ function ReviewStep({
     const units = new Map([...draft.inputs, ...draft.outputs].map((p) => [p.name, p.unit]));
     return (name: string) => units.get(name) ?? "";
   }, [draft]);
+  // Hands over once per accepted sequence: this page stays mounted while hidden, so a new
+  // `onAccepted` identity must not hand the same sequence over again.
+  const handedOver = useRef<unknown>(null);
   useEffect(() => {
-    if (accept.state.status === "done") onAccepted(accept.state.data.spec.summary.name);
+    if (accept.state.status !== "done" || handedOver.current === accept.state.data) return;
+    handedOver.current = accept.state.data;
+    onAccepted(accept.state.data.spec.summary.name);
   }, [accept.state, onAccepted]);
 
   return (
@@ -428,11 +434,19 @@ function ReviewStep({
 export function WorkbenchPage({ onOpenSpec }: { onOpenSpec: (spec: string) => void }) {
   const read = useReadSequence();
   const state = read.state;
+  // Before a sequence exists, only reading and accepting can be done here.
+  const bar = <JourneyBar read={state.status === "done"} spec={null} verified={null} bound={false} />;
   if (state.status === "done") {
-    return <ReviewStep key={state.data.key} view={state.data} onAccepted={onOpenSpec} onRestart={read.reset} />;
+    return (
+      <div className="flex flex-col gap-4">
+        {bar}
+        <ReviewStep key={state.data.key} view={state.data} onAccepted={onOpenSpec} onRestart={read.reset} />
+      </div>
+    );
   }
   return (
     <div className="flex flex-col gap-4">
+      {bar}
       <SourceStep onRead={(text, attachments) => read.run({ text, attachments })} />
       {state.status === "running" && (
         <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">

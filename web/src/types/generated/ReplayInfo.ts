@@ -14,6 +14,11 @@ start_s: number,
  */
 drafted: boolean, 
 /**
+ * The specs the recorded run used drafted graphs for, sorted (an engineer's own
+ * sequence always runs from a draft; our specs may run hand-built).
+ */
+drafts: Array<string>, 
+/**
  * True when the recorded run ran the duct static pressure resets.
  */
 pressure: boolean, 

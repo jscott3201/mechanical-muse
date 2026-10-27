@@ -10,18 +10,19 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAction, useResource } from "@/hooks/useResource";
 import { formatNumber } from "@/lib/format";
+import { format } from "@/lib/route";
 import { cn } from "@/lib/utils";
 import type { BacnetInfo } from "@/types/generated/BacnetInfo";
 import type { Binding } from "@/types/generated/Binding";
 import type { DraftInfo } from "@/types/generated/DraftInfo";
-import type { ReplayInfo } from "@/types/generated/ReplayInfo";
-import type { ReplayRequest } from "@/types/generated/ReplayRequest";
 import type { RunInfo } from "@/types/generated/RunInfo";
 import type { RunRequest } from "@/types/generated/RunRequest";
 import type { RunState } from "@/types/generated/RunState";
 import type { SpecSummary } from "@/types/generated/SpecSummary";
 
 import { ErrorNote } from "../ErrorNote";
+import { configFacts, describe } from "./describe";
+import { ReplayList } from "./ReplayList";
 import { RunView } from "./RunView";
 import { formatSimTime } from "./trends";
 
@@ -345,71 +346,51 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
   );
 }
 
-function ReplayButton({ replay, onStarted }: { replay: ReplayInfo; onStarted: (run: RunInfo) => void }) {
-  const body = useMemo<ReplayRequest>(() => ({ record: replay.name }), [replay.name]);
-  const start = useAction<RunInfo>("/api/runs/replay", body);
-  const reported = useRef<string | null>(null);
-  useEffect(() => {
-    if (start.state.status === "done" && reported.current !== start.state.data.id) {
-      reported.current = start.state.data.id;
-      onStarted(start.state.data);
-    }
-  }, [start.state, onStarted]);
-  return (
-    <li className="flex flex-col gap-1">
-      <div className="flex items-center justify-between gap-2">
-        <span className="min-w-0 text-sm">
-          <span className="block truncate font-mono text-xs">{replay.name}</span>
-          <span className="text-xs text-muted-foreground">
-            {replay.baseline ? "BOPTEST baseline" : `${replay.drafted ? "Spark-drafted" : "hand-built"}${replay.pressure ? ", with static pressure" : ""}${replay.own.length > 0 ? `, with your sequence ${replay.own.join(", ")}` : ""}`} ·{" "}
-            {replay.ticks} steps from {formatSimTime(replay.start_s)}
-          </span>
-        </span>
-        <Button size="sm" variant="outline" onClick={start.run} disabled={start.state.status === "running"}>
-          <History aria-hidden="true" /> Replay
-        </Button>
-      </div>
-      {start.state.status === "error" && <ErrorNote error={start.state.error} />}
-    </li>
-  );
+/** What a listed run ran, in words; a replay says so. */
+function runLabel(r: RunInfo): string {
+  const what = describe(configFacts(r.config));
+  return r.config.replay ? `Replay: ${what}` : what;
 }
 
-/** Recorded runs the server can play back through the same live view. */
-function ReplayList({ onStarted }: { onStarted: (run: RunInfo) => void }) {
-  const replays = useResource<ReplayInfo[]>("/api/replays");
-  if (replays.status !== "ready" || replays.data.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Replay a recorded run</CardTitle>
-        <CardDescription>
-          Sends a recorded run's events again through the same view, labelled as a replay. Nothing
-          runs against BOPTEST.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ul className="flex flex-col gap-2">
-          {replays.data.map((r) => (
-            <ReplayButton key={r.name} replay={r} onStarted={onStarted} />
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
+/** Below the two-column layout the run view sits under the forms: bring it into view. */
+function revealOnNarrow(el: HTMLElement | null) {
+  if (!el || typeof window.matchMedia !== "function") return;
+  if (!window.matchMedia("(min-width: 1024px)").matches) el.scrollIntoView?.({ behavior: "smooth", block: "start" });
 }
 
-export function RunsPage({ initialDraft = null }: { initialDraft?: DraftChoice | null } = {}) {
+export function RunsPage({
+  initialDraft = null,
+  run = null,
+  replay = null,
+  onSelectRun,
+}: {
+  /** A verified draft to preset in the start form (from `#/runs?spec=&draft=`). */
+  initialDraft?: DraftChoice | null;
+  /** The run named in the URL. */
+  run?: string | null;
+  /** A recorded run to point out (from `#/runs?replay=`); never started by itself. */
+  replay?: string | null;
+  /** Called with a run just started, so the URL can name it. */
+  onSelectRun?: (id: string) => void;
+} = {}) {
   const runs = useResource<RunInfo[]>("/api/runs");
-  const [selected, setSelected] = useState<string | null>(null);
+  // The page stays mounted under a hidden tab: keep the last run and draft the URL named.
+  const [picked, setPicked] = useState<string | null>(run);
+  if (run !== null && run !== picked) setPicked(run);
+  const [draft, setDraft] = useState<DraftChoice | null>(initialDraft);
+  if (initialDraft && (initialDraft.spec !== draft?.spec || initialDraft.contentId !== draft.contentId)) setDraft(initialDraft);
   const list = runs.status === "ready" ? [...runs.data].reverse() : [];
-  const current = selected ?? list[0]?.id ?? null;
+  const current = picked ?? list[0]?.id ?? null;
   const { reload } = runs;
+  const view = useRef<HTMLElement>(null);
   const onStarted = useCallback(
-    (run: RunInfo) => {
-      setSelected(run.id);
+    (started: RunInfo) => {
+      setPicked(started.id);
+      onSelectRun?.(started.id);
       reload();
+      revealOnNarrow(view.current);
     },
-    [reload],
+    [reload, onSelectRun],
   );
   // Keep the list's states and step counts current while any run is active.
   const active = list.some((r) => r.state === "starting" || r.state === "running");
@@ -421,32 +402,33 @@ export function RunsPage({ initialDraft = null }: { initialDraft?: DraftChoice |
   return (
     <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
       <div className="flex flex-col gap-4">
-        <StartForm key={initialDraft ? `${initialDraft.spec}:${initialDraft.contentId}` : "none"} onStarted={onStarted} initialDraft={initialDraft} />
-        <ReplayList onStarted={onStarted} />
+        <StartForm key={draft ? `${draft.spec}:${draft.contentId}` : "none"} onStarted={onStarted} initialDraft={draft} />
         {runs.status === "error" && <ErrorNote error={runs.error} onRetry={reload} />}
         {list.length > 0 && (
           <nav aria-label="Runs" className="flex flex-col gap-1">
+            <h3 className="px-3 text-xs font-medium text-muted-foreground">Runs on this server</h3>
             {list.map((r) => (
-              <button
+              <a
                 key={r.id}
-                type="button"
-                onClick={() => setSelected(r.id)}
+                href={format({ page: "runs", run: r.id })}
+                onClick={() => setPicked(r.id)}
                 aria-current={r.id === current ? "page" : undefined}
-                className={cn("flex flex-col rounded-md px-3 py-2 text-left text-sm hover:bg-muted", r.id === current && "bg-muted")}
+                className={cn("flex flex-col rounded-md px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-2", r.id === current && "bg-muted")}
               >
-                <span className="font-mono text-xs">{r.id}</span>
-                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{runLabel(r)}</span>
+                <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="outline">
                     <StateIcon state={r.state} /> {r.state}
                   </Badge>
-                  {r.config.replay ? "replay" : r.config.baseline ? "baseline" : "reset"} · {r.ticks}/{r.config.steps} steps
+                  <span className="font-mono">{r.id}</span> · {r.ticks}/{r.config.steps} steps
                 </span>
-              </button>
+              </a>
             ))}
           </nav>
         )}
+        <ReplayList highlight={replay} onStarted={onStarted} />
       </div>
-      <section className="min-w-0">
+      <section ref={view} className="min-w-0 scroll-mt-20">
         {current ? (
           <RunView runId={current} onEnded={reload} />
         ) : (

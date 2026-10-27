@@ -212,11 +212,14 @@ export function AuthorPanel({
   spec,
   scenarios,
   onRunDraft,
+  onVerified,
 }: {
   spec: string;
   scenarios: number;
   /** Opens the run form with this verified draft chosen. */
   onRunDraft?: (spec: string, contentId: string) => void;
+  /** Called once when a session stores a verified draft. */
+  onVerified?: () => void;
 }) {
   const health = useResource<Health>("/api/health");
   const live = health.status === "ready" && health.data.live_model !== undefined;
@@ -232,6 +235,11 @@ export function AuthorPanel({
     if (start.state.status === "done") setSessionId(start.state.data.id);
   }, [start.state]);
   const stream = useAuthorStream(sessionId);
+  const verifiedId = stream.ended?.state === "verified" ? (stream.ended.draft?.content_id ?? null) : null;
+  useEffect(() => {
+    if (verifiedId) onVerified?.();
+    // Once per stored draft, not on every new callback identity.
+  }, [verifiedId]);
   const running = start.state.status === "running" || (sessionId !== null && stream.ended === null);
   const recorded = (stream.config?.source ?? source) === "recorded";
   return (
@@ -301,13 +309,12 @@ export function AuthorPanel({
             played back. Every check runs now, on this server.
           </p>
         )}
-        {stream.attempts.length > 0 && (
-          <ol aria-label="Attempts" className="flex flex-col gap-2">
-            {stream.attempts.map((a) => (
-              <AttemptRow key={a.index} attempt={a} spec={spec} />
-            ))}
-          </ol>
-        )}
+        {/* Always present, so screen readers hear each attempt as it arrives. */}
+        <ol aria-label="Attempts" aria-live="polite" className="flex flex-col gap-2 empty:hidden">
+          {stream.attempts.map((a) => (
+            <AttemptRow key={a.index} attempt={a} spec={spec} />
+          ))}
+        </ol>
         {stream.ended && (
           <section aria-label="Session result" className="flex flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">

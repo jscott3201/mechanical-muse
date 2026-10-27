@@ -1,5 +1,5 @@
 import { Building2, FileText, ListChecks, ShieldCheck, Sparkles, Waypoints } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAction, useResource } from "@/hooks/useResource";
 import { formatWithUnit } from "@/lib/format";
+import { format, type Section } from "@/lib/route";
 import type { BindingView } from "@/types/generated/BindingView";
+import type { DraftInfo } from "@/types/generated/DraftInfo";
 import type { GraphView } from "@/types/generated/GraphView";
 import type { Receipt as ReceiptDto } from "@/types/generated/Receipt";
 import type { SpecDetail as SpecDetailDto } from "@/types/generated/SpecDetail";
@@ -21,6 +23,8 @@ import { ExplanationPanel } from "./graph/ExplanationPanel";
 import { GraphCanvas } from "./graph/GraphCanvas";
 import { Receipt } from "./Receipt";
 import { BindingPanel } from "./workbench/BindingPanel";
+import { JourneyBar } from "./workbench/JourneyBar";
+import { OwnDrafts } from "./workbench/OwnDrafts";
 
 function PointTable({
   title,
@@ -97,29 +101,48 @@ function plain(text: string): string {
 
 const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
 
-type Section = "interface" | "graph" | "spark" | "building" | "scenarios" | "task";
-
 export function SpecDetail({
   name,
+  active = true,
+  section: routed,
+  onSection,
   onRunDraft,
 }: {
   name: string;
+  /** Whether this page is on screen (it stays mounted under a hidden tab). */
+  active?: boolean;
+  /** The sub-tab named in the URL; when `onSection` is absent the page keeps its own. */
+  section?: Section;
+  onSection?: (section: Section) => void;
   onRunDraft?: (spec: string, contentId: string) => void;
 }) {
   const spec = useResource<SpecDetailDto>(`/api/specs/${encodeURIComponent(name)}`);
   const verify = useAction<ReceiptDto>(`/api/specs/${encodeURIComponent(name)}/verify`);
-  const [chosen, setSection] = useState<Section | null>(null);
+  const [kept, setKept] = useState<Section | null>(null);
+  const chosen = onSection ? (routed ?? null) : kept;
+  const setSection = (s: Section) => (onSection ? onSection(s) : setKept(s));
+  const own = spec.status === "ready" && !spec.data.reference;
   // An engineer's sequence can run on BOPTEST once its binding is confirmed.
-  const binding = useResource<BindingView>(
-    spec.status === "ready" && !spec.data.reference ? `/api/workbench/${encodeURIComponent(name)}/binding` : null,
-  );
+  const binding = useResource<BindingView>(own ? `/api/workbench/${encodeURIComponent(name)}/binding` : null);
+  // Its verified drafts stand in for the hand-built graph it does not have.
+  const drafts = useResource<DraftInfo[]>(own ? "/api/drafts" : null);
+  const title = spec.status === "ready" ? spec.data.summary.title : null;
+  useEffect(() => {
+    if (active && title) document.title = `${title} · Mechanical Muse`;
+  }, [active, title]);
   if (spec.status === "loading") return <Skeleton className="h-64 w-full" />;
   if (spec.status === "error") return <ErrorNote error={spec.error} onRetry={spec.reload} />;
   const { summary, about, description, params, scenarios, reference } = spec.data;
+  const ownDrafts = drafts.status === "ready" ? drafts.data.filter((d) => d.spec === name) : [];
+  const bound = binding.status === "ready";
   // An engineer's own sequence has no hand-built graph: Muse Spark's drafts are the point.
-  const section: Section = chosen ?? (reference ? "interface" : "spark");
+  const fallback: Section = reference ? "interface" : "spark";
+  const section: Section = chosen === null || (reference && chosen === "building") ? fallback : chosen;
   return (
     <div className="flex flex-col gap-4">
+      {!reference && (
+        <JourneyBar read spec={name} verified={ownDrafts[0]?.content_id ?? null} bound={bound} />
+      )}
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -160,7 +183,7 @@ export function SpecDetail({
       </Card>
 
       <Tabs value={section} onValueChange={(v) => setSection(v as Section)} className="gap-4">
-        <TabsList className="flex-wrap">
+        <TabsList className="h-auto flex-wrap">
           <TabsTrigger value="interface">Interface</TabsTrigger>
           <TabsTrigger value="graph">
             <Waypoints aria-hidden="true" /> Block graph
@@ -194,28 +217,29 @@ export function SpecDetail({
         <TabsContent value="graph">
           {reference ? (
             <ReferenceGraph name={name} />
+          ) : drafts.status === "error" ? (
+            <ErrorNote error={drafts.error} onRetry={drafts.reload} />
+          ) : drafts.status === "loading" ? (
+            <Skeleton className="h-64 w-full" />
           ) : (
-            <Card>
-              <CardContent className="flex flex-col items-start gap-3 pt-6 text-sm text-muted-foreground">
-                <p>
-                  This is your own sequence, so there is no hand-built graph. Have Muse Spark draft one: each verified
-                  draft's graph appears in the Muse Spark tab, with its explanation.
-                </p>
-                <Button variant="outline" onClick={() => setSection("spark")}>
-                  <Sparkles aria-hidden="true" /> Draft with Muse Spark
-                </Button>
-              </CardContent>
-            </Card>
+            <OwnDrafts
+              spec={name}
+              drafts={ownDrafts}
+              onDraft={() => setSection("spark")}
+              onRun={bound && onRunDraft ? (id) => onRunDraft(name, id) : undefined}
+            />
           )}
         </TabsContent>
-        <TabsContent value="spark">
+        {/* Kept mounted while another sub-tab shows, so a running or finished session survives. */}
+        <TabsContent value="spark" forceMount className="data-[state=inactive]:hidden">
           {/* Our specs have their own wiring; an engineer's runs once its binding is confirmed. */}
           <AuthorPanel
             spec={name}
             scenarios={scenarios.length}
-            onRunDraft={reference || binding.status === "ready" ? onRunDraft : undefined}
+            onRunDraft={reference || bound ? onRunDraft : undefined}
+            onVerified={drafts.reload}
           />
-          {!reference && binding.status !== "ready" && (
+          {!reference && !bound && (
             <p className="mt-2 text-sm text-muted-foreground">
               To run a verified draft on BOPTEST, bind the sequence to the building first (Building tab).
             </p>
@@ -223,7 +247,15 @@ export function SpecDetail({
         </TabsContent>
         {!reference && (
           <TabsContent value="building">
-            <BindingPanel spec={name} onBound={binding.reload} />
+            <BindingPanel
+              spec={name}
+              onBound={binding.reload}
+              next={
+                ownDrafts[0]
+                  ? { label: "Run a verified draft", href: format({ page: "runs", draft: { spec: name, contentId: ownDrafts[0].content_id } }) }
+                  : { label: "Draft it with Muse Spark", href: format({ page: "sequences", spec: name, section: "spark" }) }
+              }
+            />
           </TabsContent>
         )}
         <TabsContent value="scenarios">

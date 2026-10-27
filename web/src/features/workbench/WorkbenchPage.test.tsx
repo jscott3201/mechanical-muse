@@ -59,7 +59,10 @@ describe("WorkbenchPage", () => {
       }),
     );
     const opened = vi.fn();
-    render(<WorkbenchPage onOpenSpec={opened} />);
+    const { rerender } = render(<WorkbenchPage onOpenSpec={opened} />);
+    // The journey bar marks the step in words, not only by colour.
+    expect(screen.getByRole("link", { name: "Read (next)" })).toBeTruthy();
+    expect(screen.getByText("Draft & verify")).toBeTruthy();
     const read = screen.getByRole("button", { name: /Read with Muse Spark/ });
     expect((read as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText("Sequence text"), { target: { value: "Run the fan above 27 °C." } });
@@ -68,12 +71,21 @@ describe("WorkbenchPage", () => {
     expect(await screen.findByText(/Read by muse-spark-1.3/)).toBeTruthy();
     expect(screen.getByText(/\(recorded\)/)).toBeTruthy();
     expect(screen.getByText("Is the comparison strict?")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Read (done)" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Accept (next)" })).toBeTruthy();
     expect(screen.getByRole("img", { name: "Timeline of scenario hot" })).toBeTruthy();
     expect(calls[0]?.body).toEqual({ text: "Run the fan above 27 °C.", attachments: [] });
 
     fireEvent.click(screen.getByRole("switch", { name: "Keep cool" }));
     fireEvent.click(screen.getByRole("button", { name: /Accept 1 scenario and create the sequence/ }));
     await vi.waitFor(() => expect(opened).toHaveBeenCalledWith("fan_on_hot"));
+    // The page stays mounted while hidden: a parent re-render with a new callback must not hand
+    // the same sequence over again (that looped once, refetching the spec list forever).
+    const again = vi.fn();
+    rerender(<WorkbenchPage onOpenSpec={again} />);
+    rerender(<WorkbenchPage onOpenSpec={vi.fn()} />);
+    expect(opened).toHaveBeenCalledTimes(1);
+    expect(again).not.toHaveBeenCalled();
     const accept = calls.find((c) => c.url === "/api/workbench/accept")?.body as {
       key: string;
       draft: { scenarios: { name: string }[] };
