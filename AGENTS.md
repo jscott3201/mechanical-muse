@@ -105,7 +105,7 @@ Engine facts every change must respect (details: `docs/engine-api.md`):
 | `docs/` | Design notes: `engine-api.md`, `model-api.md`, `block-graph-schema.md` (+ `.schema.json`), `boptest-point-map.md` (+ `boptest-points.csv`), `plant-reset.md`, `benchmark-split.md` (+ `.json`), `bacnet-device-table.md`, `coding-agents.md`, `DECISIONS.md`, `upstream-gaps.md`, `runtime-results.md`. |
 | `third_party/` | Pre-existing material that must be redistributed, each with its notice. |
 | `compose.yaml` | BOPTEST v0.9.0 for local runs, from a checkout named by `BOPTEST_DIR` (`make boptest-up`); `compose.boptest-images.yaml` swaps in the quay.io minio images and raises the web service's worker timeout. |
-| `.agents/skills/` | Project skills, the committed copy (`mm-*` are project-specific). Agents do not edit them. |
+| `.agents/skills/` | Project skills (`mm-*`), the committed copy. General-purpose skills from before the event may sit beside them locally; they are gitignored. Agents do not edit them. |
 | `.muse/hooks.json` | Wires the Stop hook (`.muse/hooks/verify.sh`) into Muse Code: the checks below run before a turn can finish. Agents do not edit `.muse/`. |
 | `.claude/` | Local only (gitignored): Claude Code's settings, which wire the same Stop hook, and its copy of the skills. |
 | `ledger/` | Local only (gitignored): the shared handoff log for both harnesses. See below. |
@@ -230,7 +230,6 @@ live loop is supervisory; Muse Glimmer is served on Modal behind the same `Model
   Claude Code: worktree isolation on the subagent). Read-only subagents can share the checkout.
   Worktrees start from HEAD with a cold `target/` and `node_modules/`, and without the gitignored
   `.claude/` and `ledger/`, so a Claude Code worker has no Stop hook: run the checks before merging.
-  See the `parallel-lanes` skill.
 - Start with the matching skill: `mm-hackathon-boundary` before anything user-facing or any new
   dependency; `mm-oce-engine-host`, `mm-block-graph-cxf`, `mm-meta-model-api`, `mm-boptest-runtime`,
   `mm-bacnet-mirror`, `mm-benchmark-hygiene`, `mm-web-live-views`, `mm-demo-prep` for their areas.

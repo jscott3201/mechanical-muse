@@ -8,8 +8,8 @@ metadata:
 Event 2026-10-26 to 2026-11-04; this repo started 2026-10-26. Official Rules, paraphrased: open-source software may be used if its licenses are followed and the entry builds on it, but the entry must be original, solely owned work; the repo is public; the demo may show only event-built work, clearly identifiable, or the entry is disqualified.
 
 **Pre-existing** (pinned, unmodified, dated before the event, our own earlier repos included)
-- open-control-engine v0.2.0 `4063202b`; open-control-library `124427b` (data only); rusty-bacnet v0.14.0 `1caf4db7`; BOPTEST by IBPSA, an external service (README pin is TBD: fill it from the commit `compose.yaml` builds); `yet-more-skills` `97d2a36` (source of the non-`mm-*` skill forks, notices kept); ordinary crates and npm packages.
-- New work: `crates/`, `web/`, `specs/`, `docs/`, `fixtures/`, `.agents/skills/mm-*`, `.muse/`, `.mcp.json`, `scripts/`. Never commit `.claude/` or `ledger/` (local only).
+- open-control-engine v0.2.0 `4063202b`; open-control-library `124427b` (data only); rusty-bacnet v0.14.0 `1caf4db7`; BOPTEST by IBPSA v0.9.0 `9b1610b`, an external service; ordinary crates and npm packages.
+- New work: `crates/`, `web/`, `specs/`, `docs/`, `fixtures/`, `.agents/skills/mm-*`, `.muse/`, `.mcp.json`, `scripts/`. Never commit `.claude/` or `ledger/` (local only), or pre-event material such as general-purpose skills copied from older repos: organizers said (Oct 27) the repo must hold only event-built work. Any coding tool is allowed; Meta's models must be a real part of what the product runs.
 
 **Same-change rules**
 - Add or adjust the README "Pre-existing dependencies" row (name, author, license, pinned commit, use) in the same change as any new dependency, dataset, shadcn component, extra UI library, copied skill or ported Modelica file. Modelica Buildings Library (BSD-3) lives only under `third_party/` with its notice.
