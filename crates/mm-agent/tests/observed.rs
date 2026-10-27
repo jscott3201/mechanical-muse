@@ -216,8 +216,5 @@ async fn the_recorded_plant_reset_run_still_goes_red_amber_green() {
             other => format!("{other:?}"),
         })
         .collect();
-    assert_eq!(
-        story,
-        ["load-failed load-failed-schedule", "8/10", "passed 10"]
-    );
+    assert_eq!(story, ["load-failed algebraic-loop", "8/10", "passed 10"]);
 }

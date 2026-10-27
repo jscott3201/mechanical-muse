@@ -19,7 +19,7 @@ use crate::runs::{PlantSource, Runs, RunsConfig};
 use crate::specs::SpecStore;
 
 /// open-control-engine commit pinned in the workspace (checked against `Cargo.lock` in tests).
-pub const ENGINE_REV: &str = "4063202b9a9e50c723bb858d786108571d3d401d";
+pub const ENGINE_REV: &str = "fa5cb19d4b2b8831fb6a2979bc1d1099f69f3693";
 
 /// Verifications allowed to run at once.
 const VERIFY_SLOTS: usize = 2;

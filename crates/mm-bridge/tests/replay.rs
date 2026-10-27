@@ -159,7 +159,7 @@ fn bad_connection_is_unresolved_reference() {
 }
 
 #[test]
-fn an_algebraic_loop_gets_a_code_even_without_diagnostics() {
+fn an_algebraic_loop_is_refused_with_a_diagnostic_per_member() {
     let g: mm_graph::BlockGraph = serde_json::from_str(
         r#"{"name":"loop_test","inputs":[{"name":"xin","type":"real","unit":"1","description":""}],
             "outputs":[{"name":"xout","type":"real","description":""}],
@@ -172,9 +172,28 @@ fn an_algebraic_loop_gets_a_code_even_without_diagnostics() {
         .err()
         .expect("the engine refuses an algebraic loop");
     assert_eq!(failure.stage, "schedule");
-    // The engine gives no diagnostic here, so the code is our own fallback.
-    assert_eq!(failure.code, "load-failed-schedule", "{failure:?}");
-    assert!(failure.diagnostics.is_empty());
+    // Since engine #348 the refusal is coded, with one diagnostic per loop member, so the
+    // repair message can name the connectors (our `load-failed-<stage>` fallback is unused).
+    assert_eq!(failure.code, "algebraic-loop", "{failure:?}");
+    let mut subjects: Vec<_> = failure
+        .diagnostics
+        .iter()
+        .map(|d| (d.code.as_str(), d.subject.as_deref().unwrap_or("")))
+        .collect();
+    subjects.sort_unstable();
+    assert_eq!(
+        subjects,
+        [
+            (
+                "algebraic-loop",
+                "urn:mechanical-muse:loop_test#loop_test.add.u2"
+            ),
+            (
+                "algebraic-loop",
+                "urn:mechanical-muse:loop_test#loop_test.add.y"
+            ),
+        ]
+    );
 }
 
 #[test]

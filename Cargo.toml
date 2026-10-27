@@ -11,7 +11,7 @@ publish = false
 
 [workspace.dependencies]
 # Pre-existing, pinned, read-only (AGENTS.md hard rule 2). Never `cargo update` these.
-oce-api = { git = "https://github.com/jscott3201/open-control-engine", rev = "4063202b9a9e50c723bb858d786108571d3d401d" }
+oce-api = { git = "https://github.com/jscott3201/open-control-engine", rev = "fa5cb19d4b2b8831fb6a2979bc1d1099f69f3693" }
 bacnet-objects = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
 bacnet-server = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
 bacnet-types = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }

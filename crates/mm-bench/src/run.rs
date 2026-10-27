@@ -16,7 +16,7 @@ use crate::baseline::Baseline;
 use crate::scrub::Tier;
 
 /// The engine every result is judged on.
-pub const ENGINE_REV: &str = "4063202b9a9e50c723bb858d786108571d3d401d";
+pub const ENGINE_REV: &str = "fa5cb19d4b2b8831fb6a2979bc1d1099f69f3693";
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct BenchConfig {

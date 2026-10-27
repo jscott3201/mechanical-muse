@@ -5,7 +5,7 @@ license: MIT OR Apache-2.0
 metadata:
   short-description: "oce-api host rules: frames, receipts, DTOs"
 ---
-`mm-bridge` is the only crate that calls `oce-api` (v0.2.0, rev `4063202b`, read-only; gaps go in `docs/upstream-gaps.md`). Depth: `docs/engine-api.md`.
+`mm-bridge` is the only crate that calls `oce-api` (v0.2.0, rev `fa5cb19`, read-only; gaps go in `docs/upstream-gaps.md`). Depth: `docs/engine-api.md`.
 
 **Frames (HostTick)**
 - Each tick submit the whole input table: every `input_definitions()` path once, exact `ValueType`, no String. `prepare_frame(t, &entries)` right before `execute_frame`; a prepared frame goes stale after reload or halt/set/resume (`StalePreparedFrame`): re-prepare.

@@ -5,11 +5,11 @@ Every signature below was read from the pinned sources or the crate's own
 `crates/oce-api/tests/public-api.txt` baseline, and the two code snippets in sections 12 and 17
 were compiled and run against the pinned revs (edition 2024, Rust 1.97.x).
 
-Pinned sources (read-only for the whole event):
+Pinned sources (read-only; changing a rev is a human decision):
 
 | Repo | Tag | Rev (use this in Cargo.toml) |
 |---|---|---|
-| open-control-engine | v0.2.0 (main) | `4063202b9a9e50c723bb858d786108571d3d401d` |
+| open-control-engine | v0.2.0 (`development`, 2026-10-27; was `4063202`) | `fa5cb19d4b2b8831fb6a2979bc1d1099f69f3693` |
 | rusty-bacnet | v0.14.0 | `1caf4db71ac488720b17e343b9c50d43c15f62fc` |
 | open-control-library | (data only) | no code dependency; use as test-vector and CXF reference |
 
@@ -35,7 +35,7 @@ engine docs mention; either spelling is the same source.
 ```toml
 # Cargo.toml (workspace member crates inherit via [workspace.dependencies])
 [workspace.dependencies]
-oce-api = { git = "https://github.com/jscott3201/open-control-engine", rev = "4063202b9a9e50c723bb858d786108571d3d401d" }
+oce-api = { git = "https://github.com/jscott3201/open-control-engine", rev = "fa5cb19d4b2b8831fb6a2979bc1d1099f69f3693" }
 bacnet-objects = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
 bacnet-server  = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
 bacnet-types   = { git = "https://github.com/jscott3201/rusty-bacnet", rev = "1caf4db71ac488720b17e343b9c50d43c15f62fc" }
@@ -477,7 +477,7 @@ edition = "2024"
 rust-version = "1.97.0"
 
 [dependencies]
-oce-api = { git = "https://github.com/jscott3201/open-control-engine", rev = "4063202b9a9e50c723bb858d786108571d3d401d" }
+oce-api = { git = "https://github.com/jscott3201/open-control-engine", rev = "fa5cb19d4b2b8831fb6a2979bc1d1099f69f3693" }
 ```
 
 ```rust

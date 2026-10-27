@@ -21,7 +21,7 @@ Rebuild each open-control-library rule (test data, `124427b`) from a scrubbed sp
 - Headline: rule-level all-scenario pass. Secondary: scenario pass rate. Count load failures and interface mismatches separately.
 - Baselines beside every figure, recomputed per subset. Whole library: constant-false passes 720 of 1,760 scenarios (40.9%), constant-true 30.
 - First try and after repair are separate numbers with the attempt budget. If repair shows library vectors, label it "repaired against the scoring vectors" or score on a hidden second set.
-- First replay every reference rule: cards were verified at `ENGINE_PIN` `41e997f`, our judge is engine `4063202b`. List failures; drop them from the denominator.
+- First replay every reference rule: cards were verified at `ENGINE_PIN` `41e997f`, our judge is engine `fa5cb19` (results before Oct 27 used `4063202b`; `mm-bench --rescore` re-checks stored replies on a new pin). List failures; drop them from the denominator.
 
 **Run record** (JSON beside each result; no keys)
 - Model id, effort, temperature (default 1.0, no documented seed: run each rule 3+ times, report spread), prompt and schema hashes, exemplar ids, subset, tier, engine rev, library commit, attempt budget, tokens.
