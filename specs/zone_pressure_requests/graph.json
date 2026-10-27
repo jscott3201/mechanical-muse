@@ -43,20 +43,6 @@
    ]
   },
   {
-   "id": "openLong",
-   "class": "Logical.TrueDelay",
-   "params": [
-    {
-     "name": "delayTime",
-     "value": 60.0
-    },
-    {
-     "name": "delayOnInit",
-     "value": true
-    }
-   ]
-  },
-  {
    "id": "served",
    "class": "Reals.GreaterThreshold",
    "params": [
@@ -71,17 +57,55 @@
    ]
   },
   {
-   "id": "halfSet",
+   "id": "set1",
    "class": "Reals.MultiplyByParameter",
    "params": [
     {
      "name": "k",
-     "value": 0.5
+     "value": 0.9
     }
    ]
   },
   {
-   "id": "seventySet",
+   "id": "gap1",
+   "class": "Reals.Subtract",
+   "params": []
+  },
+  {
+   "id": "short1",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.0
+    },
+    {
+     "name": "h",
+     "value": 0.01
+    }
+   ]
+  },
+  {
+   "id": "need1",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "long1",
+   "class": "Logical.TrueDelay",
+   "params": [
+    {
+     "name": "delayTime",
+     "value": 120.0
+    },
+    {
+     "name": "delayOnInit",
+     "value": true
+    }
+   ]
+  },
+  {
+   "id": "set2",
    "class": "Reals.MultiplyByParameter",
    "params": [
     {
@@ -91,17 +115,60 @@
    ]
   },
   {
-   "id": "short3",
+   "id": "gap2",
    "class": "Reals.Subtract",
    "params": []
   },
   {
    "id": "short2",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.0
+    },
+    {
+     "name": "h",
+     "value": 0.01
+    }
+   ]
+  },
+  {
+   "id": "need2",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "long2",
+   "class": "Logical.TrueDelay",
+   "params": [
+    {
+     "name": "delayTime",
+     "value": 120.0
+    },
+    {
+     "name": "delayOnInit",
+     "value": true
+    }
+   ]
+  },
+  {
+   "id": "set3",
+   "class": "Reals.MultiplyByParameter",
+   "params": [
+    {
+     "name": "k",
+     "value": 0.5
+    }
+   ]
+  },
+  {
+   "id": "gap3",
    "class": "Reals.Subtract",
    "params": []
   },
   {
-   "id": "starved3",
+   "id": "short3",
    "class": "Reals.GreaterThreshold",
    "params": [
     {
@@ -115,48 +182,33 @@
    ]
   },
   {
-   "id": "starved2",
-   "class": "Reals.GreaterThreshold",
+   "id": "need3",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "long3",
+   "class": "Logical.TrueDelay",
    "params": [
     {
-     "name": "t",
-     "value": 0.0
+     "name": "delayTime",
+     "value": 120.0
     },
     {
-     "name": "h",
-     "value": 0.01
+     "name": "delayOnInit",
+     "value": true
     }
    ]
   },
   {
-   "id": "counts",
-   "class": "Logical.And",
+   "id": "oneReq",
+   "class": "Logical.Or",
    "params": []
   },
   {
-   "id": "want3",
-   "class": "Logical.And",
-   "params": []
-  },
-  {
-   "id": "want2",
-   "class": "Logical.And",
-   "params": []
-  },
-  {
-   "id": "openInt",
+   "id": "oneInt",
    "class": "Conversions.BooleanToInteger",
    "params": []
-  },
-  {
-   "id": "three",
-   "class": "Integers.Sources.Constant",
-   "params": [
-    {
-     "name": "k",
-     "value": 3
-    }
-   ]
   },
   {
    "id": "two",
@@ -165,6 +217,16 @@
     {
      "name": "k",
      "value": 2
+    }
+   ]
+  },
+  {
+   "id": "three",
+   "class": "Integers.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 3
     }
    ]
   },
@@ -181,28 +243,36 @@
  ],
  "connections": [
   "uDam -> damOpen.u",
-  "damOpen.y -> openLong.u",
   "VSet_flow -> served.u",
-  "VSet_flow -> halfSet.u",
-  "VSet_flow -> seventySet.u",
-  "halfSet.y -> short3.u1",
-  "VDis_flow -> short3.u2",
-  "short3.y -> starved3.u",
-  "seventySet.y -> short2.u1",
-  "VDis_flow -> short2.u2",
-  "short2.y -> starved2.u",
-  "openLong.y -> counts.u1",
-  "served.y -> counts.u2",
-  "counts.y -> want3.u1",
-  "starved3.y -> want3.u2",
-  "counts.y -> want2.u1",
-  "starved2.y -> want2.u2",
-  "damOpen.y -> openInt.u",
+  "VSet_flow -> set1.u",
+  "set1.y -> gap1.u1",
+  "VDis_flow -> gap1.u2",
+  "gap1.y -> short1.u",
+  "short1.y -> need1.u1",
+  "served.y -> need1.u2",
+  "need1.y -> long1.u",
+  "VSet_flow -> set2.u",
+  "set2.y -> gap2.u1",
+  "VDis_flow -> gap2.u2",
+  "gap2.y -> short2.u",
+  "short2.y -> need2.u1",
+  "served.y -> need2.u2",
+  "need2.y -> long2.u",
+  "VSet_flow -> set3.u",
+  "set3.y -> gap3.u1",
+  "VDis_flow -> gap3.u2",
+  "gap3.y -> short3.u",
+  "short3.y -> need3.u1",
+  "served.y -> need3.u2",
+  "need3.y -> long3.u",
+  "long1.y -> oneReq.u1",
+  "damOpen.y -> oneReq.u2",
+  "oneReq.y -> oneInt.u",
   "two.y -> req2.u1",
-  "want2.y -> req2.u2",
-  "openInt.y -> req2.u3",
+  "long2.y -> req2.u2",
+  "oneInt.y -> req2.u3",
   "three.y -> req3.u1",
-  "want3.y -> req3.u2",
+  "long3.y -> req3.u2",
   "req2.y -> req3.u3",
   "req3.y -> yPreReq"
  ]

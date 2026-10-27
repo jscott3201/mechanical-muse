@@ -154,44 +154,61 @@ fn zone_pressure_requests_vectors_catch_common_mistakes() {
             "damper open above 90 % instead of 95 %",
             Box::new(move |g| set_param(g, "damOpen", "t", n(0.9))),
         ),
-        // A damper already open at the first frame must still stay open for the full delay.
         (
-            "open-time delay passes a first-frame open at once",
-            Box::new(move |g| set_param(g, "openLong", "delayOnInit", b(false))),
+            "no damper request (airflow only)",
+            Box::new(|g| rewire(g, "damOpen.y -> oneReq.u2", "long1.y -> oneReq.u2")),
+        ),
+        // A shortfall already present at the first frame must still last the full 120 s.
+        (
+            "persistence passes a first-frame shortfall at once",
+            Box::new(move |g| {
+                for d in ["long1", "long2", "long3"] {
+                    set_param(g, d, "delayOnInit", b(false));
+                }
+            }),
         ),
         (
-            "open for 120 s instead of 60 s",
-            Box::new(move |g| set_param(g, "openLong", "delayTime", n(120.0))),
+            "persistence of 60 s",
+            Box::new(move |g| {
+                for d in ["long1", "long2", "long3"] {
+                    set_param(g, d, "delayTime", n(60.0));
+                }
+            }),
         ),
         (
-            "airflow requests without the open-time requirement",
-            Box::new(|g| rewire(g, "openLong.y -> counts.u1", "damOpen.y -> counts.u1")),
-        ),
-        (
-            "airflow requests without the served check",
-            Box::new(|g| rewire(g, "served.y -> counts.u2", "openLong.y -> counts.u2")),
+            "one request below 85 % instead of 90 %",
+            Box::new(move |g| set_param(g, "set1", "k", n(0.85))),
         ),
         (
             "3 and 2 request fractions swapped",
             Box::new(move |g| {
-                set_param(g, "halfSet", "k", n(0.7));
-                set_param(g, "seventySet", "k", n(0.5));
+                set_param(g, "set3", "k", n(0.7));
+                set_param(g, "set2", "k", n(0.5));
+            }),
+        ),
+        (
+            "airflow requests without the served check",
+            Box::new(|g| {
+                for k in ["1", "2", "3"] {
+                    rewire(
+                        g,
+                        &format!("served.y -> need{k}.u2"),
+                        &format!("short{k}.y -> need{k}.u2"),
+                    );
+                }
             }),
         ),
         (
             "airflow comparisons without a release band",
             Box::new(move |g| {
-                set_param(g, "starved3", "h", n(0.0));
-                set_param(g, "starved2", "h", n(0.0));
+                for s in ["short1", "short2", "short3"] {
+                    set_param(g, s, "h", n(0.0));
+                }
             }),
         ),
         (
-            "one request only after the open time",
-            Box::new(|g| rewire(g, "damOpen.y -> openInt.u", "openLong.y -> openInt.u")),
-        ),
-        (
             "airflow compared with the whole setpoint",
-            Box::new(|g| rewire(g, "halfSet.y -> short3.u1", "VSet_flow -> short3.u1")),
+            Box::new(|g| rewire(g, "set3.y -> gap3.u1", "VSet_flow -> gap3.u1")),
         ),
     ];
     assert_caught("zone_pressure_requests", mutations);

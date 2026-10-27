@@ -1,6 +1,6 @@
 {
  "name": "zone_pressure_requests",
- "description": "Static pressure reset requests from one VAV zone. Output yPreReq is 3 when the damper has been open for open_time and the zone is served and the airflow is starved below three_fraction of its setpoint; else 2 when the damper has been open for open_time and the zone is served and the airflow is starved below two_fraction of its setpoint; else 1 while the damper is open; else 0. The damper is open once its position goes above damper_open, and stays open until its position is no longer above damper_open minus damper_band. The zone is served once its airflow setpoint goes above served_flow, and stays served until the setpoint is no longer above served_flow minus served_band. The airflow is starved below a fraction of its setpoint once (fraction times setpoint minus airflow) goes above 0, and stays starved until that difference is no longer above minus flow_band. Timing at the edges: all thresholds are strict (a damper at exactly 0.95 is not open; a damper that is open closes at exactly 0.85). The open time restarts every time the damper opens, and a damper already open at the first frame still has to stay open for the full open_time before the 2 or 3 requests can appear (it sends 1 meanwhile).",
+ "description": "Static pressure reset requests from one VAV zone. Output yPreReq is 3 when the airflow has been short of three_fraction of its setpoint, with the zone served, for at least persistence; else 2 when it has been short of two_fraction of its setpoint, with the zone served, for at least persistence; else 1 when it has been short of one_fraction of its setpoint, with the zone served, for at least persistence, or while the damper is open; else 0. The airflow is short of a fraction of its setpoint once (fraction times setpoint minus airflow) goes above 0, and stays short until that difference is no longer above minus flow_band. The zone is served once its airflow setpoint goes above served_flow, and stays served until the setpoint is no longer above served_flow minus served_band. The damper is open once its position goes above damper_open, and stays open until its position is no longer above damper_open minus damper_band. Timing at the edges: all thresholds are strict (a damper at exactly 0.95 is not open; a damper that is open closes at exactly 0.85). Each persistence count restarts whenever its condition (short and served) turns on again, and a condition already true at the first frame still has to last the full persistence.",
  "inputs": [
   {
    "name": "uDam",
@@ -31,22 +31,34 @@
  ],
  "params": [
   {
-   "name": "damper_open",
-   "value": 0.95,
+   "name": "one_fraction",
+   "value": 0.9,
    "unit": "1",
-   "meaning": "Position above which the damper counts as open"
+   "meaning": "Fraction of setpoint below which a lasting shortfall sends 1 request"
   },
   {
-   "name": "damper_band",
-   "value": 0.1,
+   "name": "two_fraction",
+   "value": 0.7,
    "unit": "1",
-   "meaning": "Release band below damper_open"
+   "meaning": "Fraction of setpoint below which a lasting shortfall sends 2 requests"
   },
   {
-   "name": "open_time",
-   "value": 60.0,
+   "name": "three_fraction",
+   "value": 0.5,
+   "unit": "1",
+   "meaning": "Fraction of setpoint below which a lasting shortfall sends 3 requests"
+  },
+  {
+   "name": "flow_band",
+   "value": 0.01,
+   "unit": "m3/s",
+   "meaning": "Release band on the shortfall conditions"
+  },
+  {
+   "name": "persistence",
+   "value": 120.0,
    "unit": "s",
-   "meaning": "How long the damper must stay open before airflow requests count"
+   "meaning": "How long a shortfall must last before it counts"
   },
   {
    "name": "served_flow",
@@ -61,22 +73,16 @@
    "meaning": "Release band below served_flow"
   },
   {
-   "name": "three_fraction",
-   "value": 0.5,
+   "name": "damper_open",
+   "value": 0.95,
    "unit": "1",
-   "meaning": "Fraction of setpoint below which a starved zone sends 3 requests"
+   "meaning": "Position above which the damper counts as open"
   },
   {
-   "name": "two_fraction",
-   "value": 0.7,
+   "name": "damper_band",
+   "value": 0.1,
    "unit": "1",
-   "meaning": "Fraction of setpoint below which a starved zone sends 2 requests"
-  },
-  {
-   "name": "flow_band",
-   "value": 0.01,
-   "unit": "m3/s",
-   "meaning": "Release band on the starved-airflow conditions"
+   "meaning": "Release band below damper_open"
   }
  ]
 }
