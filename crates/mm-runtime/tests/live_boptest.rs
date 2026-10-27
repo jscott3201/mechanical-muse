@@ -3,10 +3,14 @@
 //!
 //!   cargo test -p mm-runtime --test live_boptest -- --ignored --nocapture
 //!
+//! Use `cargo test`, not nextest: nextest's 2 min limit would kill the test mid-initialize and
+//! leave the BOPTEST test holding the only worker until its idle timeout.
+//!
 //! Environment (all optional): `BOPTEST_URL` (default `http://127.0.0.1:80`), `MM_LIVE_STEPS`
 //! (120 s steps, default 30), `MM_LIVE_START` (simulation seconds, default 05:30 on day 185, the
 //! Monday after the case's peak cooling day; day 184 is a Sunday, unoccupied), `MM_LIVE_WARMUP` (seconds, default one day), `MM_LIVE_OUT` (path
-//! for a JSON run record, relative to the workspace root).
+//! for a JSON run record, relative to the workspace root), `MM_LIVE_BASELINE=1` (no sequence,
+//! no writes: the baseline controllers over the same window).
 //!
 //! No reset requests are wired yet (the AHU request sequence comes next), so the request count
 //! is a constant 0: after the start delay the reset trims, warming the supply water first.
@@ -76,13 +80,20 @@ async fn chw_reset_drives_boptest() {
     let start = env_f64("MM_LIVE_START", 185.0 * 86_400.0 + 5.5 * 3_600.0);
     let warmup = env_f64("MM_LIVE_WARMUP", 86_400.0);
 
-    let cxf = cxf();
-    let seq = mm_runtime::RunningSequence::load(SEQ, &cxf, &receipt(&cxf), live_bindings())
-        .expect("verified sequence loads with live bindings");
-    let mut sup = Supervisor::new(vec![seq], outputs(None, 288.15), FailSafe::Release).unwrap();
+    // Baseline mode runs no sequence and writes nothing: the same window under BOPTEST's own
+    // controllers, for KPI comparison.
+    let baseline = std::env::var("MM_LIVE_BASELINE").is_ok_and(|v| v == "1");
+    let mut sup = if baseline {
+        Supervisor::new(Vec::new(), Vec::new(), FailSafe::Release).unwrap()
+    } else {
+        let cxf = cxf();
+        let seq = mm_runtime::RunningSequence::load(SEQ, &cxf, &receipt(&cxf), live_bindings())
+            .expect("verified sequence loads with live bindings");
+        Supervisor::new(vec![seq], outputs(None, 288.15), FailSafe::Release).unwrap()
+    };
 
     let mut plant = BoptestClient::select(&url, CASE).await.expect("select");
-    let outcome = drive(&mut plant, &mut sup, start, warmup, steps).await;
+    let outcome = drive(&mut plant, &mut sup, start, warmup, steps, baseline).await;
     // Free the worker whatever happened; v0.9.0 may answer stop with a non-JSON body.
     if let Err(e) = plant.stop().await {
         eprintln!("stop: {e}");
@@ -99,14 +110,10 @@ async fn chw_reset_drives_boptest() {
     }
     let ticks = record["ticks"].as_array().unwrap();
     assert!(!ticks.is_empty(), "no ticks ran");
-    let degraded = ticks
-        .iter()
-        .flat_map(|t| t["events"].as_array().unwrap())
-        .filter(|e| e["event"] != "clamped")
-        .count();
+    let degraded = record["degraded_ticks"].as_u64().unwrap();
     assert_eq!(
         degraded, 0,
-        "unexpected fail-safe events; see the run record"
+        "fail-safe events on {degraded} ticks; see the run record"
     );
 }
 
@@ -116,6 +123,7 @@ async fn drive(
     start: f64,
     warmup: f64,
     steps: usize,
+    baseline: bool,
 ) -> Result<serde_json::Value, PlantError> {
     let t0 = std::time::Instant::now();
     let mut readings = plant.initialize(start, warmup).await?;
@@ -124,6 +132,7 @@ async fn drive(
     eprintln!("initialized in {init_s:.0} s; {} points", readings.len());
 
     let mut ticks = Vec::new();
+    let mut degraded = 0u64;
     let t1 = std::time::Instant::now();
     for _ in 0..steps {
         let report = sup.tick(&readings);
@@ -137,14 +146,15 @@ async fn drive(
             report.outputs.get(SEQ),
             serde_json::Value::Object(seen.clone())
         );
-        let has_bad = report
+        if report
             .events
             .iter()
-            .any(|e| !matches!(e, Event::Clamped { .. }));
-        ticks.push(json!({"report": report, "seen": seen, "events": report.events}));
-        if has_bad {
+            .any(|e| !matches!(e, Event::Clamped { .. }))
+        {
+            degraded += 1;
             eprintln!("events: {:?}", report.events);
         }
+        ticks.push(json!({"report": report, "seen": seen}));
         readings = match plant.advance(&report.writes).await {
             Ok(next) => next,
             Err(PlantError::Ended) => break,
@@ -152,14 +162,19 @@ async fn drive(
         };
     }
     let wall = t1.elapsed().as_secs_f64();
-    let kpi = plant.kpi().await.unwrap_or_default();
+    let kpi = match plant.kpi().await {
+        Ok(k) => json!(k),
+        Err(e) => json!({"error": e.to_string()}),
+    };
     Ok(json!({
         "case": CASE,
+        "baseline": baseline,
         "start": start,
         "warmup": warmup,
         "step": STEP,
         "init_wall_s": init_s,
         "steps_wall_s": wall,
+        "degraded_ticks": degraded,
         "ticks": ticks,
         "kpi": kpi,
     }))

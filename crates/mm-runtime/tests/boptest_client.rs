@@ -14,9 +14,7 @@ async fn serve(replies: Vec<(u16, &'static str)>) -> String {
     tokio::spawn(async move {
         for (status, body) in replies {
             let (mut sock, _) = listener.accept().await.unwrap();
-            let mut buf = vec![0u8; 16 * 1024];
-            // Read the request head (and any small body) before answering.
-            let _ = sock.read(&mut buf).await.unwrap();
+            read_request(&mut sock).await;
             let reply = format!(
                 "HTTP/1.1 {status} X\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
                 body.len()
@@ -25,6 +23,29 @@ async fn serve(replies: Vec<(u16, &'static str)>) -> String {
         }
     });
     base
+}
+
+/// Reads one whole request (head, then `content-length` body bytes), so closing the socket
+/// never discards unread input (which would reset the connection under the client).
+async fn read_request(sock: &mut tokio::net::TcpStream) {
+    let mut buf = Vec::new();
+    let mut chunk = [0u8; 4096];
+    loop {
+        let n = sock.read(&mut chunk).await.unwrap();
+        assert!(n > 0, "client closed before sending a whole request");
+        buf.extend_from_slice(&chunk[..n]);
+        let Some(end) = buf.windows(4).position(|w| w == b"\r\n\r\n") else {
+            continue;
+        };
+        let head = String::from_utf8_lossy(&buf[..end]).to_ascii_lowercase();
+        let body_len: usize = head
+            .lines()
+            .find_map(|l| l.strip_prefix("content-length:"))
+            .map_or(0, |v| v.trim().parse().unwrap());
+        if buf.len() >= end + 4 + body_len {
+            return;
+        }
+    }
 }
 
 const SELECTED: (u16, &str) = (200, r#"{"testid":"t1"}"#);
