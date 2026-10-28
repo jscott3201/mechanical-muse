@@ -1,0 +1,305 @@
+{
+  "key": "attack:ce269bd8ddad7235",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "proposals": [
+    {
+      "name": "oat_exact_thresholds",
+      "description": "Stay enabled with low humidity. Outdoor starts exactly at cold threshold then steps exactly to warm threshold. Both inclusive limits should give high then low setpoint.",
+      "rationale": "Probes values exactly at outdoor thresholds which accepted cases only approach from inside or outside.",
+      "inputs": [
+        {
+          "point": "ahuEnable",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": true
+            }
+          ]
+        },
+        {
+          "point": "outdoorAirTemp",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 288.7055555555555
+            },
+            {
+              "t": 900.0,
+              "value": 294.26111111111106
+            }
+          ]
+        },
+        {
+          "point": "returnAirRh",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 0.6
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "output": "dischargeAirTempSetpoint",
+          "from_s": 660.0,
+          "to_s": 840.0,
+          "equals": 291.4833333333333,
+          "tolerance": 0.01
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 660.0,
+          "to_s": 840.0,
+          "equals": false
+        },
+        {
+          "output": "dischargeAirTempSetpoint",
+          "from_s": 960.0,
+          "to_s": 1200.0,
+          "equals": 285.9277777777778,
+          "tolerance": 0.01
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 960.0,
+          "to_s": 1200.0,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "humidity_exact_boundaries",
+      "description": "Stay enabled cold outdoor. Humidity held exactly at 0.70 then raised to latch then held exactly at 0.65. Exact values should not enter or exit dehumidification.",
+      "rationale": "Probes strict above 0.70 and below 0.65 comparisons which accepted cases never test with exact values.",
+      "inputs": [
+        {
+          "point": "ahuEnable",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": true
+            }
+          ]
+        },
+        {
+          "point": "outdoorAirTemp",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 283.15
+            }
+          ]
+        },
+        {
+          "point": "returnAirRh",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 0.7
+            },
+            {
+              "t": 780.0,
+              "value": 0.75
+            },
+            {
+              "t": 1260.0,
+              "value": 0.65
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "output": "dischargeAirTempSetpoint",
+          "from_s": 660.0,
+          "to_s": 720.0,
+          "equals": 291.4833333333333,
+          "tolerance": 0.01
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 660.0,
+          "to_s": 720.0,
+          "equals": false
+        },
+        {
+          "output": "dischargeAirTempSetpoint",
+          "from_s": 1140.0,
+          "to_s": 1200.0,
+          "equals": 285.9277777777778,
+          "tolerance": 0.01
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1140.0,
+          "to_s": 1200.0,
+          "equals": true
+        },
+        {
+          "output": "dischargeAirTempSetpoint",
+          "from_s": 1320.0,
+          "to_s": 1560.0,
+          "equals": 285.9277777777778,
+          "tolerance": 0.01
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1320.0,
+          "to_s": 1560.0,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "dehum_entry_continuity_reset",
+      "description": "Stay enabled cold outdoor. Humidity high for 240 s then brief low dip then high again. Entry timer must reset so latch is delayed by the dip.",
+      "rationale": "Probes continuous 300 s requirement with interruption which accepted cases never interrupt before entry.",
+      "inputs": [
+        {
+          "point": "ahuEnable",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": true
+            }
+          ]
+        },
+        {
+          "point": "outdoorAirTemp",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 283.15
+            }
+          ]
+        },
+        {
+          "point": "returnAirRh",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 0.6
+            },
+            {
+              "t": 660.0,
+              "value": 0.75
+            },
+            {
+              "t": 900.0,
+              "value": 0.6
+            },
+            {
+              "t": 960.0,
+              "value": 0.75
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "output": "dischargeAirTempSetpoint",
+          "from_s": 1020.0,
+          "to_s": 1140.0,
+          "equals": 291.4833333333333,
+          "tolerance": 0.01
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1020.0,
+          "to_s": 1140.0,
+          "equals": false
+        },
+        {
+          "output": "dischargeAirTempSetpoint",
+          "from_s": 1320.0,
+          "to_s": 1560.0,
+          "equals": 285.9277777777778,
+          "tolerance": 0.01
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1320.0,
+          "to_s": 1560.0,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "simultaneous_oat_dehum_exit",
+      "description": "Stay enabled. Latch dehumidification cold then at same tick drop humidity to exit and step outdoor to mid value. Result should follow new outdoor reset.",
+      "rationale": "Probes two inputs changing on the same tick which accepted cases never do together.",
+      "inputs": [
+        {
+          "point": "ahuEnable",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": true
+            }
+          ]
+        },
+        {
+          "point": "outdoorAirTemp",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 283.15
+            },
+            {
+              "t": 1200.0,
+              "value": 291.4833333333333
+            }
+          ]
+        },
+        {
+          "point": "returnAirRh",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 0.6
+            },
+            {
+              "t": 660.0,
+              "value": 0.75
+            },
+            {
+              "t": 1200.0,
+              "value": 0.6
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "output": "dischargeAirTempSetpoint",
+          "from_s": 1020.0,
+          "to_s": 1140.0,
+          "equals": 285.9277777777778,
+          "tolerance": 0.01
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1020.0,
+          "to_s": 1140.0,
+          "equals": true
+        },
+        {
+          "output": "dischargeAirTempSetpoint",
+          "from_s": 1260.0,
+          "to_s": 1500.0,
+          "equals": 288.7055555555555,
+          "tolerance": 0.01
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1260.0,
+          "to_s": 1500.0,
+          "equals": false
+        }
+      ]
+    }
+  ],
+  "problems": []
+}
