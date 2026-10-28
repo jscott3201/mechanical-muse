@@ -2,7 +2,9 @@
 
 Live runs of verified sequences against BOPTEST. Each entry states the setup, what was seen, and
 what it does not show. Run records (JSON) stay local in the gitignored `runs/`; the numbers
-below are copied from them.
+below are copied from them. Each run's energy, emissions and cost by scope (and by end use for
+runs that recorded every power reading) come from its KPIs and readings as described in
+[emissions.md](emissions.md).
 
 ## 2026-10-27 (night): duct static pressure reset on every floor
 
