@@ -42,15 +42,17 @@ pub struct RunRequest {
     #[serde(default)]
     #[ts(optional)]
     pub drafts: Option<BTreeMap<String, String>>,
-    /// A test fault: replace one sensor reading with NaN for a few steps, to show the
-    /// fail-safe. Labelled as injected in every tick it touches.
+    /// A test fault: change one sensor reading (NaN, a stuck value, or a bias) for a few
+    /// steps. Labelled as injected in every tick it touches.
     #[serde(default)]
     #[ts(optional)]
     pub fault: Option<Fault>,
 }
 
-/// A sensor reading replaced with NaN before the sequences see it, for `steps` steps from
-/// step `from_step` (0-based). Only the air-handler readings the sequences use can be faulted.
+/// A sensor reading changed before the sequences see it, for `steps` steps from step
+/// `from_step` (0-based). Only the air-handler readings the sequences use can be faulted. Only
+/// the reading changes: nothing is written to BOPTEST for it, so what differs is what our
+/// sequences decide from the bad reading.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(deny_unknown_fields)]
@@ -58,6 +60,54 @@ pub struct Fault {
     pub point: String,
     pub from_step: u32,
     pub steps: u32,
+    /// What the reading becomes (NaN in records and requests from before modes existed).
+    #[serde(default)]
+    pub mode: FaultMode,
+}
+
+/// How a faulted reading reads: not a number (the sequences stop and the fail-safe acts),
+/// stuck at a value, or off by a fixed offset (in the reading's own unit).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum FaultMode {
+    #[default]
+    Nan,
+    Hold {
+        value: f64,
+    },
+    Bias {
+        offset: f64,
+    },
+}
+
+impl FaultMode {
+    /// The faulted reading, given the true one (`None` when the plant did not report it).
+    pub fn apply(self, reading: Option<f64>) -> Option<f64> {
+        match self {
+            FaultMode::Nan => Some(f64::NAN),
+            FaultMode::Hold { value } => Some(value),
+            FaultMode::Bias { offset } => reading.map(|r| r + offset),
+        }
+    }
+
+    /// Why a tick says `injected`. The NaN wording is the one records have always carried.
+    pub fn reason(self) -> String {
+        match self {
+            FaultMode::Nan => "test fault: reading replaced with NaN".into(),
+            FaultMode::Hold { value } => format!("test fault: reading held at {value}"),
+            FaultMode::Bias { offset } => format!("test fault: reading biased by {offset:+}"),
+        }
+    }
+
+    /// The held value or offset, which must be finite.
+    pub fn amount(self) -> Option<f64> {
+        match self {
+            FaultMode::Nan => None,
+            FaultMode::Hold { value } => Some(value),
+            FaultMode::Bias { offset } => Some(offset),
+        }
+    }
 }
 
 /// The settings a run actually uses.

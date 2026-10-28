@@ -181,7 +181,7 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
       steps,
       start_s: day * 86400 + hour * 3600,
       ...(Object.keys(drafts).length > 0 ? { drafts } : {}),
-      ...(fault && !baseline && requests ? { fault: { point: FAULT_POINT, from_step: faultStep, steps: FAULT_STEPS } } : {}),
+      ...(fault && !baseline && requests ? { fault: { point: FAULT_POINT, from_step: faultStep, steps: FAULT_STEPS, mode: { kind: "nan" as const } } } : {}),
     };
   }, [baseline, requests, pressure, steps, day, hour, chosen, fault, faultStep, bound]);
   const start = useAction<RunInfo>("/api/runs", body);
