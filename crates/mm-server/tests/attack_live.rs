@@ -18,8 +18,6 @@ use mm_server::{AppState, AuthoringConfig, PlantSource, RunsConfig, SpecStore, a
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
-const NAME: &str = "ahu1_sat_rev_b";
-
 fn repo(path: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
@@ -50,6 +48,19 @@ async fn call(
 #[tokio::test]
 #[ignore = "calls the Meta Model API; needs MODEL_API_KEY"]
 async fn live_spark_tries_to_break_revision_b() {
+    attack_live("ahu-sat-reset-sample-v2.png", "ahu1_sat_rev_b").await;
+}
+
+/// Revision A of the sheet (its humidity override latches in BOPTEST's office).
+#[tokio::test]
+#[ignore = "calls the Meta Model API; needs MODEL_API_KEY"]
+async fn live_spark_tries_to_break_revision_a() {
+    attack_live("ahu-sat-reset-sample.png", "ahu1_sat_stpt").await;
+}
+
+// A helper of the two live tests: printing what Spark proposed is its purpose.
+#[allow(clippy::print_stderr)]
+async fn attack_live(sample_png: &str, name: &str) {
     let key = std::env::var("MODEL_API_KEY").expect("set MODEL_API_KEY");
     let spark = Arc::new(mm_agent::SparkClient::new(key).unwrap());
     let records = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
@@ -78,8 +89,8 @@ async fn live_spark_tries_to_break_revision_b() {
             attacks: None,
         },
     );
-    let png = std::fs::read(repo("fixtures/sequences/ahu-sat-reset-sample-v2.png")).unwrap();
-    let sample = json!({"attachments": [{"name": "ahu-sat-reset-sample-v2.png", "mime": "image/png",
+    let png = std::fs::read(repo(&format!("fixtures/sequences/{sample_png}"))).unwrap();
+    let sample = json!({"attachments": [{"name": sample_png, "mime": "image/png",
         "data_base64": base64::engine::general_purpose::STANDARD.encode(png)}]});
     let (status, view) = call(&state, "POST", "/api/workbench/read", Some(sample)).await;
     assert_eq!(status, StatusCode::OK, "{view}");
@@ -88,7 +99,7 @@ async fn live_spark_tries_to_break_revision_b() {
         "the reading is the committed one"
     );
     let mut draft = view["draft"].clone();
-    draft["name"] = json!(NAME);
+    draft["name"] = json!(name);
     let (status, _) = call(
         &state,
         "POST",
@@ -100,7 +111,7 @@ async fn live_spark_tries_to_break_revision_b() {
     let (status, session) = call(
         &state,
         "POST",
-        &format!("/api/specs/{NAME}/author"),
+        &format!("/api/specs/{name}/author"),
         Some(json!({"source": "recorded"})),
     )
     .await;
@@ -121,7 +132,7 @@ async fn live_spark_tries_to_break_revision_b() {
     let (status, attack) = call(
         &state,
         "POST",
-        &format!("/api/workbench/{NAME}/attack"),
+        &format!("/api/workbench/{name}/attack"),
         Some(json!({"draft": content_id})),
     )
     .await;
