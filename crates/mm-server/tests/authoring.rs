@@ -287,36 +287,6 @@ async fn bad_requests_are_refused_before_any_model_call() {
     assert_eq!(sessions, json!([]), "a refused request starts nothing");
 }
 
-/// A keyless server can only play back recordings: the client must learn which specs have one
-/// before a Draft click, not from a red error after it.
-#[tokio::test]
-async fn recorded_sessions_are_listed_per_spec() {
-    let state = state(None, Duration::ZERO);
-    let (status, got) = call(&state, "GET", "/api/specs/chw_plant_reset/recordings", None).await;
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(got, json!({"plain": true, "tools": true}));
-    let (status, got) = call(
-        &state,
-        "GET",
-        "/api/specs/ahu_chw_requests/recordings",
-        None,
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(got, json!({"plain": false, "tools": false}));
-    let (status, _) = call(&state, "GET", "/api/specs/nope/recordings", None).await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    let (status, err) = call(
-        &state,
-        "POST",
-        "/api/specs/ahu_chw_requests/author",
-        Some(json!({"tools": true})),
-    )
-    .await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(err["code"], "no-recording", "{err}");
-}
-
 /// Occupied floors with air handlers slightly warm: the plant reset runs normally.
 fn readings(time: f64) -> mm_runtime::Measurements {
     let mut m: mm_runtime::Measurements = [("time".to_owned(), time)].into_iter().collect();

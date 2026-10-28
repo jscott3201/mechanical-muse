@@ -276,3 +276,28 @@ async fn the_committed_tools_session_plays_back_red_then_green() {
     assert_eq!(status, StatusCode::CREATED, "{plain}");
     assert_eq!(plain["config"]["tools"], false);
 }
+
+/// A keyless server can only play back recordings: the client must learn which specs have one
+/// before a Draft click, not from a red error after it.
+#[tokio::test]
+async fn recorded_sessions_are_listed_per_spec() {
+    let state = state(&repo("fixtures/recordings"));
+    let uri = |spec: &str| format!("/api/specs/{spec}/recordings");
+    let (status, got) = call(&state, "GET", &uri("chw_plant_reset"), Value::Null).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(got, json!({"plain": true, "tools": true}));
+    let (status, got) = call(&state, "GET", &uri("ahu_chw_requests"), Value::Null).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(got, json!({"plain": false, "tools": false}));
+    let (status, _) = call(&state, "GET", &uri("nope"), Value::Null).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, err) = call(
+        &state,
+        "POST",
+        "/api/specs/ahu_chw_requests/author",
+        json!({"tools": true}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(err["code"], "no-recording", "{err}");
+}
