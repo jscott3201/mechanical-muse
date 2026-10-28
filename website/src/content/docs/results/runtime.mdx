@@ -105,6 +105,24 @@ against the same run without the fault: +130 kWh, +44 kgCO2e and +$12.25, nearly
 electricity, about a fifth of the ten hours' saving. One window, one fault. See the
 [Emissions ledger](/mechanical-muse/how-it-works/emissions/).
 
+## Home price response, live
+
+**2026-10-28.** The verified graph through `mm-runtime` (`building: home`) on BOPTEST's heat pump
+house, spot prices, two weeks of 15-minute steps after a week of warm-up, against BOPTEST's own
+controller. Each step the runtime passes BOPTEST's forecast in as readings; the graph decides.
+
+| Window | Cost | Energy | Thermal discomfort | Power, most expensive quarter of prices | BOPTEST peak demand KPI |
+| --- | --- | --- | --- | --- | --- |
+| Typical heating (from day 108) | −8.4 % | −7.7 % | −14.8 % | 1.17 → 0.87 kW (−26 %) | +16.4 % |
+| Peak heating (from day 16) | −8.3 % | −7.5 % | −81.9 % | 1.63 → 1.03 kW (−37 %) | +3.7 % |
+
+:::caution[Read these beside the numbers]
+Every setpoint matched the independent reference model; no fail-safe event. The peak-price
+power is ours, from recorded readings, not a BOPTEST KPI. The single highest 15-minute draw
+rose: shifting heat concentrates it before the expensive hours, and homes on the same prices
+would add those rebounds up. Perfect forecast, one house, heating only.
+:::
+
 ## Home price response probe
 
 **2026-10-28.** BOPTEST's `bestest_hydronic_heat_pump` (a home in Brussels), highly dynamic
@@ -112,7 +130,7 @@ price, 14-day windows, against BOPTEST's own controller. The rule was run from t
 spec's Python reference model, **not yet the verified graph through the runtime**, with a
 perfect price forecast.
 
-| Window | Cost | Thermal discomfort | Mean power in the dearest quarter of 15-min prices |
+| Window | Cost | Thermal discomfort | Mean power in the most expensive quarter of 15-min prices |
 | --- | --- | --- | --- |
 | Typical heating (BOPTEST window) | −8.4 % | −14.8 % | 1.17 → 0.85 kW |
 | Peak heating (BOPTEST window) | −8.3 % | −81.9 % | 1.68 → 1.04 kW |

@@ -16,7 +16,8 @@ Mechanical Muse is an agent built on Meta's Muse Spark. It turns a written seque
 operations into running building control logic, and that logic may run only once it passes its
 tests. Muse Spark drafts the logic as a block graph. A deterministic control engine replays test
 vectors against every draft, and failures go back to Spark for repair. Only a draft with a green
-verification receipt runs on an emulated large office building.
+verification receipt runs on an emulated building: BOPTEST's large office, or its heat pump
+house on spot electricity prices.
 
 Built solo by Justin Scott for the Meta Global AI Developer Hackathon (Indie track), October 26
 to November 4, 2026.
@@ -57,7 +58,7 @@ building. Mechanical Muse puts a gate in between:
 | Emit | A catalog-backed validator and a deterministic emitter turn the graph into CXF (CDL as JSON-LD) | `mm-graph`: built in the event |
 | Verify | The CXF is loaded with typed diagnostics and the spec's test vectors are replayed | Bridge `mm-bridge`: built in the event. Engine: open-control-engine, used unmodified |
 | Repair | Diagnostics and failing scenarios go back to Spark until the vectors pass or the budget runs out | `mm-agent`: built in the event |
-| Run | A verified sequence runs in a supervisory loop against an emulated large office | Runtime `mm-runtime`: built in the event. Emulator: BOPTEST, used unmodified |
+| Run | A verified sequence runs in a supervisory loop against an emulated large office or a heat pump house | Runtime `mm-runtime`: built in the event. Emulator: BOPTEST, used unmodified |
 | Mirror | Live points are served read-only as one BACnet/IP device | `mm-bacnet`: built in the event. Protocol stack: rusty-bacnet, used unmodified |
 | Show | A React web app shows authoring, receipts, live trends, KPIs and explanations | `mm-server` and `web/`: built in the event |
 
