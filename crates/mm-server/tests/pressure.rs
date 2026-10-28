@@ -190,6 +190,7 @@ async fn pressure_drafts_run_when_pressure_is_on() {
                 source: mm_server::author_dto::ModelSource::Recorded,
                 session: "test".into(),
                 attempts_used: 1,
+                stored_seq: 0,
             },
             graph,
         });

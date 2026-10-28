@@ -185,6 +185,12 @@ pub struct DraftInfo {
     pub source: ModelSource,
     pub session: String,
     pub attempts_used: u32,
+    /// Store order: each stored draft gets a number one above every draft before it, so lists
+    /// can show the newest first (a content id is a hash and says nothing about age). Drafts
+    /// stored before this field existed read as 0, the oldest. Not part of any receipt.
+    #[serde(default)]
+    #[ts(type = "number")]
+    pub stored_seq: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, TS)]

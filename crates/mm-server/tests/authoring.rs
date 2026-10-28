@@ -387,6 +387,7 @@ fn stored(state: &AppState, content_id: &str, graph: mm_graph::BlockGraph) {
             source: mm_server::author_dto::ModelSource::Recorded,
             session: "test".into(),
             attempts_used: 1,
+            stored_seq: 0,
         },
         graph,
     });

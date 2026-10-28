@@ -431,9 +431,10 @@ async fn author(session: &AuthorSession, state: &AppState) -> Result<Done, Strin
         source: session.config.source,
         session: session.id.clone(),
         attempts_used: u32::try_from(trace.attempts.len()).unwrap_or(u32::MAX),
+        stored_seq: 0,
     };
-    authoring.drafts.insert(Draft {
-        info: info.clone(),
+    let info = authoring.drafts.insert(Draft {
+        info,
         graph: verified.graph,
     });
     Ok((AuthorState::Verified, Some(info), None, usage))

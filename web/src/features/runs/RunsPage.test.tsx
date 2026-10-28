@@ -264,6 +264,7 @@ describe("RunsPage with drafts", () => {
       source: "recorded",
       session: "author-1",
       attempts_used: 3,
+      stored_seq: 1,
     };
     const started = {
       id: "run-9",
@@ -299,6 +300,35 @@ describe("RunsPage with drafts", () => {
     });
     expect(screen.getByText(/Drafted by muse-spark-1.3 \(recorded run\)/)).toBeTruthy();
     expect(screen.getByText("Hand-built reference")).toBeTruthy();
+  });
+});
+
+describe("RunsPage draft order", () => {
+  it("offers the newest drafts by store order, not by content id", async () => {
+    // Content ids are hashes: here they sort the opposite way to store order.
+    const drafts = [5, 4, 3, 2, 1].map((n) => ({
+      content_id: `cxf:fnv1a128:00000${n}`,
+      spec: "chw_plant_reset",
+      scenarios: 10,
+      model: "muse-spark-1.3",
+      source: "live",
+      session: `author-${n}`,
+      attempts_used: 1,
+      stored_seq: 6 - n,
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/bacnet") return bacnetOff();
+        if (url === "/api/drafts") return new Response(JSON.stringify(drafts), { status: 200 });
+        return new Response("[]", { status: 200 });
+      }),
+    );
+    render(<RunsPage />);
+    const group = await screen.findByRole("group", { name: "Plant reset graph" });
+    const shown = Array.from(group.querySelectorAll("button[title]")).map((b) => b.getAttribute("title"));
+    // stored_seq 5, 4, 3 are content ids ending 1, 2, 3.
+    expect(shown).toEqual(["cxf:fnv1a128:000001", "cxf:fnv1a128:000002", "cxf:fnv1a128:000003"]);
   });
 });
 

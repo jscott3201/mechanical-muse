@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useLiveRuns } from "@/hooks/useLiveRuns";
 import { useAction, useResource } from "@/hooks/useResource";
+import { draftsOf } from "@/lib/drafts";
 import { formatNumber } from "@/lib/format";
 import { format } from "@/lib/route";
 import { cn } from "@/lib/utils";
@@ -82,8 +83,8 @@ function GraphChoice({
   /** What "no draft" means: our hand-built graph, or (for an engineer's sequence) not running it. */
   noneLabel?: string;
 }) {
-  // The newest drafts first in view; a chosen older one stays visible.
-  const [showAll, setShowAll] = useState(() => value !== null && drafts.findIndex((d) => d.content_id === value) < drafts.length - SHOWN_DRAFTS);
+  // The newest drafts (listed first) in view; a chosen older one stays visible.
+  const [showAll, setShowAll] = useState(() => value !== null && drafts.findIndex((d) => d.content_id === value) >= SHOWN_DRAFTS);
   return (
     <div className="flex flex-col gap-1" role="group" aria-label={label}>
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
@@ -98,7 +99,7 @@ function GraphChoice({
         >
           {noneLabel}
         </Button>
-        {(showAll ? drafts : drafts.slice(-SHOWN_DRAFTS)).map((d) => (
+        {(showAll ? drafts : drafts.slice(0, SHOWN_DRAFTS)).map((d) => (
           <Button
             key={d.content_id}
             size="sm"
@@ -264,7 +265,7 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
           <div className="flex flex-col gap-3">
             <span className="text-xs font-medium text-muted-foreground">Graphs (verified Muse Spark drafts or our own)</span>
             {GRAPHS.map(({ spec, label }) => {
-              const drafts = stored.data.filter((d) => d.spec === spec);
+              const drafts = draftsOf(stored.data, spec);
               if (drafts.length === 0) return null;
               return (
                 <GraphChoice
@@ -286,7 +287,7 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
               Your sequences (bound to the building; runs a verified draft on every bound floor)
             </span>
             {own.map((spec) => {
-              const drafts = stored.data.filter((d) => d.spec === spec);
+              const drafts = draftsOf(stored.data, spec);
               if (drafts.length === 0) return null;
               const title = ownSpecs.status === "ready" ? ownSpecs.data.find((s) => s.name === spec)?.title : undefined;
               return (
