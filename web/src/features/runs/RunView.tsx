@@ -288,11 +288,11 @@ function RunStream({
             {log.map((e, i) => (
               <li key={`${e.seq}-${i}`} className="flex items-start gap-2">
                 {e.severity === "error" ? (
-                  <CircleAlert aria-label="error" className="mt-0.5 size-4 shrink-0 text-destructive" />
+                  <CircleAlert role="img" aria-label="error" className="mt-0.5 size-4 shrink-0 text-destructive" />
                 ) : e.severity === "warning" ? (
-                  <TriangleAlert aria-label="warning" className="mt-0.5 size-4 shrink-0" />
+                  <TriangleAlert role="img" aria-label="warning" className="mt-0.5 size-4 shrink-0" />
                 ) : (
-                  <Info aria-label="info" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <Info role="img" aria-label="info" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                 )}
                 <span className="tabular-nums text-muted-foreground">
                   {e.t === null ? "" : formatSimTime(e.t)}

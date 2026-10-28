@@ -446,7 +446,7 @@ function ReviewStep({
               onClick={() => accept.run({ draft: acceptedDraft(draft, kept), key: view.key })}
               disabled={kept.size === 0 || accept.state.status === "running"}
             >
-              {accept.state.status === "running" && <LoaderCircle aria-hidden="true" className="animate-spin" />}
+              {accept.state.status === "running" && <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" />}
               Accept {kept.size} scenario{kept.size === 1 ? "" : "s"} and create the sequence
             </Button>
             <span className="text-xs text-muted-foreground">

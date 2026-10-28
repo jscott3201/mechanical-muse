@@ -24,7 +24,10 @@ describe("LineChart", () => {
 
   it("has a table view that says no data", () => {
     render(<LineChart title="Temp" unit="°C" series={series} formatX={String} formatY={String} />);
-    fireEvent.click(screen.getByRole("button", { name: "Show table" }));
+    const toggle = screen.getByRole("button", { name: "Show Temp as a table" });
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText("no data")).toBeTruthy();
     expect(screen.getAllByRole("row")).toHaveLength(4);
   });

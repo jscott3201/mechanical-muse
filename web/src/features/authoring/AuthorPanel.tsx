@@ -199,7 +199,7 @@ function AttemptRow({ attempt, spec, units }: { attempt: AttemptEntry; spec: str
         </>
       ) : (
         <p className="flex items-center gap-2 font-medium">
-          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />{" "}
+          <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />{" "}
           {attempt.checks.length > 0 ? "Muse Spark is drafting and checking its work…" : "Muse Spark is drafting…"}
         </p>
       )}
@@ -307,7 +307,7 @@ export function AuthorPanel({
             </Button>
           </div>
           <Button onClick={start.run} disabled={running || (source === "live" && !live && health.status === "ready")}>
-            {running ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Sparkles aria-hidden="true" />}
+            {running ? <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : <Sparkles aria-hidden="true" />}
             {running ? "Authoring…" : "Draft"}
           </Button>
           {health.status === "ready" && !live && (
