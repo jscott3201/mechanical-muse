@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 440" width="1000" height="440" role="img" aria-labelledby="t d">
+  <title id="t">How Mechanical Muse works</title>
+  <desc id="d">A sequence of operations goes to Muse Spark, which drafts a block graph. mm-graph validates it and emits CXF. mm-bridge loads it on open-control-engine and replays test vectors. A failing draft goes back to Spark with the diagnostic and failing scenarios for a bounded repair. Only a draft with a green receipt runs: mm-runtime drives the BOPTEST building emulator in a supervisory loop, and mm-server streams it to the web app and mirrors it read-only over BACnet.</desc>
+  <style>
+    .card { fill: #f8fafc; stroke: #d0d7de; }
+    .t { fill: #1f2328; font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .s { fill: #57606a; font: 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .l { fill: #57606a; font: italic 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .lr { fill: #cf222e; font: italic 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .lg { fill: #1a7f37; font: italic 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .in { fill: #ffffff; stroke: #8c959f; stroke-width: 1.5; }
+    .new { fill: #eef1ff; stroke: #5b5bd6; stroke-width: 1.5; }
+    .meta { fill: #e7f0ff; stroke: #0866ff; stroke-width: 2; }
+    .pre { fill: #ffffff; stroke: #6e7781; stroke-width: 1.5; stroke-dasharray: 6 4; }
+    .ok { fill: #e6f6ea; stroke: #1a7f37; stroke-width: 2; }
+    .a { fill: none; stroke: #57606a; stroke-width: 2; }
+    .ar { fill: none; stroke: #cf222e; stroke-width: 2; stroke-dasharray: 5 4; }
+    .ag { fill: none; stroke: #1a7f37; stroke-width: 2.5; }
+    .ha { fill: #57606a; } .hr { fill: #cf222e; } .hg { fill: #1a7f37; }
+    @media (prefers-color-scheme: dark) {
+      .card { fill: #0d1117; stroke: #30363d; }
+      .t { fill: #e6edf3; } .s, .l { fill: #9198a1; }
+      .lr { fill: #ff7b72; } .lg { fill: #3fb950; }
+      .in { fill: #161b22; stroke: #6e7681; }
+      .new { fill: #1b1d3a; stroke: #8e8cf0; }
+      .meta { fill: #0c2147; stroke: #4c9aff; }
+      .pre { fill: #0d1117; stroke: #8b949e; }
+      .ok { fill: #0f2e1a; stroke: #3fb950; }
+      .a { stroke: #9198a1; } .ar { stroke: #ff7b72; } .ag { stroke: #3fb950; }
+      .ha { fill: #9198a1; } .hr { fill: #ff7b72; } .hg { fill: #3fb950; }
+    }
+  </style>
+  <defs>
+    <marker id="ma" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ha" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="mr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="hr" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="mg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="hg" d="M0,0 L10,5 L0,10 z"/></marker>
+  </defs>
+  <rect class="card" x="0.5" y="0.5" width="999" height="439" rx="14"/>
+
+  <!-- Row 1: authoring and verification -->
+  <rect class="in" x="20" y="64" width="160" height="88" rx="10"/>
+  <text class="t" x="100" y="96" text-anchor="middle">Sequence of</text>
+  <text class="t" x="100" y="115" text-anchor="middle">operations</text>
+  <text class="s" x="100" y="136" text-anchor="middle">text, PDF or photo</text>
+
+  <rect class="meta" x="215" y="64" width="160" height="88" rx="10"/>
+  <text class="t" x="295" y="96" text-anchor="middle">Muse Spark</text>
+  <text class="s" x="295" y="117" text-anchor="middle">drafts a block graph</text>
+  <text class="s" x="295" y="135" text-anchor="middle">Meta Model API</text>
+
+  <rect class="new" x="410" y="64" width="160" height="88" rx="10"/>
+  <text class="t" x="490" y="96" text-anchor="middle">mm-graph</text>
+  <text class="s" x="490" y="117" text-anchor="middle">validates the graph,</text>
+  <text class="s" x="490" y="135" text-anchor="middle">emits CXF (byte-stable)</text>
+
+  <rect class="new" x="605" y="64" width="160" height="88" rx="10"/>
+  <text class="t" x="685" y="96" text-anchor="middle">mm-bridge</text>
+  <text class="s" x="685" y="117" text-anchor="middle">loads it, replays</text>
+  <text class="s" x="685" y="135" text-anchor="middle">every test vector</text>
+
+  <rect class="pre" x="605" y="178" width="160" height="42" rx="8"/>
+  <text class="s" x="685" y="204" text-anchor="middle">open-control-engine</text>
+  <path class="a" d="M685,152 V176"/>
+
+  <rect class="ok" x="800" y="64" width="180" height="88" rx="10"/>
+  <text class="t" x="890" y="96" text-anchor="middle">Green receipt</text>
+  <text class="s" x="890" y="117" text-anchor="middle">content id +</text>
+  <text class="s" x="890" y="135" text-anchor="middle">passes X of Y vectors</text>
+
+  <path class="a" d="M180,108 H211" marker-end="url(#ma)"/>
+  <path class="a" d="M375,108 H406" marker-end="url(#ma)"/>
+  <path class="a" d="M570,108 H601" marker-end="url(#ma)"/>
+  <path class="ag" d="M765,108 H796" marker-end="url(#mg)"/>
+  <text class="l" x="390" y="58" text-anchor="middle">JSON</text>
+  <text class="l" x="587" y="58" text-anchor="middle">CXF</text>
+
+  <!-- Repair loop -->
+  <path class="ar" d="M685,64 C685,22 295,22 295,60" marker-end="url(#mr)"/>
+  <text class="lr" x="490" y="22" text-anchor="middle">red: diagnostic code + failing scenarios go back to Spark (bounded repair)</text>
+
+  <!-- Gate down to the runtime -->
+  <path class="ag" d="M890,152 V240 H685 V266" marker-end="url(#mg)"/>
+  <text class="lg" x="900" y="196">only verified</text>
+  <text class="lg" x="900" y="212">CXF runs</text>
+
+  <!-- Row 2: running -->
+  <rect class="new" x="605" y="270" width="160" height="88" rx="10"/>
+  <text class="t" x="685" y="302" text-anchor="middle">mm-runtime</text>
+  <text class="s" x="685" y="323" text-anchor="middle">supervisory loop,</text>
+  <text class="s" x="685" y="341" text-anchor="middle">clamps, fail-safe</text>
+
+  <rect class="pre" x="820" y="270" width="160" height="88" rx="10"/>
+  <text class="t" x="900" y="302" text-anchor="middle">BOPTEST</text>
+  <text class="s" x="900" y="323" text-anchor="middle">emulated large</text>
+  <text class="s" x="900" y="341" text-anchor="middle">office building</text>
+  <path class="a" d="M769,300 H816" marker-start="url(#ma)" marker-end="url(#ma)"/>
+  <text class="l" x="792" y="380" text-anchor="middle">readings / setpoints</text>
+  <text class="l" x="792" y="396" text-anchor="middle">every 120 s</text>
+
+  <rect class="new" x="410" y="270" width="160" height="88" rx="10"/>
+  <text class="t" x="490" y="302" text-anchor="middle">mm-server</text>
+  <text class="s" x="490" y="323" text-anchor="middle">REST + event stream,</text>
+  <text class="s" x="490" y="341" text-anchor="middle">receipts, run records</text>
+  <path class="a" d="M605,314 H574" marker-end="url(#ma)"/>
+
+  <rect class="new" x="215" y="250" width="160" height="66" rx="10"/>
+  <text class="t" x="295" y="278" text-anchor="middle">Web app</text>
+  <text class="s" x="295" y="298" text-anchor="middle">trace, graphs, trends, KPIs</text>
+  <rect class="new" x="215" y="332" width="160" height="66" rx="10"/>
+  <text class="t" x="295" y="360" text-anchor="middle">BACnet mirror</text>
+  <text class="s" x="295" y="380" text-anchor="middle">read-only device</text>
+  <path class="a" d="M410,300 H392 V283 H379" marker-end="url(#ma)"/>
+  <path class="a" d="M410,330 H392 V365 H379" marker-end="url(#ma)"/>
+
+  <!-- Legend -->
+  <rect class="new" x="22" y="262" width="22" height="14" rx="3"/>
+  <text class="s" x="52" y="274">built in the event</text>
+  <rect class="meta" x="22" y="290" width="22" height="14" rx="3"/>
+  <text class="s" x="52" y="302">Meta model</text>
+  <rect class="pre" x="22" y="318" width="22" height="14" rx="3"/>
+  <text class="s" x="52" y="330">pre-existing, used</text>
+  <text class="s" x="52" y="346">unmodified</text>
+  <rect class="ok" x="22" y="362" width="22" height="14" rx="3"/>
+  <text class="s" x="52" y="374">trust gate</text>
+</svg>
