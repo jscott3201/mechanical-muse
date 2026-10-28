@@ -265,7 +265,10 @@ export function AuthorPanel({
     if (verifiedId) onVerified?.();
     // Once per stored draft, not on every new callback identity.
   }, [verifiedId]);
-  const running = start.state.status === "running" || (sessionId !== null && stream.ended === null);
+  // A stream that closes without its `ended` event (a server restart forgets the session and
+  // answers 404) will never finish: treat it as ended so the controls come back.
+  const lost = sessionId !== null && stream.ended === null && stream.connection === "closed";
+  const running = start.state.status === "running" || (sessionId !== null && stream.ended === null && !lost);
   const recorded = (stream.config?.source ?? source) === "recorded";
   return (
     <Card>
@@ -398,6 +401,13 @@ export function AuthorPanel({
               {recorded && ", as recorded"}
             </p>
           </section>
+        )}
+        {lost && (
+          <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
+            <CircleX aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            The session's stream closed before it ended (the server may have restarted, which clears its
+            sessions). Nothing more will arrive; start a new draft.
+          </p>
         )}
         {stream.connection === "reconnecting" && (
           <p className="text-sm text-muted-foreground">Connection lost; reconnecting…</p>
