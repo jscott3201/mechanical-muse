@@ -91,6 +91,8 @@ pub struct RunHandle {
     stop: watch::Sender<bool>,
     ticks: AtomicU32,
     kpis: Mutex<Option<BTreeMap<String, f64>>>,
+    /// The BOPTEST test this run selected, once it has one (for logs at exit).
+    testid: Mutex<Option<String>>,
 }
 
 impl RunHandle {
@@ -111,6 +113,15 @@ impl RunHandle {
 
     pub(crate) fn set_state(&self, state: RunState) {
         *lock(&self.state) = state;
+    }
+
+    pub(crate) fn set_testid(&self, testid: &str) {
+        *lock(&self.testid) = Some(testid.to_owned());
+    }
+
+    /// The BOPTEST test this run selected, if it got that far.
+    pub fn testid(&self) -> Option<String> {
+        lock(&self.testid).clone()
     }
 
     /// True for a replay of a recorded run (no plant).
@@ -235,6 +246,7 @@ impl Runs {
             stop,
             ticks: AtomicU32::new(0),
             kpis: Mutex::new(None),
+            testid: Mutex::new(None),
         });
         reg.runs.insert(id, Arc::clone(&handle));
         Ok(handle)

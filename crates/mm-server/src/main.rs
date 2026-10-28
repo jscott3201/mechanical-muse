@@ -98,24 +98,39 @@ async fn main() -> anyhow::Result<()> {
         start_bacnet(&state, &bacnet).await?;
     }
     let on_signal = state.clone();
-    axum::serve(listener, app(state.clone()))
-        .with_graceful_shutdown(async move {
+    let (signalled, first) = tokio::sync::oneshot::channel::<()>();
+    let serve = axum::serve(listener, app(state.clone())).with_graceful_shutdown(async move {
+        let _ = tokio::signal::ctrl_c().await;
+        tracing::info!(
+            "stopping: closing event streams and asking active runs to stop (Ctrl-C again to exit now)"
+        );
+        on_signal.shutdown();
+        let _ = signalled.send(());
+    });
+    // Tokio's handler replaces the default SIGINT behaviour for good, so a second Ctrl-C is only
+    // heard if something listens for it after the first.
+    let second = async move {
+        if first.await.is_ok() {
             let _ = tokio::signal::ctrl_c().await;
-            tracing::info!("stopping: closing event streams and asking the active run to stop");
-            on_signal.shutdown();
-        })
-        .await
-        .context("serving")?;
-    // Give an active run time to finish its step and stop its BOPTEST test, so the worker is
-    // not left holding an orphan. An initializing run cannot be stopped safely; say so.
-    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(600);
-    while let Some(run) = state.runs().active() {
-        if tokio::time::Instant::now() >= deadline {
-            tracing::warn!(run = %run.id, "run still active at exit; its BOPTEST test may need stopping");
-            break;
+        } else {
+            std::future::pending::<()>().await;
         }
-        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+    };
+    tokio::pin!(second);
+    tokio::select! {
+        served = serve => served.context("serving")?,
+        () = &mut second => {
+            let left = mm_server::shutdown::unfinished(state.runs());
+            mm_server::shutdown::report(&mm_server::shutdown::Drained::Interrupted(left));
+            return Ok(());
+        }
     }
+    // Give active runs time to finish their step and stop their BOPTEST test, so the worker is
+    // not left holding an orphan. An initializing run cannot be stopped safely; say so.
+    let outcome =
+        mm_server::shutdown::drain(state.runs(), std::time::Duration::from_secs(600), second)
+            .await;
+    mm_server::shutdown::report(&outcome);
     Ok(())
 }
 

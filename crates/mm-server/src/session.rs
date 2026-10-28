@@ -249,6 +249,7 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
                 tracing::error!(error = %e, "select failed; BOPTEST may hold an orphaned test");
                 format!("selecting the test case: {e}")
             })?;
+            handle.set_testid(client.testid());
             // A stop asked for while selecting is honoured here, before the warm-up: a selected
             // test that is not initializing can be stopped safely. The select itself and the
             // initialize are never abandoned halfway (either can leave an orphaned test).
