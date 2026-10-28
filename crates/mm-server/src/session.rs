@@ -347,6 +347,11 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
         // Nothing produces values once the run ends, whatever its outcome.
         crate::bacnet::clear(bacnet).await;
     }
+    if config.is_home()
+        && let Some(peak) = crate::home_facts::peak_power(&handle.journal().since(None))
+    {
+        handle.publish(None, RunEvent::PeakPower { peak });
+    }
     if let AnyPlant::Boptest { client, .. } = &plant {
         match client.kpi().await {
             Ok(values) => handle.publish(None, RunEvent::Kpi { values }),

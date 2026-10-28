@@ -23,7 +23,9 @@ fn readings(time: f64, peak_in: usize) -> Measurements {
     let mut m: Measurements = [
         ("time".to_owned(), time),
         ("reaTZon_y".to_owned(), 294.35),
-        ("reaPHeaPum_y".to_owned(), 1200.0),
+        ("reaPHeaPum_y".to_owned(), 0.0),
+        ("reaPFan_y".to_owned(), 0.0),
+        ("reaPPumEmi_y".to_owned(), 0.0),
     ]
     .into_iter()
     .collect();
@@ -145,6 +147,11 @@ async fn the_home_preheats_then_coasts() {
     for (got, want) in sent.iter().zip(expected) {
         assert!((got - want).abs() < 1e-9, "sent {sent:?}");
     }
+    // The run ends with its peak-price power figure, before the end event.
+    let peak = events.iter().find(|e| e["kind"] == "peak-power").unwrap();
+    assert_eq!(peak["peak"]["steps"], 4);
+    assert_eq!(peak["peak"]["mean_kw"], 0.0, "{peak}");
+    assert_eq!(info["peak"]["steps"], 4, "{info}");
     // The price now and the room are recorded for the charts.
     let first = events.iter().find(|e| e["kind"] == "tick").unwrap();
     assert_eq!(

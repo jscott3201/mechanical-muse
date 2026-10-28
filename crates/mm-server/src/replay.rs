@@ -118,6 +118,16 @@ fn info(name: &str, events: &[Envelope]) -> ReplayInfo {
             .unwrap_or_default(),
         pressure: config.as_ref().is_some_and(|c| c.pressure),
         state: ended,
+        case: config
+            .as_ref()
+            .map_or_else(|| mm_runtime::preset::CASE.to_owned(), |c| c.case.clone()),
+        step_s: config
+            .as_ref()
+            .map_or(mm_runtime::preset::STEP_S, |c| c.step_s),
+        peak: events.iter().rev().find_map(|e| match &e.event {
+            RunEvent::PeakPower { peak } => Some(peak.clone()),
+            _ => None,
+        }),
         kpis: events.iter().rev().find_map(|e| match &e.event {
             RunEvent::Kpi { values } => Some(values.clone()),
             _ => None,

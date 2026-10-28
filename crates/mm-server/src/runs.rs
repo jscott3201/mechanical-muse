@@ -31,6 +31,7 @@ impl Entry for Envelope {
             RunEvent::Phase { .. } => "phase",
             RunEvent::Tick { .. } => "tick",
             RunEvent::Kpi { .. } => "kpi",
+            RunEvent::PeakPower { .. } => "peak-power",
             RunEvent::Ended { .. } => "ended",
         }
     }
@@ -94,6 +95,7 @@ pub struct RunHandle {
     stop: watch::Sender<bool>,
     ticks: AtomicU32,
     kpis: Mutex<Option<BTreeMap<String, f64>>>,
+    peak: Mutex<Option<crate::home_facts::PeakPower>>,
     /// The BOPTEST test this run selected, once it has one (for logs at exit).
     testid: Mutex<Option<String>>,
 }
@@ -107,6 +109,7 @@ impl RunHandle {
             ticks: self.ticks.load(Ordering::Relaxed),
             events: u32::try_from(self.journal.len()).unwrap_or(u32::MAX),
             kpis: lock(&self.kpis).clone(),
+            peak: lock(&self.peak).clone(),
         }
     }
 
@@ -138,8 +141,10 @@ impl RunHandle {
 
     /// Appends an event to the log, the record and the live channel, in that order.
     pub(crate) fn publish(&self, sim_time_s: Option<f64>, event: RunEvent) {
-        if let RunEvent::Kpi { values } = &event {
-            *lock(&self.kpis) = Some(values.clone());
+        match &event {
+            RunEvent::Kpi { values } => *lock(&self.kpis) = Some(values.clone()),
+            RunEvent::PeakPower { peak } => *lock(&self.peak) = Some(peak.clone()),
+            _ => {}
         }
         self.journal.append(|seq| Envelope {
             run_id: self.id.clone(),
@@ -243,6 +248,7 @@ impl Runs {
             stop,
             ticks: AtomicU32::new(0),
             kpis: Mutex::new(None),
+            peak: Mutex::new(None),
             testid: Mutex::new(None),
         });
         reg.runs.insert(id, Arc::clone(&handle));

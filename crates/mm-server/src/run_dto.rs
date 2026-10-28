@@ -210,6 +210,10 @@ pub struct RunInfo {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub kpis: Option<BTreeMap<String, f64>>,
+    /// A home run's power in its most expensive quarter of prices, at the end.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub peak: Option<crate::home_facts::PeakPower>,
 }
 
 /// Where a running sequence's graph came from.
@@ -294,6 +298,11 @@ pub enum RunEvent {
     Kpi {
         values: BTreeMap<String, f64>,
     },
+    /// The home's power in the run's most expensive quarter of prices (ours, from recorded
+    /// readings; home runs only).
+    PeakPower {
+        peak: crate::home_facts::PeakPower,
+    },
     /// The last event of every run.
     Ended {
         state: RunState,
@@ -357,6 +366,13 @@ pub struct ReplayInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub fault: Option<Fault>,
+    /// BOPTEST test case and step length of the recorded run.
+    pub case: String,
+    pub step_s: f64,
+    /// A home run's power in its most expensive quarter of prices, if the record has it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub peak: Option<crate::home_facts::PeakPower>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, TS)]
