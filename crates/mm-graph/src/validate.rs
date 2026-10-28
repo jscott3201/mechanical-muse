@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::Serialize;
 
 use crate::graph::{BlockGraph, Endpoint, ParamValue, parse_edge};
-use crate::palette::{Palette, ParamKind, PortKind};
+use crate::palette::{MAX_WIDTH, Palette, ParamKind, PortKind, WIDTH_PARAM, width_value};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -21,6 +21,7 @@ pub enum FindingCode {
     DuplicateParam,
     MissingRequiredParam,
     ParamTypeMismatch,
+    InvalidWidth,
     MalformedEdge,
     UnknownSource,
     UnknownDestination,
@@ -43,6 +44,7 @@ impl FindingCode {
             FindingCode::DuplicateParam => "duplicate-param",
             FindingCode::MissingRequiredParam => "missing-required-param",
             FindingCode::ParamTypeMismatch => "param-type-mismatch",
+            FindingCode::InvalidWidth => "invalid-width",
             FindingCode::MalformedEdge => "malformed-edge",
             FindingCode::UnknownSource => "unknown-source",
             FindingCode::UnknownDestination => "unknown-destination",
@@ -82,6 +84,9 @@ struct Validator {
     sources: BTreeMap<Endpoint, PortKind>,
     /// Edge destinations: boundary outputs and block inputs, with their kind.
     destinations: BTreeMap<Endpoint, PortKind>,
+    /// Width blocks whose `nin` is missing or bad. Their ports are unknown, so edges into them
+    /// are not reported again (the `nin` finding says what to fix).
+    unsized_blocks: BTreeSet<String>,
 }
 
 impl Validator {
@@ -166,16 +171,39 @@ impl Validator {
                 self.push(
                     FindingCode::ClassNotAuthorable,
                     &block.id,
-                    format!("{} is width-driven or reserved", block.class),
+                    format!(
+                        "{} is not offered (reserved, or a width-driven class we do not expand)",
+                        block.class
+                    ),
                 );
             }
             for port in &spec.outputs {
                 let at = port_endpoint(&block.id, &port.name);
                 self.sources.insert(at, port.kind);
             }
-            for port in &spec.inputs {
+            for port in spec.input_ports(&block.params) {
                 let at = port_endpoint(&block.id, &port.name);
                 self.destinations.insert(at, port.kind);
+            }
+            if spec.width.is_some() {
+                let nin = block.params.iter().find(|p| p.name == WIDTH_PARAM);
+                if nin.is_none_or(|p| width_value(&p.value).is_none()) {
+                    self.unsized_blocks.insert(block.id.clone());
+                }
+                // A value that is not a whole number already gets param-type-mismatch.
+                if let Some(nin) = nin
+                    && let ParamValue::Number(got) = nin.value
+                    && width_value(&nin.value).is_none()
+                    && param_problem(ParamKind::Integer, &nin.value).is_none()
+                {
+                    self.push(
+                        FindingCode::InvalidWidth,
+                        format!("{}.{WIDTH_PARAM}", block.id),
+                        format!(
+                            "{WIDTH_PARAM} is the number of inputs u1..u<{WIDTH_PARAM}>, from 1 to {MAX_WIDTH}; got {got}"
+                        ),
+                    );
+                }
             }
             let mut set = BTreeSet::new();
             for param in &block.params {
@@ -234,7 +262,9 @@ impl Validator {
                     format!("{} is not a boundary input or a block output", edge.from),
                 );
             }
-            if to.is_none() {
+            let into_unsized = matches!(&edge.to, Endpoint::Port { block, .. }
+                if self.unsized_blocks.contains(block));
+            if to.is_none() && !into_unsized {
                 self.push(
                     FindingCode::UnknownDestination,
                     text,

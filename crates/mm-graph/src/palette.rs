@@ -7,6 +7,17 @@ use serde::Deserialize;
 
 const CDL_PREFIX: &str = "CDL.";
 
+/// Width-driven classes we expand ourselves: `nin` inputs named `u1`..`u<nin>`, all of the output's
+/// kind, and one output `y`. The engine binds these ports by position, so the names are ours.
+/// Others stay out until a sequence needs them (`MultiSum` also has one gain per input).
+const WIDTH_CLASSES: &[&str] = &["Reals.MultiMax", "Reals.MultiMin"];
+
+/// The parameter that sets a width class's input count.
+pub const WIDTH_PARAM: &str = "nin";
+
+/// The widest block we offer. Enough for a day of hourly values; keeps drafts and prompts small.
+pub const MAX_WIDTH: u32 = 32;
+
 #[derive(Debug, thiserror::Error)]
 pub enum PaletteError {
     #[error("catalog JSON is malformed: {0}")]
@@ -17,6 +28,8 @@ pub enum PaletteError {
         port: String,
         kind: String,
     },
+    #[error("catalog class {0} no longer has the shape we expand (one output, only nin)")]
+    UnexpectedWidthClass(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -78,8 +91,45 @@ pub struct ClassSpec {
     pub outputs: Vec<PortSpec>,
     pub params: BTreeMap<String, ParamSpec>,
     pub stateful: bool,
-    /// False for reserved and width-driven classes, which need port synthesis we do not have yet.
+    /// False for reserved classes and for width-driven ones outside [`WIDTH_CLASSES`].
     pub authorable: bool,
+    /// For a width class, the kind of its `u1`..`u<nin>` inputs; `inputs` is then empty and
+    /// [`ClassSpec::input_ports`] builds them per block.
+    pub width: Option<PortKind>,
+}
+
+impl ClassSpec {
+    /// A block's input ports. A width class gets `u1`..`u<nin>` from its own `nin`; none when
+    /// `nin` is missing or out of range (the validator reports that).
+    pub fn input_ports(&self, params: &[crate::graph::Param]) -> Vec<PortSpec> {
+        let Some(kind) = self.width else {
+            return self.inputs.clone();
+        };
+        let n = params
+            .iter()
+            .find(|p| p.name == WIDTH_PARAM)
+            .and_then(|p| width_value(&p.value))
+            .unwrap_or(0);
+        (1..=n)
+            .map(|i| PortSpec {
+                name: format!("u{i}"),
+                kind,
+            })
+            .collect()
+    }
+}
+
+/// `nin` as an input count, if it is a whole number in `1..=MAX_WIDTH`.
+pub fn width_value(value: &crate::graph::ParamValue) -> Option<u32> {
+    let crate::graph::ParamValue::Number(x) = value else {
+        return None;
+    };
+    if x.fract() != 0.0 || *x < 1.0 || *x > f64::from(MAX_WIDTH) {
+        return None;
+    }
+    // Checked above: a whole number in 1..=MAX_WIDTH.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    Some(*x as u32)
 }
 
 #[derive(Debug, Clone)]
@@ -106,17 +156,22 @@ impl Palette {
                 .iter()
                 .chain(&entry.outputs)
                 .all(|p| p.name.is_some());
-            let spec = ClassSpec {
-                class: class.to_owned(),
-                inputs: ports(class, &entry.inputs)?,
-                outputs: ports(class, &entry.outputs)?,
-                params: params(&entry),
-                stateful: entry.stateful,
-                authorable: all_named
-                    && !needs_unsupported_param(&params(&entry))
-                    && !entry.reserved
-                    && !entry.width_driven
-                    && entry.naming != "width_driven",
+            let spec = if entry.width_driven && WIDTH_CLASSES.contains(&class) {
+                width_class(class, &entry)?
+            } else {
+                ClassSpec {
+                    class: class.to_owned(),
+                    inputs: ports(class, &entry.inputs)?,
+                    outputs: ports(class, &entry.outputs)?,
+                    params: params(&entry),
+                    stateful: entry.stateful,
+                    authorable: all_named
+                        && !needs_unsupported_param(&params(&entry))
+                        && !entry.reserved
+                        && !entry.width_driven
+                        && entry.naming != "width_driven",
+                    width: None,
+                }
             };
             classes.insert(spec.class.clone(), spec);
         }
@@ -131,6 +186,42 @@ impl Palette {
     pub fn classes(&self) -> impl Iterator<Item = &ClassSpec> {
         self.classes.values()
     }
+}
+
+/// A width class: one output named `y`, inputs built per block, and `nin` required (the catalog's
+/// default of 0 inputs is not a useful block).
+fn width_class(class: &str, entry: &RawEntry) -> Result<ClassSpec, PaletteError> {
+    let [out] = entry.outputs.as_slice() else {
+        return Err(PaletteError::UnexpectedWidthClass(class.to_owned()));
+    };
+    let kind = PortKind::parse(&out.kind).ok_or_else(|| PaletteError::UnknownPortKind {
+        class: class.to_owned(),
+        port: "y".to_owned(),
+        kind: out.kind.clone(),
+    })?;
+    let mut params = params(entry);
+    if params.len() != 1 || !params.contains_key(WIDTH_PARAM) || !entry.inputs.is_empty() {
+        return Err(PaletteError::UnexpectedWidthClass(class.to_owned()));
+    }
+    params.insert(
+        WIDTH_PARAM.to_owned(),
+        ParamSpec {
+            kind: ParamKind::Integer,
+            required: true,
+        },
+    );
+    Ok(ClassSpec {
+        class: class.to_owned(),
+        inputs: Vec::new(),
+        outputs: vec![PortSpec {
+            name: "y".to_owned(),
+            kind,
+        }],
+        params,
+        stateful: entry.stateful,
+        authorable: !entry.reserved,
+        width: Some(kind),
+    })
 }
 
 fn ports(class: &str, raw: &[RawPort]) -> Result<Vec<PortSpec>, PaletteError> {
@@ -270,9 +361,9 @@ mod tests {
         assert_eq!(palette.classes().count(), 133);
         let authorable = palette.classes().filter(|c| c.authorable).count();
         // 105 named classes, minus CalendarTime (enum zerTim) and Assert (string message), which
-        // need parameter kinds we cannot set yet. Width-driven and positional TimeTables need port
-        // synthesis.
-        assert_eq!(authorable, 103);
+        // need parameter kinds we cannot set yet, plus the two width classes we expand (MultiMax,
+        // MultiMin). Other width-driven classes and positional TimeTables need port synthesis.
+        assert_eq!(authorable, 105);
         assert!(!palette.class("Reals.Sources.TimeTable").unwrap().authorable);
     }
 
@@ -309,6 +400,40 @@ mod tests {
             })
         );
         assert!(td.stateful && td.authorable);
+    }
+
+    #[test]
+    fn multi_max_expands_from_nin() {
+        use crate::graph::{Param, ParamValue};
+        let palette = Palette::pinned().unwrap();
+        let mm = palette.class("Reals.MultiMax").unwrap();
+        assert!(mm.authorable);
+        assert_eq!(mm.width, Some(PortKind::Real));
+        assert_eq!(mm.outputs[0].name, "y");
+        assert_eq!(
+            mm.params.get(WIDTH_PARAM),
+            Some(&ParamSpec {
+                kind: ParamKind::Integer,
+                required: true
+            })
+        );
+        let nin = |x: f64| {
+            vec![Param {
+                name: WIDTH_PARAM.into(),
+                value: ParamValue::Number(x),
+            }]
+        };
+        let names: Vec<_> = mm
+            .input_ports(&nin(3.0))
+            .into_iter()
+            .map(|p| p.name)
+            .collect();
+        assert_eq!(names, ["u1", "u2", "u3"]);
+        for bad in [0.0, 2.5, 33.0, -1.0] {
+            assert!(mm.input_ports(&nin(bad)).is_empty(), "nin {bad}");
+        }
+        assert!(mm.input_ports(&[]).is_empty());
+        assert!(!palette.class("Reals.MultiSum").unwrap().authorable);
     }
 
     #[test]

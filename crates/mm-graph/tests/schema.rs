@@ -16,7 +16,7 @@ fn every_class_in_the_enum_is_authorable() {
         .as_array()
         .unwrap()
         .clone();
-    assert_eq!(classes.len(), 53);
+    assert_eq!(classes.len(), 55);
     for class in classes {
         let class = class.as_str().unwrap();
         let spec = palette

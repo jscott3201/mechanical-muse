@@ -102,6 +102,7 @@ pub fn emit_cxf(
             continue;
         };
         let id = &block.id;
+        let inputs = spec.input_ports(&block.params);
         let mut node = vec![
             ("@id", Json::str(at(id))),
             (
@@ -124,10 +125,10 @@ pub fn emit_cxf(
                 refs(block.params.iter().map(|p| p.name.as_str()).collect()),
             ));
         }
-        if !spec.inputs.is_empty() {
+        if !inputs.is_empty() {
             node.push((
                 "S231:hasInput",
-                refs(spec.inputs.iter().map(|p| p.name.as_str()).collect()),
+                refs(inputs.iter().map(|p| p.name.as_str()).collect()),
             ));
         }
         if !spec.outputs.is_empty() {
@@ -157,7 +158,7 @@ pub fn emit_cxf(
                 ),
             ]));
         }
-        for p in &spec.inputs {
+        for p in &inputs {
             nodes.push(port(&format!("{id}.{}", p.name), p.kind, true));
         }
         for p in &spec.outputs {

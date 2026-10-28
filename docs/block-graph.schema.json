@@ -54,7 +54,8 @@
             "Reals.Hysteresis", "Reals.PID", "Logical.TrueFalseHold", "Logical.Change", "Integers.GreaterThreshold",
             "Logical.Pre", "Discrete.TriggeredSampler", "Integers.Add", "Logical.Xor", "Reals.Limiter",
             "Logical.Sources.SampleTrigger", "Integers.Change", "Integers.Multiply", "Logical.Nor", "Integers.LessThreshold",
-            "Integers.LessEqualThreshold", "Integers.AddParameter", "Discrete.FirstOrderHold"
+            "Integers.LessEqualThreshold", "Integers.AddParameter", "Discrete.FirstOrderHold", "Reals.MultiMax",
+            "Reals.MultiMin"
           ]
         },
         "params": {"type": "array", "description": "Parameters to set; omit defaults. [] if none.", "items": {"$ref": "#/$defs/param"}}

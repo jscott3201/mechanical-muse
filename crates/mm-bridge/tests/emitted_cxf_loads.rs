@@ -40,7 +40,7 @@ fn load_clean(bytes: &[u8]) -> String {
 
 #[test]
 fn goldens_load_without_diagnostics_and_ids_are_stable() {
-    for name in ["ahu_0027", "ahu_0005"] {
+    for name in ["ahu_0027", "ahu_0005", "width_max_min"] {
         let graph_json = std::fs::read(repo(&format!(
             "crates/mm-graph/tests/golden/{name}.graph.json"
         )))
@@ -98,4 +98,46 @@ fn content_id_depends_on_node_order() {
     };
     let emitted = emit_cxf(&imported.graph, &Palette::pinned().unwrap(), &options).unwrap();
     assert_ne!(load_clean(&emitted), load_clean(&original));
+}
+
+/// MultiMax and MultiMin, expanded from `nin` by mm-graph, compute the right values on the engine
+/// whichever input holds the extreme (the engine binds their ports by position).
+#[test]
+fn width_blocks_compute_max_and_min() {
+    use mm_bridge::{ReplayLimits, ScenarioOutcome, VectorFile, replay};
+    let graph: BlockGraph = serde_json::from_slice(
+        &std::fs::read(repo(
+            "crates/mm-graph/tests/golden/width_max_min.graph.json",
+        ))
+        .unwrap(),
+    )
+    .unwrap();
+    let cxf = emit_cxf(&graph, &Palette::pinned().unwrap(), &EmitOptions::default()).unwrap();
+    let scenario = |name: &str, a: f64, b: f64, c: f64, hi: f64, lo: f64| {
+        serde_json::json!({
+            "name": name, "description": name,
+            "inputs": {"pA": a, "pB": b, "pC": c},
+            "expect": [
+                {"output": "hiVal", "from_s": 0.0, "to_s": 120.0, "equals": hi, "tolerance": 1e-9},
+                {"output": "loVal", "from_s": 0.0, "to_s": 120.0, "equals": lo, "tolerance": 1e-9}
+            ]
+        })
+    };
+    let vectors: VectorFile = serde_json::from_value(serde_json::json!({
+        "schema": "mechanical-muse/vectors/v1",
+        "clock": {"step_s": 60.0, "horizon_s": 120},
+        "scenarios": [
+            scenario("max_first", 4.0, 1.5, -2.0, 4.0, -2.0),
+            scenario("max_middle", 1.5, 4.0, -2.0, 4.0, -2.0),
+            scenario("max_last", -2.0, 1.5, 4.0, 4.0, -2.0),
+            scenario("min_middle", 1.5, -2.0, 4.0, 4.0, -2.0),
+            scenario("all_equal", 0.25, 0.25, 0.25, 0.25, 0.25)
+        ]
+    }))
+    .unwrap();
+    let report = replay(&cxf, &vectors, &ReplayLimits::default()).unwrap();
+    for s in &report.scenarios {
+        assert_eq!(s.outcome, ScenarioOutcome::Pass, "{}", s.name);
+    }
+    assert_eq!(report.scenarios.len(), 5);
 }

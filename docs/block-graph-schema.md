@@ -101,7 +101,7 @@ Addressing: a bare token is a boundary input (as source) or boundary output (as 
 ```
 
 **Design notes**
-- **Class enum (53).** The 62 census classes, minus the 8 width-driven ones (`Logical.MultiAnd/MultiOr`, `Reals.MultiMax/MultiMin/MultiSum/MatrixGain`, `Routing.*ScalarReplicator`; they need `nin` plus `u1..u<nin>` port synthesis) and `Utilities.Assert`; ordered by combined frequency. It covers 100% of library block instances and 96.2% of G36-fixture instances. **Fallback** = rebuild the enum from the 103 authorable classes in the pinned catalog (width-driven classes, positional `TimeTable`s, and `CalendarTime`/`Assert` with enum/string required parameters excluded; well inside the 1000-value cap) and put those classes' ports in the prompt palette; `mm-graph`'s validator already accepts any authorable class. I avoided an `anyOf [enum, free string]` per block because the free-string branch would void the grammar constraint.
+- **Class enum (55).** Added 2026-10-28: `Reals.MultiMax` and `Reals.MultiMin` (width classes, see below). Originally 53: the 62 census classes, minus the 8 width-driven ones (`Logical.MultiAnd/MultiOr`, `Reals.MultiMax/MultiMin/MultiSum/MatrixGain`, `Routing.*ScalarReplicator`; they need `nin` plus `u1..u<nin>` port synthesis) and `Utilities.Assert`; ordered by combined frequency. It covers 100% of library block instances and 96.2% of G36-fixture instances. **Fallback** = rebuild the enum from the 103 authorable classes (105 since MultiMax and MultiMin, 2026-10-28) in the pinned catalog (width-driven classes, positional `TimeTable`s, and `CalendarTime`/`Assert` with enum/string required parameters excluded; well inside the 1000-value cap) and put those classes' ports in the prompt palette; `mm-graph`'s validator already accepts any authorable class. I avoided an `anyOf [enum, free string]` per block because the free-string branch would void the grammar constraint.
 - **Interface is locked by the task.** For the benchmark the point list and output list come from the card (`points`, `outputs`); the validator requires `inputs`/`outputs` names and types to equal them exactly. `unit` and `description` exist only so the model states what it thinks each point is; the emitter drops them (CXF v1 has no annotations).
 - **`value`** accepts number, boolean, string. Real parameters accept JSON integers (emitter writes `86400.0`); the string branch is reserved for enum parameters (`Reals.PID*.controllerType`), which `mm-graph` refuses for now: leave them at their defaults.
 - **Edge order.** Write edges in dataflow order (inputs first). CXF groups edges by source; order within a source's fan-out list is preserved, order between sources is irrelevant.
@@ -187,3 +187,14 @@ Aggregate: 1.67 MB of CXF becomes 242 kB of wire JSON (6.9x; 5.0x against minifi
 - Does Meta's decoder accept `anyOf` of three primitives for `value`? If not, use `{"value": number, "text": string}` or encode booleans as strings and let the palette coerce.
 - Should the model emit `unit`/`description` at all? They cost ~26% of output bytes and CXF drops them.
 - Enum-valued parameters and width-driven blocks are the two places where the emitter needs more than the palette (G36-dialect fixtures are the reference).
+
+## Width classes (added 2026-10-28)
+
+`Reals.MultiMax` and `Reals.MultiMin` are width-driven in the catalog: their input count comes from
+the integer parameter `nin`, and the catalog lists no port names. `mm-graph` expands them itself:
+`nin` is required (1 to 32), the inputs are `u1`..`u<nin>` (Real), the output is `y`. The engine
+binds width-driven ports by position, so the emitter lists `u1`..`u<nin>` in order. A missing or
+out-of-range `nin` is the finding `invalid-width` (or `missing-required-param`). Other
+width-driven classes (`MultiSum`, which also takes one gain per input, `MultiAnd`, `MultiOr`,
+replicators) stay out until a sequence needs them. First use: the home price-response sequence,
+which takes the max and min of a day of hourly prices.

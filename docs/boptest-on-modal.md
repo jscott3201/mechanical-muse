@@ -19,7 +19,7 @@ beyond `deploy/modal/`.
 (`deploy/modal/Dockerfile`: BOPTEST's worker and web build steps, redis, and minio built from
 source at the release BOPTEST names, because its published binaries and images are gone), starts
 the four services on localhost (`deploy/modal/start.sh`), uploads the
-`multizone_office_complex_air` test case, and opens a Modal tunnel to BOPTEST's web service.
+`multizone_office_complex_air` and `bestest_hydronic_heat_pump` test cases, and opens a Modal tunnel to BOPTEST's web service.
 Size: 4 cores, 16 GiB. At Modal's list prices that is about $0.32 an hour; the app stops itself
 after `MINUTES` (default 120).
 

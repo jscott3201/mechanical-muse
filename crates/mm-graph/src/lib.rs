@@ -20,7 +20,10 @@ pub use graph::{
 };
 pub use import::{ImportError, Imported, cxf_to_graph};
 pub use number::python_float_repr;
-pub use palette::{ClassSpec, Palette, PaletteError, ParamKind, ParamSpec, PortKind, PortSpec};
+pub use palette::{
+    ClassSpec, MAX_WIDTH, Palette, PaletteError, ParamKind, ParamSpec, PortKind, PortSpec,
+    WIDTH_PARAM, width_value,
+};
 pub use validate::{Finding, FindingCode, validate};
 
 /// The model-facing JSON Schema (Meta strict structured-output subset).

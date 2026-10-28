@@ -49,6 +49,7 @@ RUN wget -q https://go.dev/dl/go1.24.2.linux-amd64.tar.gz && tar -C /usr/local -
  && git fetch -q --depth 1 https://github.com/minio/minio "$MINIO_COMMIT" && git checkout -q FETCH_HEAD \
  && CGO_ENABLED=0 /usr/local/go/bin/go build -trimpath -o /usr/local/bin/minio . \
  && cd / && rm -rf /tmp/minio /root/go /root/.cache/go-build /usr/local/go
-# Provisioning tool and the one test case we use
+# Provisioning tool and the test cases we use (the office, and the home for price response)
 COPY service/provision /src/service/provision
 COPY testcases/multizone_office_complex_air /src/testcases/multizone_office_complex_air
+COPY testcases/bestest_hydronic_heat_pump /src/testcases/bestest_hydronic_heat_pump
