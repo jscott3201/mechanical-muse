@@ -405,7 +405,9 @@ impl<'a> DraftTools<'a> {
                 "ok": true, "class": spec.class,
                 "inputs": match spec.width {
                     Some(kind) => json!([{"name": format!("u1..u<{}>", mm_graph::WIDTH_PARAM),
-                                          "type": kind.as_str()}]),
+                                          "type": kind.as_str(),
+                                          "note": format!("one input per count of {}: u1, u2, ... u<{}>",
+                                                          mm_graph::WIDTH_PARAM, mm_graph::WIDTH_PARAM)}]),
                     None => json!(ports(&spec.inputs)),
                 },
                 "outputs": ports(&spec.outputs),

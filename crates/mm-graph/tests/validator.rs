@@ -268,16 +268,24 @@ fn width_graph_validates() {
 }
 
 #[test]
-fn width_out_of_range_is_flagged() {
-    for bad in [0.0, 2.5, 33.0] {
+fn width_out_of_range_is_flagged_once() {
+    // A whole number out of range: invalid-width only, not one finding per edge into the block.
+    for bad in [0.0, 33.0, -1.0] {
         let mut g = width_graph();
         g.blocks[0].params[0].value = mm_graph::ParamValue::Number(bad);
-        let found = codes(&g);
-        assert!(
-            found.contains(&("hi.nin".to_owned(), FindingCode::InvalidWidth)),
-            "nin {bad}: {found:?}"
+        assert_eq!(
+            codes(&g),
+            vec![("hi.nin".to_owned(), FindingCode::InvalidWidth)],
+            "nin {bad}"
         );
     }
+    // Not a whole number: the type finding alone.
+    let mut g = width_graph();
+    g.blocks[0].params[0].value = mm_graph::ParamValue::Number(2.5);
+    assert_eq!(
+        codes(&g),
+        vec![("hi.nin".to_owned(), FindingCode::ParamTypeMismatch)]
+    );
 }
 
 #[test]
@@ -296,5 +304,8 @@ fn width_ports_follow_nin() {
 fn width_without_nin_is_flagged() {
     let mut g = width_graph();
     g.blocks[0].params.clear();
-    assert!(codes(&g).contains(&("hi.nin".to_owned(), FindingCode::MissingRequiredParam)));
+    assert_eq!(
+        codes(&g),
+        vec![("hi.nin".to_owned(), FindingCode::MissingRequiredParam)]
+    );
 }

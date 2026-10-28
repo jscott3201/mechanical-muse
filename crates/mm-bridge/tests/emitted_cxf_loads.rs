@@ -130,6 +130,7 @@ fn width_blocks_compute_max_and_min() {
             scenario("max_first", 4.0, 1.5, -2.0, 4.0, -2.0),
             scenario("max_middle", 1.5, 4.0, -2.0, 4.0, -2.0),
             scenario("max_last", -2.0, 1.5, 4.0, 4.0, -2.0),
+            scenario("min_middle", 1.5, -2.0, 4.0, 4.0, -2.0),
             scenario("all_equal", 0.25, 0.25, 0.25, 0.25, 0.25)
         ]
     }))
@@ -138,5 +139,5 @@ fn width_blocks_compute_max_and_min() {
     for s in &report.scenarios {
         assert_eq!(s.outcome, ScenarioOutcome::Pass, "{}", s.name);
     }
-    assert_eq!(report.scenarios.len(), 4);
+    assert_eq!(report.scenarios.len(), 5);
 }
