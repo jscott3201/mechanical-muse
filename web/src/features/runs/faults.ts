@@ -58,6 +58,18 @@ export function faultModeText(f: Fault): string {
   }
 }
 
+/**
+ * "Fail-safe active for steps 20–24 and 40: ..." for the spans a run recorded, or null when the
+ * fail-safe never acted. Step numbers count from 0, as the fault's do.
+ */
+export function failSafeNote(spans: readonly { from: number; to: number }[]): string | null {
+  if (spans.length === 0) return null;
+  const parts = spans.map((s) => (s.from === s.to ? `${s.from}` : `${s.from}–${s.to}`));
+  const list = parts.length === 1 ? parts.join("") : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+  const one = spans.length === 1 && spans[0]?.from === spans[0]?.to;
+  return `Fail-safe active for step${one ? "" : "s"} ${list}: no new setpoints were written for the affected sequences (last good values held or handed back to BOPTEST's own controllers).`;
+}
+
 /** "floor1_reaAHU_yCooVal_y held at 1 for steps 30–89". */
 export function faultText(f: Fault): string {
   return `${f.point} ${faultModeText(f)} for steps ${f.from_step}–${f.from_step + f.steps - 1}`;

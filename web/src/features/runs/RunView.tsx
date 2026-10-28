@@ -1,4 +1,4 @@
-import { CircleAlert, History, Info, OctagonX, Sparkles, TriangleAlert } from "lucide-react";
+import { CircleAlert, History, Info, OctagonX, ShieldAlert, Sparkles, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ import { ErrorNote } from "../ErrorNote";
 import { change } from "./baseline";
 import { configFacts, describe } from "./describe";
 import { RunEmissions } from "./EmissionsPanel";
-import { faultText } from "./faults";
+import { failSafeNote, faultText } from "./faults";
 import { RunExplanationPanel } from "./RunExplanationPanel";
 import { RunStatus } from "./RunStatus";
 import { KpiTiles, RunProgress, SequenceGroups } from "./RunSummary";
@@ -107,6 +107,7 @@ function RunStream({
   const hasKpis = stream.kpi !== null && stream.kpi !== undefined;
   const comparisons = useComparisons(cfg ?? null, hasKpis);
   const base = comparisons.baseline;
+  const failSafe = failSafeNote(stream.failSafeSpans);
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -143,6 +144,12 @@ function RunStream({
             <p className="flex items-start gap-2 text-sm text-destructive">
               <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
               {stream.ended.message}
+            </p>
+          )}
+          {failSafe && (
+            <p className="flex items-start gap-2 text-sm">
+              <ShieldAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-destructive" />
+              {failSafe}
             </p>
           )}
           {cfg && stream.phase === "running" && !stream.ended && (

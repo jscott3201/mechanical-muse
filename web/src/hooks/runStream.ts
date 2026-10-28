@@ -42,6 +42,13 @@ export interface RunStreamState {
   gap: boolean;
   /** Why the latest step wrote no new setpoints (fail-safe active), or null when it did. */
   degraded: string | null;
+  /** Ticks seen so far (the step index of the next tick); never trimmed with the buffer. */
+  steps: number;
+  /**
+   * Runs of steps (0-based, inclusive) where the fail-safe was active, so a short degraded spell
+   * stays visible after it ends.
+   */
+  failSafeSpans: { from: number; to: number }[];
 }
 
 export const MAX_TICKS = 6000;
@@ -58,6 +65,8 @@ export const initialRunStream: RunStreamState = {
   lastSeq: null,
   gap: false,
   degraded: null,
+  steps: 0,
+  failSafeSpans: [],
 };
 
 function describe(e: SupervisorEvent): LogEntry["text"] {
@@ -74,10 +83,19 @@ function describe(e: SupervisorEvent): LogEntry["text"] {
     case "stale":
       return "readings did not move forward in time; nothing ran";
     case "injected":
-      return `${where}: test fault injected (reading replaced with NaN)`;
+      return `${where}: test fault injected (${injectedWhat(e.reason)})`;
     default:
       return `${where}: ${e.kind}`;
   }
+}
+
+/**
+ * What an injected fault did to the reading. The server's reason is mode-aware ("test fault:
+ * reading biased by +4"); records from before fault modes carry the NaN wording or none.
+ */
+function injectedWhat(reason: string | undefined): string {
+  const what = reason?.replace(/^test fault:\s*/, "").trim();
+  return what ? what : "reading replaced with NaN";
 }
 
 function severity(e: SupervisorEvent): LogEntry["severity"] {
@@ -139,6 +157,8 @@ export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamSta
           ticks,
           log: events.length ? [...base.log, ...events] : base.log,
           degraded: failSafe ? describe(failSafe) : null,
+          steps: base.steps + 1,
+          failSafeSpans: failSafe ? extendSpans(base.failSafeSpans, base.steps) : base.failSafeSpans,
         };
         break;
       }
@@ -172,6 +192,12 @@ export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamSta
     ticks.splice(0, ticks.length - MAX_TICKS);
   }
   return next;
+}
+
+function extendSpans(spans: RunStreamState["failSafeSpans"], step: number): RunStreamState["failSafeSpans"] {
+  const last = spans[spans.length - 1];
+  if (last && last.to === step - 1) return [...spans.slice(0, -1), { from: last.from, to: step }];
+  return [...spans, { from: step, to: step }];
 }
 
 /**

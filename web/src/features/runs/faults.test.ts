@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { endUsesMissing, faultBanner, signed, signedUsd } from "./ledger";
-import { faultModeText, faultRequest, faultText } from "./faults";
+import { failSafeNote, faultModeText, faultRequest, faultText } from "./faults";
 
 describe("endUsesMissing", () => {
   it("gives the actual reason end uses are not shown", () => {
@@ -30,6 +30,15 @@ describe("faults", () => {
     expect(faultText(faultRequest("hold", 30))).toBe("floor1_reaAHU_yCooVal_y held at 1 for steps 30–89");
     expect(faultModeText({ ...faultRequest("bias", 0), mode: { kind: "bias", offset: -1.5 } })).toBe("biased by −1.5");
     expect(faultText(faultRequest("nan", 20))).toBe("floor1_reaAHU_TSup_y reads NaN for steps 20–24");
+  });
+
+  it("notes the steps the fail-safe acted, after the fact", () => {
+    expect(failSafeNote([])).toBeNull();
+    expect(failSafeNote([{ from: 20, to: 24 }])).toMatch(/^Fail-safe active for steps 20–24: /);
+    expect(failSafeNote([{ from: 7, to: 7 }])).toMatch(/^Fail-safe active for step 7: /);
+    expect(failSafeNote([{ from: 1, to: 2 }, { from: 5, to: 5 }, { from: 9, to: 12 }])).toMatch(
+      /^Fail-safe active for steps 1–2, 5 and 9–12: /,
+    );
   });
 });
 
