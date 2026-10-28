@@ -4,7 +4,7 @@ import type { ReplayInfo } from "@/types/generated/ReplayInfo";
 import type { RunConfig } from "@/types/generated/RunConfig";
 import type { RunInfo } from "@/types/generated/RunInfo";
 
-import { change, findBaseline } from "./baseline";
+import { change, findBaseline, findHealthy } from "./baseline";
 
 const cfg: RunConfig = {
   baseline: false,
@@ -54,18 +54,50 @@ describe("findBaseline", () => {
       source: "baseline run run-2",
       recorded: false,
       kpis: { ener_tot: 0.3255 },
+      reference: "run:run-2",
     });
   });
 
   it("falls back to a recorded baseline of the same window", () => {
     const found = findBaseline(cfg, [run("run-1", { baseline: true })], [replay({ ticks: 60 }), replay({})]);
-    expect(found).toEqual({ source: "recorded baseline run run-1", recorded: true, kpis: { ener_tot: 0.3255 } });
+    expect(found).toEqual({
+      source: "recorded baseline run run-1",
+      recorded: true,
+      kpis: { ener_tot: 0.3255 },
+      reference: "replay:day185-noon-baseline",
+    });
   });
 
   it("finds nothing for another window, a non-baseline run, or a baseline run itself", () => {
     expect(findBaseline(cfg, [run("run-1", { steps: 60, baseline: true }, { ener_tot: 1 })], [replay({ start_s: 1 })])).toBeNull();
     expect(findBaseline(cfg, [run("run-1", {}, { ener_tot: 1 })], [replay({ baseline: false })])).toBeNull();
     expect(findBaseline({ ...cfg, baseline: true }, [], [replay({})])).toBeNull();
+  });
+});
+
+describe("findHealthy", () => {
+  const fault = { point: "floor1_reaAHU_yCooVal_y", from_step: 30, steps: 60, mode: { kind: "hold" as const, value: 1 } };
+  const faulted: RunConfig = { ...cfg, fault };
+
+  it("finds the same run without the fault, on this server first", () => {
+    const runs = [
+      run("run-1", {}, { ener_tot: 0.31 }),
+      run("run-2", { fault }, { ener_tot: 0.33 }),
+      run("run-3", { pressure: true }, { ener_tot: 0.25 }),
+    ];
+    expect(findHealthy(faulted, runs, [])).toEqual({ reference: "run:run-1", source: "run run-1" });
+    const recorded = replay({ name: "day185-noon-requests", baseline: false, requests: true });
+    expect(findHealthy(faulted, [], [recorded])).toEqual({
+      reference: "replay:day185-noon-requests",
+      source: "recorded run run-1",
+    });
+  });
+
+  it("finds nothing without a fault, for a baseline, a faulted or another-window run", () => {
+    expect(findHealthy(cfg, [run("run-1", {}, { ener_tot: 1 })], [])).toBeNull();
+    expect(findHealthy(faulted, [run("run-1", { baseline: true }, { ener_tot: 1 })], [replay({})])).toBeNull();
+    expect(findHealthy(faulted, [run("run-1", { steps: 60 }, { ener_tot: 1 })], [])).toBeNull();
+    expect(findHealthy(faulted, [], [replay({ baseline: false, requests: true, fault })])).toBeNull();
   });
 });
 
