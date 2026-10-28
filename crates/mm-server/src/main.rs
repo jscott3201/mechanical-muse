@@ -86,6 +86,9 @@ async fn main() -> anyhow::Result<()> {
         bindings: Some(PathBuf::from(
             std::env::var("MM_BINDINGS_DIR").unwrap_or_else(|_| "fixtures/bindings".into()),
         )),
+        attacks: Some(PathBuf::from(
+            std::env::var("MM_ATTACKS_DIR").unwrap_or_else(|_| "fixtures/attacks".into()),
+        )),
         ..AuthoringConfig::default()
     };
     let state = AppState::build(specs, palette, runs, authoring);

@@ -43,6 +43,8 @@ struct Inner {
     runs: Runs,
     authoring: Authoring,
     explanations: crate::explain::Explanations,
+    /// Spark's proposals to break engineers' sequences, by request digest.
+    attacks: crate::attack::Attacks,
     shutdown: tokio::sync::watch::Sender<bool>,
     bacnet: std::sync::OnceLock<Arc<crate::bacnet::BacnetMirror>>,
     web: std::sync::OnceLock<std::path::PathBuf>,
@@ -87,6 +89,10 @@ impl AppState {
                     authoring.records.as_ref().map(|d| d.join("explanations")),
                     authoring.explanations.clone(),
                 ),
+                attacks: crate::attack::Attacks::new(
+                    authoring.records.as_ref().map(|d| d.join("attacks")),
+                    authoring.attacks.clone(),
+                ),
                 authoring: Authoring::new(authoring),
                 shutdown: tokio::sync::watch::channel(false).0,
                 bacnet: std::sync::OnceLock::new(),
@@ -97,6 +103,10 @@ impl AppState {
 
     pub fn explanations(&self) -> &crate::explain::Explanations {
         &self.inner.explanations
+    }
+
+    pub(crate) fn attacks(&self) -> &crate::attack::Attacks {
+        &self.inner.attacks
     }
 
     pub fn authoring(&self) -> &Authoring {
@@ -241,6 +251,7 @@ pub fn app(state: AppState) -> Router {
         .merge(crate::run_explain::routes())
         .merge(crate::workbench::routes())
         .merge(crate::bind_routes::routes())
+        .merge(crate::attack::routes())
         .fallback(fallback)
         .with_state(state)
 }

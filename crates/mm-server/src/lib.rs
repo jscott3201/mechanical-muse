@@ -3,6 +3,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod attack;
 pub mod author_dto;
 mod author_routes;
 mod author_view;

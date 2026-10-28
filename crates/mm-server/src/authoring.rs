@@ -50,6 +50,8 @@ pub struct AuthoringConfig {
     pub readings: Option<PathBuf>,
     /// Folder of committed (recorded) BOPTEST binding proposals for the workbench.
     pub bindings: Option<PathBuf>,
+    /// Folder of committed (recorded) "try to break it" proposals for the workbench.
+    pub attacks: Option<PathBuf>,
 }
 
 impl Default for AuthoringConfig {
@@ -63,6 +65,7 @@ impl Default for AuthoringConfig {
             explanations: None,
             readings: None,
             bindings: None,
+            attacks: None,
         }
     }
 }

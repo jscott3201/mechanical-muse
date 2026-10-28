@@ -46,6 +46,7 @@ fn server(records: &std::path::Path) -> AppState {
             explanations: None,
             readings: Some(repo("fixtures/readings")),
             bindings: Some(repo("fixtures/bindings")),
+            attacks: Some(repo("fixtures/attacks")),
         },
     )
 }
