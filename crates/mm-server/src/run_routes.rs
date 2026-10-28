@@ -155,8 +155,8 @@ async fn list_replays(State(state): State<AppState>) -> Result<Json<Vec<ReplayIn
     Ok(Json(list))
 }
 
-/// Plays a recorded run back through a normal run's event stream (one run at a time, like a
-/// live one), with a config that names the record.
+/// Plays a recorded run back through a normal run's event stream, with a config that names the
+/// record. One replay at a time; it may run beside a live run, since it drives no plant.
 async fn start_replay(
     State(state): State<AppState>,
     request: Result<Json<ReplayRequest>, JsonRejection>,

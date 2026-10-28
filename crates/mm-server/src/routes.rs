@@ -211,11 +211,12 @@ impl AppState {
         self.inner.bacnet.get()
     }
 
-    /// Ends every open event stream and asks the active run to stop at its next step.
+    /// Ends every open event stream and asks every active run (live or replay) to stop at its
+    /// next step.
     pub fn shutdown(&self) {
         // Stored even with no open stream, so a stream opened afterwards ends at once.
         self.inner.shutdown.send_replace(true);
-        if let Some(run) = self.inner.runs.active() {
+        for run in self.inner.runs.all_active() {
             run.request_stop();
         }
     }

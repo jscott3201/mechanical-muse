@@ -1,4 +1,6 @@
-//! Run sessions. One run at a time (BOPTEST has one worker). Each run is one task that owns its
+//! Run sessions. One live run at a time (BOPTEST has one worker) and, beside it, one replay at a
+//! time (a replay drives no plant, so a live run stuck selecting or initializing must not block
+//! it). Each run is one task that owns its
 //! engines and its plant; it publishes events to a log (for late subscribers and reconnects), a
 //! broadcast channel (for live subscribers) and, if configured, a JSON-lines record on disk.
 
@@ -111,6 +113,11 @@ impl RunHandle {
         *lock(&self.state) = state;
     }
 
+    /// True for a replay of a recorded run (no plant).
+    pub fn is_replay(&self) -> bool {
+        self.config.replay.is_some()
+    }
+
     pub(crate) fn count_tick(&self) {
         self.ticks.fetch_add(1, Ordering::Relaxed);
     }
@@ -162,13 +169,23 @@ impl Runs {
         }
     }
 
-    /// The run that is starting or running, if any.
+    /// The live (BOPTEST) run that is starting or running, if any. Replays are not counted.
     pub fn active(&self) -> Option<Arc<RunHandle>> {
         lock(&self.registry)
             .runs
             .values()
-            .find(|r| matches!(r.state(), RunState::Starting | RunState::Running))
+            .find(|r| !r.is_replay() && is_active(r))
             .cloned()
+    }
+
+    /// Every run that is starting or running, live or replay.
+    pub fn all_active(&self) -> Vec<Arc<RunHandle>> {
+        lock(&self.registry)
+            .runs
+            .values()
+            .filter(|r| is_active(r))
+            .cloned()
+            .collect()
     }
 
     pub fn get(&self, id: &str) -> Option<Arc<RunHandle>> {
@@ -183,18 +200,21 @@ impl Runs {
             .collect()
     }
 
-    /// Registers a new run if none is active. The caller spawns its task.
+    /// Registers a new live run if no other live run is active. The caller spawns its task.
     pub fn create(&self, request: &RunRequest) -> Result<Arc<RunHandle>, StartError> {
         self.register(resolve(request)?)
     }
 
-    /// Registers a run with a settled configuration (a live run, or a replay).
+    /// Registers a run with a settled configuration (a live run, or a replay). A live run waits
+    /// for no replay and a replay for no live run: each kind is refused only while another run
+    /// of its own kind is active.
     pub(crate) fn register(&self, config: RunConfig) -> Result<Arc<RunHandle>, StartError> {
         let mut reg = lock(&self.registry);
+        let replay = config.replay.is_some();
         if let Some(active) = reg
             .runs
             .values()
-            .find(|r| matches!(r.state(), RunState::Starting | RunState::Running))
+            .find(|r| r.is_replay() == replay && is_active(r))
         {
             return Err(StartError::Active(active.id.clone()));
         }
@@ -233,6 +253,10 @@ impl Runs {
             PlantSource::Boptest { .. } | PlantSource::Off => None,
         }
     }
+}
+
+fn is_active(run: &RunHandle) -> bool {
+    matches!(run.state(), RunState::Starting | RunState::Running)
 }
 
 pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {

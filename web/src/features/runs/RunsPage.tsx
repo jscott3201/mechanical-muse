@@ -232,7 +232,7 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
       <CardHeader>
         <CardTitle>Start a run</CardTitle>
         <CardDescription>
-          On BOPTEST's large office, with a one-day warm-up. Every sequence is verified again first; one run at a time.
+          On BOPTEST's large office, with a one-day warm-up. Every sequence is verified again first; one live run at a time (replays can play beside it).
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
