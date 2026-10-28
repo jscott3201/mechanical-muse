@@ -189,16 +189,30 @@ async fn explain(
         .get(&id)
         .ok_or_else(|| Failure::new(StatusCode::NOT_FOUND, "unknown-run", "no run with that id"))?;
     let events = handle.journal().since(None);
-    let context = context(&events).ok_or_else(|| {
+    let mut context = context(&events).ok_or_else(|| {
         Failure::new(
             StatusCode::CONFLICT,
             "not-started",
             "the run has not started yet",
         )
     })?;
-    let key = digest(&context.to_string());
+    // Events and settings only, as every explanation was keyed before ledger facts existed.
+    let events_key = digest(&context.to_string());
+    let facts = crate::run_facts::facts(&state, &id, &events).await;
+    let key = match (facts, context.as_object_mut()) {
+        (Some(facts), Some(object)) => {
+            object.insert("ledger".into(), facts);
+            digest(&context.to_string())
+        }
+        _ => events_key.clone(),
+    };
     let ex = state.explanations();
-    if let Some(found) = ex.known(&ex.runs, &key) {
+    // One keyed on events alone was written without ledger facts and was told to claim no
+    // energy results, so it states none of them and still describes these events truly.
+    if let Some(found) = ex
+        .known(&ex.runs, &key)
+        .or_else(|| ex.known(&ex.runs, &events_key))
+    {
         return Ok(Json(found));
     }
     let client = state.authoring().config.spark.clone().ok_or_else(|| {
@@ -281,5 +295,42 @@ mod tests {
         assert_eq!(sim_time(16070400.0 + 40.0 * 60.0), "day 186 00:40");
         assert_eq!(digest("x"), digest("x"));
         assert!(digest("x").starts_with("run:"));
+    }
+
+    /// The committed run explanations were written before the number check: every number they
+    /// state is in the context they were written from, so the check would have let them through.
+    #[test]
+    fn recorded_explanations_pass_the_number_check() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
+        let mut checked = 0;
+        for name in crate::replay::list(&root.join("replays"))
+            .into_iter()
+            .map(|r| r.name)
+        {
+            let mut events = crate::replay::read(&root.join("replays"), &name).unwrap();
+            let replay = crate::replay::config(&name, &events).unwrap();
+            for e in &mut events {
+                if let RunEvent::Started { config, .. } = &mut e.event {
+                    *config = replay.clone();
+                }
+            }
+            let context = context(&events).unwrap();
+            let key = digest(&context.to_string());
+            let file = root
+                .join("explanations")
+                .join(format!("{}.json", key.replace(':', "_")));
+            let Ok(text) = std::fs::read_to_string(file) else {
+                continue;
+            };
+            let e: RunExplanationView = serde_json::from_str(&text).unwrap();
+            let mut texts = vec![e.summary.as_str()];
+            for i in &e.items {
+                texts.extend([i.when.as_str(), i.title.as_str(), i.text.as_str()]);
+            }
+            let bad = mm_agent::unsupported_numbers(&texts, &context.to_string());
+            assert!(bad.is_empty(), "{name}: {bad:?}");
+            checked += 1;
+        }
+        assert!(checked >= 1, "no recorded explanation matched a replay");
     }
 }

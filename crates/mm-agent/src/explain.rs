@@ -203,8 +203,10 @@ Rules:
 1. summary: two or three sentences on what the run did and whether anything went wrong, in plain words.
 2. items: one to six items in time order. Each has when (copied from the events), a short title, and a plain \
 explanation of what happened, why, and what the safeguard did. Group repeated events into one item.
-3. Explain only what the events show. Do not guess causes the events do not give, and do not claim energy or \
-comfort results.
+3. Explain only what the events show. Do not guess causes the events do not give. Energy, emissions, cost and \
+comfort results only from the `ledger` facts, when they are given: quote those numbers as written (rounding is fine) \
+and never compute new ones (no sums, differences or percentages of your own); a reply with a number that is not in \
+the input is rejected. Say they are simulation results. Without `ledger` facts, claim no energy or comfort results.
 4. Plain sentences, no code, no markdown. Use the operator's words (supply air temperature, chilled water) rather than \
 point identifiers, but you may name an identifier once in brackets.";
 
@@ -281,7 +283,22 @@ pub async fn explain_run<C: ModelClient>(
     let reply = client
         .complete(&explain_run_request(model, context))
         .await?;
-    Ok((check_run_explanation(&reply.text)?, reply.usage))
+    let explanation = check_run_explanation(&reply.text)?;
+    // The model quotes numbers, it does not compute them: one that is not in the input is refused.
+    let mut texts = vec![explanation.summary.as_str()];
+    for i in &explanation.items {
+        texts.extend([i.when.as_str(), i.title.as_str(), i.text.as_str()]);
+    }
+    let invented = crate::numbers::unsupported_numbers(&texts, &context.to_string());
+    if !invented.is_empty() {
+        return Err(ModelError::Malformed {
+            message: format!(
+                "the explanation states numbers that are not in the run's facts: {}",
+                invented.join(", ")
+            ),
+        });
+    }
+    Ok((explanation, reply.usage))
 }
 
 #[cfg(test)]
