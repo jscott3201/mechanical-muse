@@ -1,0 +1,14 @@
+{
+  "key": "run:4520f56cccb2b064",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "This was a simulation of supervisory control from day 185 12:00 for 300 steps using air handler chilled water requests and chilled water plant reset and it completed. Simulation results for heating and cooling energy only show total use of 13391.0 kWh costing 924.0 USD with emissions of 3802.0 kg and discomfort of 0.155 kh per zone. Compared with the baseline simulation the total change was -176.0 kg in emissions and -48.0 USD in cost, while compared with the same run without the fault the total change was 44.0 kg in emissions and 12.0 USD in cost.",
+  "items": [
+    {
+      "when": "day 185 13:00 to day 185 14:58",
+      "title": "Test fault on supply air temperature reading",
+      "text": "A test fault biased the supply air temperature reading [floor1_reaAHU_TSup_y] by +4 for 60 steps starting at day 185 13:00. The log shows only this injection and shows no clamp or handback during day 185 13:00 to day 185 14:58. Simulation results comparing this run with the same run without the fault show a change of 44.0 kg in emissions and 12.0 USD in cost and a change of 130.0 kWh in electricity use with a change of -0.002 kh per zone in discomfort."
+    }
+  ],
+  "spans": 1
+}
