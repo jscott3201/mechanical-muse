@@ -48,6 +48,8 @@ pub type ToolResult = Result<Value, ToolError>;
 pub struct Tools {
     pub(crate) palette: Palette,
     pub(crate) specs: SpecStore,
+    /// Recorded runs (`<name>.jsonl`) the ledger tools read; `None` refuses them.
+    pub(crate) replays: Option<std::path::PathBuf>,
 }
 
 const GRAPH_ARG: &str = "A block graph: {name, inputs, outputs, blocks, connections}, as \
@@ -59,7 +61,7 @@ pub fn definitions() -> Value {
         json!({"type": "string", "description": "Spec name from list_specs, e.g. chw_plant_reset"});
     let graph_arg = json!({"type": "object", "description": GRAPH_ARG});
     let read_only = json!({"readOnlyHint": true, "idempotentHint": true, "openWorldHint": false});
-    json!([
+    let mut tools = json!([
         {
             "name": "list_specs",
             "title": "List control sequence specs",
@@ -143,12 +145,26 @@ pub fn definitions() -> Value {
             },
             "annotations": read_only,
         },
-    ])
+    ]);
+    if let Some(list) = tools.as_array_mut() {
+        list.extend(crate::ledger::definitions());
+    }
+    tools
 }
 
 impl Tools {
     pub fn new(palette: Palette, specs: SpecStore) -> Self {
-        Self { palette, specs }
+        Self {
+            palette,
+            specs,
+            replays: None,
+        }
+    }
+
+    /// Lets the ledger tools read the recorded runs in `dir`.
+    pub fn with_replays(mut self, dir: std::path::PathBuf) -> Self {
+        self.replays = Some(dir);
+        self
     }
 
     /// Runs tool `name`; `None` when there is no such tool.
@@ -160,6 +176,8 @@ impl Tools {
             "validate_graph" => checks::validate_graph(self, args),
             "emit_cxf" => checks::emit(self, args),
             "verify_graph" => checks::verify(self, args),
+            "run_ledger" => crate::ledger::run_ledger(self, args),
+            "compare_runs" => crate::ledger::compare_runs(self, args),
             _ => return None,
         })
     }
