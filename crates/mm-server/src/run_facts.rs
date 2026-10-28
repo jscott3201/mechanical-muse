@@ -118,7 +118,16 @@ pub(crate) async fn facts(state: &AppState, id: &str, events: &[Envelope]) -> Op
         let mode = match f.mode {
             FaultMode::Nan => "replaced with NaN".to_owned(),
             FaultMode::Hold { value } => format!("held at {value}"),
-            FaultMode::Bias { offset } => format!("biased by {offset:+}"),
+            FaultMode::Bias { offset } => {
+                // The offset is in the reading's own unit (K for a temperature).
+                let unit = crate::bind::POINTS
+                    .get(&f.point)
+                    .map(|p| p.unit.as_str())
+                    .filter(|u| !u.is_empty() && *u != "1")
+                    .map(|u| format!(" {u}"))
+                    .unwrap_or_default();
+                format!("biased by {offset:+}{unit}")
+            }
         };
         json!({"point": f.point, "reading": mode, "from_step": f.from_step, "steps": f.steps})
     });
@@ -173,6 +182,34 @@ mod tests {
             "no fault, no comparator"
         );
         assert!(super::facts(&state, "x", &[]).await.is_none());
+    }
+
+    #[tokio::test]
+    async fn a_bias_names_its_unit_and_the_run_without_the_fault() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let palette = mm_graph::Palette::pinned().unwrap();
+        let specs = crate::SpecStore::load(&root.join("specs"), &palette).unwrap();
+        let replays = root.join("fixtures/replays");
+        let state = crate::AppState::with_runs(
+            specs,
+            palette,
+            RunsConfig {
+                plant: PlantSource::Scripted {
+                    readings: Vec::new(),
+                    pace: std::time::Duration::ZERO,
+                },
+                records: None,
+                replays: Some(replays.clone()),
+                replay_pace: std::time::Duration::ZERO,
+            },
+        );
+        let events = crate::replay::read(&replays, "day185-noon-fault-sensor-bias").unwrap();
+        let f = super::facts(&state, "x", &events).await.unwrap();
+        assert_eq!(f["test_fault"]["reading"], "biased by +4 K");
+        assert_eq!(
+            f["vs_same_run_without_the_fault"]["compared_with"],
+            "replay:day185-noon-healthy"
+        );
     }
 
     #[test]
