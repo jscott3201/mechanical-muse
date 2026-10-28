@@ -178,8 +178,9 @@ Two cautions:
 
 1. MBL's license cannot grant rights to ASHRAE's text. Some MBL docs mirror or cite Guideline 36 sections (e.g. the older CHW blocks cite section numbers). We
    write our spec from the implementation's behavior in our own words, as already planned; do not paste MBL's doc tables that restate G36 wholesale.
-2. Hackathon rules: repo public, demo must show what was built in the event, third-party assets must be rights-cleared. Keep `third_party/` (MBL, pre-existing) and
-   the PlantReset port + vectors + spec PDF + authoring harness (new) in clearly separate paths with a README that says which is which.
+2. Hackathon rules: repo public, demo must show what was built in the event, third-party assets must be rights-cleared. Nothing from MBL was copied in the end:
+   the specs are paraphrased and the reference graphs are our own, so the repository has no `third_party/` directory. If MBL material were ever copied, it would go
+   under `third_party/` with its notice, apart from the new work.
 
 **Verdict: permissive; compatible with a public MIT/Apache-2.0 repo; paraphrasing and reference-implementation use are fine. Retain the notice on any ported/copied portion; no endorsement language.**
 
