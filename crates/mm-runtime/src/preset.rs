@@ -131,6 +131,23 @@ pub fn watch_points() -> Vec<String> {
     points
 }
 
+/// Where the building's energy goes, recorded with every run so a KPI change can be traced to
+/// the chiller plant, the boiler (zone reheat) or the fans. With the chiller plant's three in
+/// [`watch_points`], these are exactly BOPTEST's 14 KPI power signals ([`crate::ledger`]). Shown and recorded only; nothing
+/// reads them to decide anything, and the BACnet mirror does not carry them.
+pub fn energy_points() -> Vec<String> {
+    let mut points: Vec<String> = ["reaHotWatSys_reaPBoi_y", "reaHotWatSys_reaPPum_y"]
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+    for f in FLOORS {
+        for p in ["reaAHU_PFanSup_y", "reaAHU_PFanRet_y", "reaAHU_PFreCoi_y"] {
+            points.push(format!("floor{f}_{p}"));
+        }
+    }
+    points
+}
+
 /// Spec folders of the zone pressure requests and of the per-floor static pressure reset.
 pub const ZONE_PRESSURE_SPEC: &str = "zone_pressure_requests";
 pub const PRESSURE_SPEC: &str = "ahu_static_pressure_reset";

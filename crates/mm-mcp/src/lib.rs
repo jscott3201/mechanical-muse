@@ -10,6 +10,7 @@
 
 mod checks;
 mod handler;
+mod ledger;
 mod tools;
 
 pub use handler::{DefinitionError, McpServer};

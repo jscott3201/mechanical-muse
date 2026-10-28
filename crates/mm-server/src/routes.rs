@@ -236,6 +236,7 @@ pub fn app(state: AppState) -> Router {
         .route("/api/specs/{name}/graph", get(spec_graph))
         .route("/api/specs/{name}/verify", post(verify_spec))
         .merge(crate::run_routes::routes())
+        .merge(crate::ledger_routes::routes())
         .merge(crate::author_routes::routes())
         .merge(crate::explain::routes())
         .merge(crate::run_explain::routes())

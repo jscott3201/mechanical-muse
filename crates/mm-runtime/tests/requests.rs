@@ -141,4 +141,25 @@ fn preset_wiring_loads_and_steps() {
     for p in preset::watch_points() {
         assert!(p.ends_with("_y") || p.ends_with("_u"), "{p}");
     }
+    // Energy points are BOPTEST measurements in W, none already watched.
+    let csv = include_str!("../../../docs/boptest-points.csv");
+    let watched = preset::watch_points();
+    for p in preset::energy_points() {
+        assert!(!watched.contains(&p), "{p}");
+        let row = csv
+            .lines()
+            .find(|l| l.split(',').next() == Some(p.as_str()))
+            .unwrap_or_else(|| panic!("{p} is not a BOPTEST point"));
+        assert!(row.contains(",measurement,W,"), "{row}");
+    }
+    // Watched plus energy points are exactly BOPTEST's 14 KPI power signals, so a recorded run
+    // can be split by end use.
+    let mut recorded: Vec<String> = watched
+        .into_iter()
+        .chain(preset::energy_points())
+        .filter(|p| p.contains("reaP") || p.contains("_reaAHU_P"))
+        .collect();
+    recorded.sort();
+    assert_eq!(recorded, mm_runtime::ledger::kpi_points());
+    assert_eq!(recorded.len(), 14);
 }

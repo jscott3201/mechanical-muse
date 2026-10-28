@@ -314,6 +314,7 @@ async fn steps(
 ) -> Result<RunState, String> {
     let stop = handle.stop_signal();
     let mut watch = preset::watch_points();
+    watch.extend(preset::energy_points());
     if handle.config.pressure {
         watch.extend(preset::pressure_watch_points());
     }
@@ -344,8 +345,13 @@ async fn steps(
             .filter(|f| (f.from_step..f.from_step.saturating_add(f.steps)).contains(&step));
         let seen = match fault {
             Some(f) => {
+                // Reading side only: the sequences see the faulted value, BOPTEST is sent nothing
+                // for it.
                 let mut faulty = readings.clone();
-                faulty.insert(f.point.clone(), f64::NAN);
+                match f.mode.apply(readings.get(&f.point).copied()) {
+                    Some(v) => faulty.insert(f.point.clone(), v),
+                    None => faulty.remove(&f.point),
+                };
                 faulty
             }
             None => readings.clone(),
@@ -360,9 +366,10 @@ async fn steps(
                     kind: "injected".into(),
                     sequence: None,
                     point: Some(f.point.clone()),
-                    value: None,
+                    // What the sequences saw; a NaN is never put in an event.
+                    value: seen.get(&f.point).copied().filter(|v| v.is_finite()),
                     sent: None,
-                    reason: Some("test fault: reading replaced with NaN".into()),
+                    reason: Some(f.mode.reason()),
                 },
             );
         }

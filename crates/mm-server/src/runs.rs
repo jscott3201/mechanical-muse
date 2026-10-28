@@ -271,6 +271,11 @@ pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
                 f.point
             )));
         }
+        if f.mode.amount().is_some_and(|v| !v.is_finite()) {
+            return Err(StartError::Invalid(
+                "a held value or bias must be a finite number".into(),
+            ));
+        }
     }
     if !(1..=MAX_STEPS).contains(&steps) {
         return Err(StartError::Invalid(format!(

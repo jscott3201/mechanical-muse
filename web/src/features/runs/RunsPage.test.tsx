@@ -21,6 +21,11 @@ const gapped = readFileSync(
   .split("\n");
 const runId = (JSON.parse(lines[0] ?? "{}") as { run_id: string }).run_id;
 
+/** What the server answers for a run's ledger before (or without) BOPTEST's KPIs. */
+function noLedger() {
+  return new Response(JSON.stringify({ code: "no-kpis", message: "no KPIs" }), { status: 409 });
+}
+
 /** What the server answers when it was started without the BACnet mirror. */
 function bacnetOff() {
   return new Response(JSON.stringify({ code: "bacnet-off", message: "off" }), { status: 404 });
@@ -64,7 +69,11 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) =>
-      url === "/api/bacnet" ? bacnetOff() : new Response(JSON.stringify(url === "/api/runs" ? [info] : []), { status: 200 }),
+      url === "/api/bacnet"
+        ? bacnetOff()
+        : url.includes("/ledger")
+          ? noLedger()
+          : new Response(JSON.stringify(url === "/api/runs" ? [info] : []), { status: 200 }),
     ),
   );
 });
@@ -105,6 +114,7 @@ describe("RunsPage", () => {
       "fetch",
       vi.fn(async (url: string) => {
         if (url === "/api/bacnet") return bacnetOff();
+        if (url.includes("/ledger")) return noLedger();
         const body = url === "/api/runs" ? [info] : url === "/api/replays" ? [baseline] : [];
         return new Response(JSON.stringify(body), { status: 200 });
       }),
@@ -157,6 +167,31 @@ describe("RunsPage", () => {
       ([url, init]) => url === "/api/runs" && (init?.method ?? "GET") === "GET",
     ).length;
     expect(gets).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("RunsPage test faults", () => {
+  it("sends the kind of fault chosen: a stuck valve reading", async () => {
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/bacnet") return bacnetOff();
+      if (init?.method === "POST")
+        return new Response(JSON.stringify({ code: "bad-request", message: "not now" }), { status: 400 });
+      return new Response("[]", { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetch);
+    render(<RunsPage />);
+    act(() => screen.getByRole("button", { name: /Change/ }).click());
+    act(() => screen.getByRole("switch", { name: /Inject a test fault/ }).click());
+    const stuck = await screen.findByRole("button", { name: "Stuck valve reading" });
+    act(() => stuck.click());
+    expect(stuck.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText(/held at 100 % open for 60 steps/)).toBeTruthy();
+    act(() => screen.getByRole("button", { name: /Start/ }).click());
+    await vi.waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true), { timeout: 5000 });
+    const post = fetch.mock.calls.find(([, i]) => i?.method === "POST");
+    expect(JSON.parse(String(post?.[1]?.body))).toMatchObject({
+      fault: { point: "floor1_reaAHU_yCooVal_y", from_step: 30, steps: 60, mode: { kind: "hold", value: 1 } },
+    });
   });
 });
 
@@ -214,6 +249,7 @@ describe("RunsPage replays", () => {
     const config = { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 300, step_s: 120, case: "c", drafts: {}, bindings: {}, replay: { record: replay.name, recorded_run: "run-1" } };
     const fetch = vi.fn(async (url: string, init?: RequestInit) => {
       if (url === "/api/bacnet") return bacnetOff();
+      if (url.includes("/ledger")) return noLedger();
       if (url === "/api/replays") return new Response(JSON.stringify([replay]), { status: 200 });
       if (url === "/api/runs/replay" && init?.method === "POST")
         return new Response(JSON.stringify({ id: "run-77", config, state: "starting", ticks: 0, events: 0 }), { status: 201 });

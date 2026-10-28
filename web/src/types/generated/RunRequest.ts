@@ -30,7 +30,7 @@ start_s?: number, warmup_s?: number, steps?: number,
  */
 drafts?: { [key in string]: string }, 
 /**
- * A test fault: replace one sensor reading with NaN for a few steps, to show the
- * fail-safe. Labelled as injected in every tick it touches.
+ * A test fault: change one sensor reading (NaN, a stuck value, or a bias) for a few
+ * steps. Labelled as injected in every tick it touches.
  */
 fault?: Fault, };

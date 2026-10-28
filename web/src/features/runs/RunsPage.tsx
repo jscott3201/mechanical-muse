@@ -22,6 +22,7 @@ import type { SpecSummary } from "@/types/generated/SpecSummary";
 
 import { ErrorNote } from "../ErrorNote";
 import { configFacts, describe } from "./describe";
+import { FAULT_CHOICES, type FaultKind, faultRequest } from "./faults";
 import { ReplayList } from "./ReplayList";
 import { RunView } from "./RunView";
 import { formatSimTime } from "./trends";
@@ -48,10 +49,6 @@ function StateIcon({ state }: { state: RunState }) {
       return <CircleX aria-hidden="true" />;
   }
 }
-
-/** The demo fault: floor 1's supply-air temperature reads NaN for a few steps. */
-const FAULT_POINT = "floor1_reaAHU_TSup_y";
-const FAULT_STEPS = 5;
 
 const GRAPHS = [
   { spec: "chw_plant_reset", label: "Plant reset graph" },
@@ -161,6 +158,7 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
   const bacnet = useResource<BacnetInfo>("/api/bacnet");
   const [fault, setFault] = useState(false);
   const [faultStep, setFaultStep] = useState(30);
+  const [faultKind, setFaultKind] = useState<FaultKind>("nan");
   const [chosen, setChosen] = useState<Record<string, string | null>>(
     initialDraft ? { [initialDraft.spec]: initialDraft.contentId } : {},
   );
@@ -181,9 +179,9 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
       steps,
       start_s: day * 86400 + hour * 3600,
       ...(Object.keys(drafts).length > 0 ? { drafts } : {}),
-      ...(fault && !baseline && requests ? { fault: { point: FAULT_POINT, from_step: faultStep, steps: FAULT_STEPS } } : {}),
+      ...(fault && !baseline && requests ? { fault: faultRequest(faultKind, faultStep) } : {}),
     };
-  }, [baseline, requests, pressure, steps, day, hour, chosen, fault, faultStep, bound]);
+  }, [baseline, requests, pressure, steps, day, hour, chosen, fault, faultStep, faultKind, bound]);
   const start = useAction<RunInfo>("/api/runs", body);
   // Each started run is reported exactly once, however often this component re-renders.
   const reported = useRef<string | null>(null);
@@ -313,6 +311,20 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
             </div>
             {fault && !baseline && requests && (
               <div className="flex flex-col gap-1">
+                <div role="group" aria-label="Kind of test fault" className="flex flex-wrap gap-1">
+                  {FAULT_CHOICES.map((c) => (
+                    <Button
+                      key={c.kind}
+                      type="button"
+                      size="sm"
+                      variant={faultKind === c.kind ? "secondary" : "outline"}
+                      aria-pressed={faultKind === c.kind}
+                      onClick={() => setFaultKind(c.kind)}
+                    >
+                      {c.label}
+                    </Button>
+                  ))}
+                </div>
                 <Label htmlFor="run-fault-step">From step</Label>
                 <Input
                   id="run-fault-step"
@@ -323,8 +335,7 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
                   onChange={(e) => setFaultStep(Number(e.target.value))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Floor 1's supply-air temperature reads NaN for {FAULT_STEPS} steps. The sequences that use it stop writing
-                  and BOPTEST's own controllers take over, then they resume.
+                  {FAULT_CHOICES.find((c) => c.kind === faultKind)?.detail}
                 </p>
               </div>
             )}

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LineChart } from "@/components/viz/LineChart";
-import { useBaselineKpis } from "@/hooks/useBaselineKpis";
+import { useComparisons } from "@/hooks/useComparisons";
 import { useAction } from "@/hooks/useResource";
 import { useRunStream } from "@/hooks/useRunStream";
 import { formatNumber } from "@/lib/format";
@@ -15,6 +15,8 @@ import type { RunInfo } from "@/types/generated/RunInfo";
 import { ErrorNote } from "../ErrorNote";
 import { change } from "./baseline";
 import { configFacts, describe } from "./describe";
+import { RunEmissions } from "./EmissionsPanel";
+import { faultText } from "./faults";
 import { RunExplanationPanel } from "./RunExplanationPanel";
 import { RunStatus } from "./RunStatus";
 import { KpiTiles, RunProgress, SequenceGroups } from "./RunSummary";
@@ -102,7 +104,9 @@ function RunStream({
   const age = now - lastEventAt;
   const staleS = stream.phase === "running" && !stream.ended && age > STALE_MS ? Math.round(age / 1000) : null;
   const cfg = stream.config;
-  const base = useBaselineKpis(cfg ?? null, stream.kpi !== null && stream.kpi !== undefined);
+  const hasKpis = stream.kpi !== null && stream.kpi !== undefined;
+  const comparisons = useComparisons(cfg ?? null, hasKpis);
+  const base = comparisons.baseline;
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -129,8 +133,7 @@ function RunStream({
               : "Waiting for the run to start…"}
             {cfg?.fault && (
               <span className="block">
-                Test fault: {cfg.fault.point} reads NaN for steps {cfg.fault.from_step}–
-                {cfg.fault.from_step + cfg.fault.steps - 1}.
+                Test fault: {faultText(cfg.fault)} (the reading only: nothing is written for it, but the setpoints computed from it still reach BOPTEST within their clamps).
               </span>
             )}
           </CardDescription>
@@ -166,6 +169,8 @@ function RunStream({
       </Card>
 
       {stream.kpi && base && <KpiTiles kpi={stream.kpi} base={base.kpis} />}
+
+      <RunEmissions runId={runId} hasKpis={hasKpis} fault={cfg?.fault} comparisons={comparisons} />
 
       {stream.ticks.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-2">
