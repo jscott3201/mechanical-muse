@@ -296,7 +296,7 @@ function RunStream({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {stream.config && !stream.config.baseline && !home && (
+          {stream.config && !stream.config.baseline && (
             <RunExplanationPanel key={runId} runId={runId} ended={stream.ended !== null} />
           )}
           <ol className="flex max-h-72 flex-col gap-1 overflow-auto text-sm">

@@ -1,0 +1,24 @@
+{
+  "key": "run:59c3c09869eb5e5f",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "This was a BOPTEST simulation of a heat pump house in Brussels on spot electricity prices where the price response sequence set the heating setpoint. In simulation results it preheated before expensive hours and coasted through them, buying less electricity at a slightly lower average price with lower cost, emissions and discomfort than the baseline replay. The run completed with no faults logged and nothing went wrong.",
+  "items": [
+    {
+      "when": "day 108 00:00",
+      "title": "Heating setpoint followed prices",
+      "text": "Simulation results show the heating setpoint preheated for 46.5 hours at a mean price of 0.231 euros per kWh, coasted for 75.0 hours at a mean price of 0.242 euros per kWh, and ran normally for 214.5 hours at a mean price of 0.229 euros per kWh. This means it added heat before expensive hours and let temperature drift down through them."
+    },
+    {
+      "when": "day 108 00:00",
+      "title": "Power in expensive hours and peak draw",
+      "text": "Simulation results show mean electric power in the most expensive quarter of fifteen minute prices above 0.242 euros per kWh was 0.87 kW, compared with a mean of 0.94 kW across all hours and a baseline of 1.17 kW in the same expensive hours, a change of -25.7 %. The single highest draw was 3.69 kW compared with a baseline of 3.17 kW, a change of 16.4 %."
+    },
+    {
+      "when": "day 108 00:00",
+      "title": "Energy cost emissions and comfort",
+      "text": "Simulation results for heating energy only show 314.3 kWh of electricity at 72.59 euros at an average price of 0.231 euros per kWh, with 52.5 kgCO2e and 8.05 K h of thermal discomfort. The baseline replay showed 340.4 kWh at 79.21 euros at an average price of 0.2327 euros per kWh, with 56.8 kgCO2e and 9.45 K h of thermal discomfort. The change was -26.1 kWh and -6.62 euros and -8.4 %, with -4.4 kgCO2e and -7.7 % and -14.8 % for discomfort, and emissions follow energy only with one factor all year of 0.167 kgCO2e per kWh. The run completed with no faults logged."
+    }
+  ],
+  "spans": 0
+}

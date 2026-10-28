@@ -102,6 +102,9 @@ fn healthy_twin(own: &LedgerSubject, other: &LedgerSubject) -> bool {
 pub(crate) async fn facts(state: &AppState, id: &str, events: &[Envelope]) -> Option<Value> {
     let own = ledger::from_events(&format!("run:{id}"), events).ok()?;
     let others = same_window(state, &own).await;
+    if own.subject.case == mm_runtime::home::CASE {
+        return Some(crate::home_explain::facts(state, &own, &others, events).await);
+    }
     let compare = |pick: &dyn Fn(&RunLedger) -> bool| {
         others
             .iter()

@@ -36,6 +36,13 @@ concentrates some of it into fewer, higher spells before them. Homes answering t
 would add those rebounds up, the known risk of price-driven demand response; this sequence does
 nothing to stagger it.
 
+**Spark explains it.** Muse Spark's explanation of each home run (recorded, served without a key)
+reads the run's facts: how long the setpoint preheated, coasted or ran normally and the mean price
+in each, the power in the most expensive hours against the baseline, and the rebound. Typical
+window: preheated 46.5 h at a mean €0.231/kWh and coasted 75.0 h at €0.242/kWh. The behavior split
+is ours, from the recorded setpoint against the comfort floor now, so a rise before people come
+home counts as preheating too.
+
 **What it does not show.** A perfect forecast (BOPTEST's default); one building, one climate,
 heating only; prices that swing little (with fixed fees, about €0.17 to €0.26 per kWh in the
 typical window and €0.22 to €0.32 in the peak one), so the per-home saving is small. Energy also falls, so part of the cost cut is plain saving rather

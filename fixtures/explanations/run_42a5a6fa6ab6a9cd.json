@@ -1,0 +1,19 @@
+{
+  "key": "run:42a5a6fa6ab6a9cd",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "summary": "The price-response sequence adjusted the heating setpoint through a simulation of a heat pump house in Brussels on spot electricity prices starting day 16 00:00, preheating before expensive hours and coasting through them, with no faults and the run completing. Simulation results show lower cost and energy use than the baseline replay with much lower discomfort, while power in the most expensive prices fell and the single highest quarter-hour draw rose slightly.",
+  "items": [
+    {
+      "when": "day 16 00:00",
+      "title": "Heating setpoint response to prices",
+      "text": "The sequence preheated for 59.5 hours when prices averaged 0.267 euros per kWh, coasted for 68.0 hours when prices averaged 0.274 euros per kWh, and ran normally for 208.5 hours when prices averaged 0.259 euros per kWh otherwise. Simulation results show this moved heating setpoint action out of expensive hours into earlier hours."
+    },
+    {
+      "when": "day 16 00:00",
+      "title": "Energy cost emissions and power",
+      "text": "Simulation results show use of 617.5 kWh at a cost of 160.02 euros at an average price of 0.2592 euros per kWh, with emissions of 103.1 kgCO2e and thermal discomfort of 1.52 K h, compared with baseline replay use of 667.7 kWh at a cost of 174.47 euros at an average price of 0.2613 euros per kWh with emissions of 111.5 kgCO2e and thermal discomfort of 8.38 K h, a change of minus 50.3 kWh and minus 14.45 euros and minus 8.4 kgCO2e and minus 8.3 % in cost and minus 7.5 % in emissions and minus 81.9 % in discomfort. Emissions used 0.167 kgCO2e per kWh all year so emissions follow energy only. Mean"
+    }
+  ],
+  "spans": 0
+}
