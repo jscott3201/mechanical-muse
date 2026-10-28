@@ -18,28 +18,32 @@ Decide the rung per scene the day before recording. Never call rung 2 to 4 "live
 
 ## Scenes
 
+The story is one engineer's sequence, from a photo of the sheet to a run on the building, then a
+revision. Our own chilled-water reset carries the closed loop in the background and gets one beat.
+
 | Time | On screen | Say (guide) | Rung |
 | --- | --- | --- | --- |
-| 0:00–0:15 | Title, then the README's two tables | "The muse proposes; the engine checks." Built this week: the authoring agent, graph emitter, engine bridge, BOPTEST runtime, BACnet mirror, web app and benchmark harness. Used, not built here: open-control-engine, open-control-library, rusty-bacnet and BOPTEST. | — |
-| 0:15–0:35 | `specs/chw_plant_reset/spec.md` beside a chilled-water trend | Control sequences are written as prose, then hand-programmed and seldom tested before they run. This one resets a chiller plant's water temperature and pressure from air handler requests. | — |
-| 0:35–1:15 | Authoring panel: Muse Spark drafts; attempt 1 fails test scenarios (or the engine refuses a loop, with its code); repair; green receipt with content id and "10 of 10" | Spark writes a block graph with structured output; a deterministic engine replays our test vectors and says exactly what is wrong; Spark repairs. Nothing unverified can reach the building. | 1, else 2 |
-| 1:15–1:30 | Graph view of the verified draft, then the reference | The draft is a graph of the engine's own blocks, drawn from the receipt; a different graph from the hand-built one, same behaviour on the vectors. | 1 |
-| 1:30–2:05 | Run form: the verified draft, day 185 noon; trends, setpoints moving, KPIs beside the baseline run | The runtime re-checks the draft, then drives BOPTEST's large office every 120 s. Over 10 hours: whole-building energy −4.7 %, chiller energy −14 %, thermal discomfort +2 %, all computed by BOPTEST against its own controllers. | 1 (Modal), else 3 |
-| 2:05–2:25 | Fault switch: floor 1 supply air temperature replaced by NaN for 5 steps; degraded badge, setpoints handed back, recovery | A labelled test fault. The runtime refuses the bad frame, hands the setpoints back to BOPTEST's own controllers, and resumes when data returns. The model never writes to the plant. | 1, else 3 (`day186-midnight-fault-demo`) |
-| 2:25–2:40 | A BACnet client (e.g. YABE) reading device 599 during the run; a write refused | The same points as a read-only BACnet device for the building's existing tools. | 1 |
-| 2:40–2:52 | Benchmark table | On 37 held-out fault rules from the open-control-library, described in prose only, Muse Spark (`muse-spark-1.3-contributor`, medium effort) verifies 35 or 36 within three attempts, in each of three runs, without ever seeing the test vectors. A constant-false graph verifies none. | — |
-| 2:52–3:00 | Repo URL; Muse Spark via the Meta Model API; built with Muse Code and Claude Code | What is next, one line. | — |
+| 0:00–0:15 | Title, then the README's pipeline diagram (built in the event vs used unmodified) | "The muse proposes; the engine checks." Built this week: the authoring agent, graph emitter, engine bridge, BOPTEST runtime, BACnet mirror, MCP server, web app and benchmark harness. Used, not built here: open-control-engine, open-control-library, rusty-bacnet and BOPTEST. | — |
+| 0:15–0:30 | The sample sheet (`fixtures/sequences/ahu-sat-reset-sample.png`) | Sequences arrive as a sheet like this. A contractor programs them by hand for each building, and they are seldom tested before they run. | — |
+| 0:30–0:55 | Bring your own → the photo → Spark's reading: task, open questions, proposed scenarios as timelines; edit one value, accept | Muse Spark reads the photo with structured output and lists what the sheet leaves open instead of guessing. Its test scenarios are proposals; the engineer accepts them, and only then do they become the gate. | 1 (sped up, say so), else 2 |
+| 0:55–1:25 | Draft: attempt 1 red, 4 of 6 scenarios (it sends 65 °F inside the 10-minute start-up hold); the failing scenario goes back; attempt 2 green, 6 of 6, content id | A deterministic engine replays the scenarios and says exactly where the draft is wrong. Spark repairs it. Nothing unverified can reach the building. | 2 (revision B's real red-to-green), or 1 |
+| 1:25–1:40 | Bind: Spark's proposed points, the server's checks, confirm; a glance at the graph | Spark also proposes which building points feed each input and which setpoint each output writes, within limits; the server checks every point and unit; the engineer confirms. | 2, or 1 |
+| 1:40–2:00 | Runs: revision A on day 143 — the setpoint flat at 55 °F, the override latched | It ran, safely, and did nothing: the sheet's humidity thresholds keep its override on in this building. The tool found that before anyone deployed it. | 3 (`day143-morning-your-sequence-rev-a`) |
+| 2:00–2:20 | Revision B (70 / 65 %): re-read, re-verify, re-run; the reset moves 55→65 °F; KPIs beside the baseline | The engineer edits the sheet and runs it through the same gate. On this window: energy −37 % and less discomfort against BOPTEST's own controller. On days it was not tuned on: RETEST_RANGE. | 3 (`…-rev-b`), else 1 |
+| 2:20–2:35 | Fault switch: a sensor replaced by NaN; degraded badge, setpoints handed back, recovery | A labelled test fault. The runtime refuses the bad frame, hands the setpoints back to BOPTEST's own controllers, and resumes when data returns. | 3 (`day186-midnight-fault-demo`), else 1 |
+| 2:35–2:50 | Benchmark table; one line on the MCP server; BACnet mirror as a still | On 137 open fault rules described in prose, Spark verifies 130 to 132 after repair, never seeing the test vectors; a constant graph verifies none. Coding agents get the same checks over MCP, and live runs appear as a read-only BACnet device. | — |
+| 2:50–3:00 | Repo URL; Muse Spark via the Meta Model API | What is next, one line. | — |
 
-Cut order when over time: BACnet to a still; the graph-view scene into the authoring scene;
-the benchmark to one spoken sentence. Never cut the repair, the closed loop or the provenance
-opening.
+Cut order when over time: the BACnet still; the binding beat into the draft beat; the benchmark to
+one spoken sentence. Never cut the repair, the revision A → B contrast, or the provenance opening.
 
 ## Claims check before recording
 
 - "checks", "verified against test vectors", "passes X of Y": yes. "Proven", "correct",
   "compliant", "first", "field-tested": no.
 - "Uses" or "calls" for the engine, library, rusty-bacnet and BOPTEST.
-- KPIs: one window, one season; say "on this 10-hour summer window".
+- KPIs: name the window ("on this 8-hour spring morning"); revision B's thresholds were chosen
+  after revision A failed on that same day, so quote the held-out range beside it.
 - BACnet: no conformance claim; the vendor id is a placeholder.
 - No ASHRAE text on screen; the spec on screen is ours.
 

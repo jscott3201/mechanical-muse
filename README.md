@@ -2,11 +2,64 @@
 
 **The muse proposes. The engine checks.**
 
-Mechanical Muse is an agent built on Meta's Muse Spark that writes building control logic from a written sequence of operations, and lets it run only once it passes its tests. A deterministic control engine checks every draft against test vectors, and only verified logic goes live on a simulated large office building.
+Mechanical Muse is an agent built on Meta's Muse Spark. It turns a written sequence of operations into running building control logic, and that logic may run only once it passes its tests. Muse Spark drafts the logic as a block graph. A deterministic control engine replays test vectors against every draft, and failures go back to Spark for repair. Only a draft with a green verification receipt runs on an emulated large office building.
 
 Built solo by Justin Scott for the Meta Global AI Developer Hackathon (Indie track), October 26 to November 4, 2026.
 
-> Status: work in progress during the hackathon.
+![How Mechanical Muse works: Muse Spark drafts, mm-graph emits CXF, mm-bridge replays test vectors on open-control-engine, failures go back for repair, and only a green receipt reaches the runtime, BOPTEST, the web app and a read-only BACnet mirror](docs/img/pipeline.svg)
+
+## Why it matters
+
+Building control sequences are written as prose by engineers. A controls contractor then programs them by hand for each building, and they are rarely tested against the written intent before they run. Mistakes show up as wasted energy, discomfort or alarms months later. Language models can draft control logic, but nobody should let unchecked model output drive a building. Mechanical Muse puts a gate in between:
+
+- **Model output is untrusted.** Spark's drafts are data. Nothing it writes reaches the building or the BACnet mirror without a recorded green receipt: a content id plus "passes X of Y" test vectors, replayed on a deterministic engine.
+- **Failures are specific.** A refused draft comes back with the engine's typed diagnostic code, or the scenario and instant where an output went wrong. Spark repairs against that, within a fixed budget.
+- **Engineers stay in charge.** Bring your own sequence (text, a PDF or a photo of the sheet). Spark proposes test scenarios and lists what the document leaves open, and the engineer accepts or corrects them before they become the gate. Spark proposes how the sequence connects to the building's points; the server checks the proposal and the engineer confirms it.
+
+## What it looks like
+
+**Bring your own sequence.** Muse Spark reads a photo of a sequence sheet into a precise task, lists what the sheet leaves open, and proposes test scenarios for the engineer to accept. The bar at the top follows the sequence from reading to a run.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/workbench-dark.png">
+  <img alt="The Bring your own page: Muse Spark's recorded reading of the revision B sheet, with the task, six open questions and the sequence's points" src="docs/img/screens/workbench-light.png">
+</picture>
+
+**Red, then green.** A recorded Muse Spark session on the chilled-water plant reset. The engine refuses attempt 1 (`algebraic-loop`, naming the blocks). Attempt 2 loads but fails 2 of 10 scenarios, each with the instant and the expected value. Attempt 3 passes all 10 and gets a content id.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/authoring-dark.png">
+  <img alt="Three authoring attempts: refused by the engine as an algebraic loop, then passing 8 of 10 scenarios, then 10 of 10 with a content id" src="docs/img/screens/authoring-light.png">
+</picture>
+
+**On the building.** A replay of revision B on BOPTEST beside our own sequences: each sequence's origin and content id, KPIs against the baseline over the same window, and live trends of what was sent against what the building measured.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/run-dark.png">
+  <img alt="A replayed run: the sequences that ran with their content ids, KPI tiles against the baseline, and chilled-water and pressure trends" src="docs/img/screens/run-light.png">
+</picture>
+
+## Results so far
+
+| What | Result | Where |
+| --- | --- | --- |
+| Muse Spark rebuilding 137 open fault-detection rules from scrubbed tasks, scored by replaying the library's 1,760 test vectors | First try 122 to 125 of 137 rules; after repair 130 to 132 (3 runs, `muse-spark-1.3-contributor`). Constant baselines pass 0 rules | [docs/benchmark-results.md](docs/benchmark-results.md) |
+| Chilled-water plant reset, verified, then run on BOPTEST against its baseline controller for 10 hours | Whole-building energy −4.7 %, chiller energy −14.2 %, thermal discomfort +2.0 % | [docs/runtime-results.md](docs/runtime-results.md) |
+| A photo of a supply-air reset sheet: read, scenarios accepted, drafted (red, then green), bound to BOPTEST, run; then the engineer revises the sheet and runs it again | Revision A ran but its humidity override latched, so its reset never acted. Revision B: energy −37.3 %, thermal discomfort −10.7 % over one 8-hour window | [docs/workbench.md](docs/workbench.md) |
+| Injected sensor fault (NaN supply-air temperature) during a live run | The reading shows as no data, the affected sequences go degraded, their setpoints are handed back to BOPTEST's own controllers, and the reset writes again once the sensor returns | [docs/runtime-results.md](docs/runtime-results.md) |
+
+![Revision B against revision A on day 143: energy −37.3 % and thermal discomfort −10.7 % with revision B, against −0.7 % and +6.7 % with revision A and −3.3 % and +0.5 % with our sequences alone](docs/img/revision-b-results.svg)
+
+Every BOPTEST number is a short window, compared with BOPTEST's own baseline controller over the same window, and BOPTEST computes the KPIs. These are results from a simulation, not field measurements. The [results log](docs/results-log.md) lists every run, including the ones that went badly.
+
+## Try it in two minutes
+
+1. `make docker-demo` (only Docker needed), or `make demo` with Rust and Node. Open http://localhost:8080.
+2. **Sequences** → *Chilled-water plant reset* → *Muse Spark* → play the recorded session. You can watch a draft fail its vectors and get repaired to a green receipt.
+3. **Bring your own** → *Use the sample sequence sheet*. Spark's reading of a photo of a sequence (recorded), its proposed scenarios and the open questions it lists.
+4. **Runs** → replay the day 143 morning run with revision B: trends, and KPIs beside the baseline over the same window. The day 186 fault demo shows the fail-safe handing control back.
+
+Without a model key or BOPTEST everything above plays back from recordings, and the UI labels each one "recorded" or "replay". Add a Meta Model API key for live authoring, and a BOPTEST URL for live runs (below).
 
 ## Run it
 
@@ -43,7 +96,7 @@ Muse Spark session (labelled "recorded"), and replay recorded BOPTEST runs (labe
 
 ## Built during the hackathon
 
-Everything in this repository was written during the event, starting October 26, 2026. The commit history is the record.
+Everything in this repository was written during the event, starting October 26, 2026, except the pre-existing material listed in the next section (for example the open-control-library rules copied unmodified into `fixtures/open-control-library/` as test data). The commit history is the record.
 
 | Component | Path | Status |
 | --- | --- | --- |
@@ -60,7 +113,12 @@ Everything in this repository was written during the event, starting October 26,
 | Design notes and API references | `docs/` | Started |
 | Coding-agent setup: agent context, project skills, verification hook | `AGENTS.md`, `.agents/skills/`, `.muse/`, `.mcp.json`, `scripts/` | Started |
 
-The application's model calls all go to Meta's models (Muse Spark through the Meta Model API; Muse Glimmer for the open-weights comparison). The repository was built with Meta's Muse Code and with Claude Code as coding tools.
+Every model call the application makes goes to Muse Spark through the Meta Model API: drafting, repair, reading a sequence, proposing a point binding, explanations and the benchmark. The repository is set up for Meta's Muse Code and for Claude Code as coding tools (one shared `AGENTS.md`, project skills and a verification hook), and coding agents can use the MCP server above.
+
+
+## Related work
+
+LLM-drafts, tools-verify loops already exist for industrial control code: LLM4PLC (ICSE-SEIP 2024) uses grammar checks, compilation and model checking; SemaPLC (2026) replays scenarios on a PLC runtime. Wan et al. (2025) generated CDL modules with a language model and checked their behavior by human review. Mechanical Muse applies the loop to building sequences in CDL/CXF. Its gate is a deterministic engine replaying test vectors, it publishes a benchmark scored that way, and verified sequences then run closed-loop on a building emulator. To our knowledge, Mechanical Muse is the first open benchmark that scores LLM-authored CDL by replaying test vectors through a deterministic engine, then runs verified sequences closed-loop on a building emulator.
 
 ## Pre-existing dependencies (not built during the hackathon)
 
