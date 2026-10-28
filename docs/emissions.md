@@ -116,6 +116,11 @@ Records: `fixtures/replays/day185-noon-healthy.jsonl` and
 One window, one fault, in simulation. The cost is measured as the difference of two runs that
 BOPTEST computed, not estimated from a formula.
 
+Muse Spark's explanation of the fault replay, written live with the ledger as given facts, is
+recorded (`fixtures/explanations/run_4520f56cccb2b064.json`) and served, labelled recorded,
+without a key. It quotes the cost (+44 kg, +$12, +130 kWh against the run without the fault)
+and passes the number check.
+
 Run explanations get the ledger and these comparisons as given facts, rounded, and are told to
 quote rather than compute. A reply that states a number not in its input (beyond a rounded
 quote, a duration from step counts, or a small count) is sent back once naming those numbers,
