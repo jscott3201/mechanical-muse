@@ -24,7 +24,7 @@ function ledger(over: Partial<RunLedger>): RunLedger {
       baseline: false,
       requests: true,
       pressure: false,
-      drafts: [],
+      drafts: {},
     },
     factors: {
       electricity_kg_per_kwh: 0.341,

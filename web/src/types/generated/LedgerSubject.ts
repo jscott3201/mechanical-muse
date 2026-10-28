@@ -14,9 +14,9 @@ reference: string, case: string, start_s: number, steps: number, step_s: number,
  */
 ticks: number, baseline: boolean, requests: boolean, pressure: boolean, 
 /**
- * Specs that ran from a model-drafted graph, sorted.
+ * Spec name to the content id of the drafted graph it ran from.
  */
-drafts: Array<string>, fault?: Fault, 
+drafts: { [key in string]: string }, fault?: Fault, 
 /**
  * The record a replayed run played back.
  */

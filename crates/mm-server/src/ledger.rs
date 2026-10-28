@@ -105,8 +105,8 @@ pub struct LedgerSubject {
     pub baseline: bool,
     pub requests: bool,
     pub pressure: bool,
-    /// Specs that ran from a model-drafted graph, sorted.
-    pub drafts: Vec<String>,
+    /// Spec name to the content id of the drafted graph it ran from.
+    pub drafts: std::collections::BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub fault: Option<Fault>,
@@ -207,7 +207,7 @@ fn subject(reference: &str, config: &RunConfig, ticks: u32) -> LedgerSubject {
         baseline: config.baseline,
         requests: config.requests,
         pressure: config.pressure,
-        drafts: config.drafts.keys().cloned().collect(),
+        drafts: config.drafts.clone(),
         fault: config.fault.clone(),
         replay_of: config.replay.as_ref().map(|r| r.record.clone()),
     }

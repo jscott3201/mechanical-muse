@@ -15,6 +15,10 @@ start_s: number,
  */
 drafted: boolean, 
 /**
+ * Spec name to the content id of each drafted graph the recorded run used.
+ */
+draft_ids: { [key in string]: string }, 
+/**
  * The specs the recorded run used drafted graphs for, sorted (an engineer's own
  * sequence always runs from a draft; our specs may run hand-built).
  */

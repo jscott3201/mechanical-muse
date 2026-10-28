@@ -51,10 +51,11 @@ export function findBaseline(cfg: RunConfig, runs: RunInfo[], replays: ReplayInf
   return null;
 }
 
-function sameKeys(a: string[], b: string[]): boolean {
-  const x = [...a].sort();
-  const y = [...b].sort();
-  return x.length === y.length && x.every((k, i) => k === y[i]);
+/** Same specs drafted, from the same graphs (content ids), not only the same spec names. */
+function sameDrafts(a: Partial<Record<string, string>>, b: Partial<Record<string, string>>): boolean {
+  const x = Object.keys(a).sort();
+  const y = Object.keys(b).sort();
+  return x.length === y.length && x.every((k, i) => k === y[i] && a[k] === b[k]);
 }
 
 /**
@@ -63,7 +64,7 @@ function sameKeys(a: string[], b: string[]): boolean {
  */
 export function findHealthy(cfg: RunConfig, runs: RunInfo[], replays: ReplayInfo[]): Comparator | null {
   if (!cfg.fault || cfg.baseline) return null;
-  const drafts = Object.keys(cfg.drafts ?? {});
+  const drafts: Partial<Record<string, string>> = cfg.drafts ?? {};
   const run = [...runs]
     .reverse()
     .find(
@@ -73,7 +74,7 @@ export function findHealthy(cfg: RunConfig, runs: RunInfo[], replays: ReplayInfo
         !r.config.replay &&
         r.config.requests === cfg.requests &&
         (r.config.pressure ?? false) === (cfg.pressure ?? false) &&
-        sameKeys(Object.keys(r.config.drafts ?? {}), drafts) &&
+        sameDrafts(r.config.drafts ?? {}, drafts) &&
         sameRunWindow(r, cfg),
     );
   if (run) return { reference: `run:${run.id}`, source: `run ${run.id}` };
@@ -83,7 +84,7 @@ export function findHealthy(cfg: RunConfig, runs: RunInfo[], replays: ReplayInfo
       !r.fault &&
       r.requests === cfg.requests &&
       r.pressure === (cfg.pressure ?? false) &&
-      sameKeys(r.drafts ?? [], drafts) &&
+      sameDrafts(r.draft_ids ?? {}, drafts) &&
       sameReplayWindow(r, cfg),
   );
   if (replay) return { reference: `replay:${replay.name}`, source: `recorded run ${replay.recorded_run}` };

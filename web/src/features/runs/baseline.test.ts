@@ -38,6 +38,7 @@ const replay = (over: Partial<ReplayInfo>): ReplayInfo => ({
   pressure: false,
   own: [],
   requests: false,
+  draft_ids: {},
   state: "completed",
   kpis: { ener_tot: 0.3255 },
   ...over,
@@ -98,6 +99,16 @@ describe("findHealthy", () => {
     expect(findHealthy(faulted, [run("run-1", { baseline: true }, { ener_tot: 1 })], [replay({})])).toBeNull();
     expect(findHealthy(faulted, [run("run-1", { steps: 60 }, { ener_tot: 1 })], [])).toBeNull();
     expect(findHealthy(faulted, [], [replay({ baseline: false, requests: true, fault })])).toBeNull();
+  });
+
+  it("does not take a run of another draft revision for the healthy one", () => {
+    const drafted: RunConfig = { ...faulted, drafts: { chw_plant_reset: "cxf:fnv1a128:aaa" } };
+    const other = run("run-1", { drafts: { chw_plant_reset: "cxf:fnv1a128:bbb" } }, { ener_tot: 1 });
+    const same = run("run-2", { drafts: { chw_plant_reset: "cxf:fnv1a128:aaa" } }, { ener_tot: 1 });
+    expect(findHealthy(drafted, [other], [])).toBeNull();
+    expect(findHealthy(drafted, [same, other], [])?.reference).toBe("run:run-2");
+    const recorded = replay({ baseline: false, requests: true, drafts: ["chw_plant_reset"], draft_ids: { chw_plant_reset: "cxf:fnv1a128:bbb" } });
+    expect(findHealthy(drafted, [], [recorded])).toBeNull();
   });
 });
 

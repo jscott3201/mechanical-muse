@@ -6,7 +6,7 @@
 
 use serde_json::{Value, json};
 
-use crate::ledger::{self, Amounts, LedgerComparison, RunLedger};
+use crate::ledger::{self, Amounts, LedgerComparison, LedgerSubject, RunLedger};
 use crate::routes::AppState;
 use crate::run_dto::{Envelope, FaultMode};
 
@@ -86,6 +86,16 @@ async fn same_window(state: &AppState, own: &RunLedger) -> Vec<RunLedger> {
     found
 }
 
+/// `other` is the same run as `own` without the fault: same switches, the same drafted graphs
+/// (content ids, not only spec names), no fault, not a baseline. The window is checked apart.
+fn healthy_twin(own: &LedgerSubject, other: &LedgerSubject) -> bool {
+    !other.baseline
+        && other.fault.is_none()
+        && other.requests == own.requests
+        && other.pressure == own.pressure
+        && other.drafts == own.drafts
+}
+
 /// The facts for run `id` from its `events`, or `None` when it has no ledger (no KPIs yet).
 pub(crate) async fn facts(state: &AppState, id: &str, events: &[Envelope]) -> Option<Value> {
     let own = ledger::from_events(&format!("run:{id}"), events).ok()?;
@@ -99,15 +109,11 @@ pub(crate) async fn facts(state: &AppState, id: &str, events: &[Envelope]) -> Op
     let baseline = (!own.subject.baseline)
         .then(|| compare(&|l| l.subject.baseline))
         .flatten();
-    let healthy = own.subject.fault.as_ref().and_then(|_| {
-        compare(&|l| {
-            !l.subject.baseline
-                && l.subject.fault.is_none()
-                && l.subject.requests == own.subject.requests
-                && l.subject.pressure == own.subject.pressure
-                && l.subject.drafts == own.subject.drafts
-        })
-    });
+    let healthy = own
+        .subject
+        .fault
+        .as_ref()
+        .and_then(|_| compare(&|l| healthy_twin(&own.subject, &l.subject)));
     let fault = own.subject.fault.as_ref().map(|f| {
         let mode = match f.mode {
             FaultMode::Nan => "replaced with NaN".to_owned(),
@@ -167,5 +173,32 @@ mod tests {
             "no fault, no comparator"
         );
         assert!(super::facts(&state, "x", &[]).await.is_none());
+    }
+
+    #[test]
+    fn a_twin_on_another_draft_revision_is_not_the_healthy_run() {
+        let events = crate::replay::read(
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/replays"),
+            "day186-midnight-fault-demo",
+        )
+        .unwrap();
+        let own = crate::ledger::from_events("run:a", &events)
+            .unwrap()
+            .subject;
+        assert!(own.fault.is_some() && !own.drafts.is_empty());
+        let same = crate::ledger::LedgerSubject {
+            fault: None,
+            ..own.clone()
+        };
+        assert!(super::healthy_twin(&own, &same));
+        let mut other_revision = same.clone();
+        for id in other_revision.drafts.values_mut() {
+            *id = "cxf:fnv1a128:00000000000000000000000000000000".into();
+        }
+        assert!(!super::healthy_twin(&own, &other_revision));
+        assert!(
+            !super::healthy_twin(&own, &own),
+            "a faulted run is not healthy"
+        );
     }
 }

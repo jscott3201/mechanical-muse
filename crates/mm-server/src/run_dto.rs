@@ -304,6 +304,9 @@ pub struct ReplayInfo {
     pub start_s: f64,
     /// True when the recorded run used a model-drafted graph.
     pub drafted: bool,
+    /// Spec name to the content id of each drafted graph the recorded run used.
+    #[serde(default)]
+    pub draft_ids: BTreeMap<String, String>,
     /// The specs the recorded run used drafted graphs for, sorted (an engineer's own
     /// sequence always runs from a draft; our specs may run hand-built).
     #[serde(default)]
