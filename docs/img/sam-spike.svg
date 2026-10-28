@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Test air handler schematic with SAM 3.1 boxes (green, tight on every symbol) and Muse Spark boxes (orange dashed, near but offset)" width="1600" height="900" viewBox="0 0 1600 900" font-family="Helvetica, Arial, sans-serif">
+  <rect width="1600" height="900" fill="#fff"/>
+  <text x="40" y="50" font-size="28" font-weight="bold">AHU-1 schematic (our test drawing)</text>
+  <!-- duct -->
+  <rect x="120" y="380" width="1380" height="160" fill="none" stroke="#000" stroke-width="4"/>
+  <!-- outdoor air damper -->
+  <g stroke="#000" stroke-width="4">
+    <line x1="170" y1="380" x2="170" y2="540"/>
+    <line x1="150" y1="400" x2="190" y2="430"/><line x1="150" y1="440" x2="190" y2="470"/><line x1="150" y1="480" x2="190" y2="510"/>
+  </g>
+  <text x="120" y="580" font-size="20">OA damper</text>
+  <!-- return/mixing damper -->
+  <rect x="300" y="200" width="100" height="180" fill="none" stroke="#000" stroke-width="4"/>
+  <g stroke="#000" stroke-width="4"><line x1="310" y1="250" x2="390" y2="230"/><line x1="310" y1="300" x2="390" y2="280"/><line x1="310" y1="350" x2="390" y2="330"/></g>
+  <text x="300" y="190" font-size="20">RA damper</text>
+  <!-- filter -->
+  <g stroke="#000" stroke-width="3"><line x1="480" y1="380" x2="480" y2="540"/><polyline fill="none" points="480,380 500,400 480,420 500,440 480,460 500,480 480,500 500,520 480,540"/></g>
+  <text x="455" y="580" font-size="20">Filter</text>
+  <!-- heating coil -->
+  <rect x="600" y="390" width="50" height="140" fill="none" stroke="#c00" stroke-width="4"/>
+  <line x1="600" y1="530" x2="650" y2="390" stroke="#c00" stroke-width="4"/>
+  <text x="585" y="580" font-size="20">Heating coil</text>
+  <!-- cooling coil -->
+  <rect x="720" y="390" width="50" height="140" fill="none" stroke="#06c" stroke-width="4"/>
+  <line x1="720" y1="530" x2="770" y2="390" stroke="#06c" stroke-width="4"/>
+  <text x="705" y="580" font-size="20">Cooling coil</text>
+  <!-- valves -->
+  <g stroke="#000" stroke-width="3" fill="none">
+    <polygon points="610,700 640,715 610,730"/><polygon points="670,700 640,715 670,730"/><line x1="640" y1="715" x2="640" y2="680"/><rect x="625" y="660" width="30" height="20"/>
+    <polygon points="730,700 760,715 730,730"/><polygon points="790,700 760,715 790,730"/><line x1="760" y1="715" x2="760" y2="680"/><rect x="745" y="660" width="30" height="20"/>
+  </g>
+  <line x1="625" y1="530" x2="640" y2="660" stroke="#c00" stroke-width="2"/><line x1="745" y1="530" x2="760" y2="660" stroke="#06c" stroke-width="2"/>
+  <text x="590" y="770" font-size="18">HW valve</text><text x="715" y="770" font-size="18">CHW valve</text>
+  <!-- supply fan -->
+  <circle cx="960" cy="460" r="65" fill="none" stroke="#000" stroke-width="4"/>
+  <polygon points="925,425 1010,460 925,495" fill="none" stroke="#000" stroke-width="4"/>
+  <text x="905" y="580" font-size="20">Supply fan</text>
+  <!-- return fan -->
+  <circle cx="700" cy="260" r="55" fill="none" stroke="#000" stroke-width="4"/>
+  <polygon points="740,230 665,260 740,290" fill="none" stroke="#000" stroke-width="4"/>
+  <line x1="400" y1="260" x2="645" y2="260" stroke="#000" stroke-width="4"/>
+  <line x1="755" y1="260" x2="1500" y2="260" stroke="#000" stroke-width="4"/>
+  <text x="655" y="190" font-size="20">Return fan</text>
+  <!-- sensor bubbles -->
+  <g font-size="16" text-anchor="middle">
+    <g><circle cx="540" cy="320" r="32" fill="#fff" stroke="#000" stroke-width="3"/><line x1="508" y1="320" x2="572" y2="320" stroke="#000" stroke-width="2"/><text x="540" y="314">TT</text><text x="540" y="338">101</text><line x1="540" y1="352" x2="540" y2="380" stroke="#000" stroke-width="2"/></g>
+    <g><circle cx="1120" cy="320" r="32" fill="#fff" stroke="#000" stroke-width="3"/><line x1="1088" y1="320" x2="1152" y2="320" stroke="#000" stroke-width="2"/><text x="1120" y="314">TT</text><text x="1120" y="338">102</text><line x1="1120" y1="352" x2="1120" y2="380" stroke="#000" stroke-width="2"/></g>
+    <g><circle cx="1300" cy="320" r="32" fill="#fff" stroke="#000" stroke-width="3"/><line x1="1268" y1="320" x2="1332" y2="320" stroke="#000" stroke-width="2"/><text x="1300" y="314">PT</text><text x="1300" y="338">103</text><line x1="1300" y1="352" x2="1300" y2="380" stroke="#000" stroke-width="2"/></g>
+    <g><circle cx="1000" cy="160" r="32" fill="#fff" stroke="#000" stroke-width="3"/><line x1="968" y1="160" x2="1032" y2="160" stroke="#000" stroke-width="2"/><text x="1000" y="154">TT</text><text x="1000" y="178">104</text><line x1="1000" y1="192" x2="1000" y2="260" stroke="#000" stroke-width="2"/></g>
+    <g><circle cx="1220" cy="660" r="32" fill="#fff" stroke="#000" stroke-width="3"/><line x1="1188" y1="660" x2="1252" y2="660" stroke="#000" stroke-width="2"/><text x="1220" y="654">FT</text><text x="1220" y="678">105</text><line x1="1220" y1="628" x2="1220" y2="540" stroke="#000" stroke-width="2"/></g>
+  </g>
+  <text x="1420" y="460" font-size="20">Supply air</text>
+  <text x="1420" y="250" font-size="20">Return air</text>
+  <text x="40" y="460" font-size="20">OA</text>
+<g fill="none" stroke-width="3">
+<rect x="1267" y="286" width="66" height="66" stroke="#16a34a"/>
+<rect x="506" y="287" width="66" height="65" stroke="#16a34a"/>
+<rect x="1187" y="626" width="65" height="66" stroke="#16a34a"/>
+<rect x="643" y="203" width="113" height="113" stroke="#16a34a"/>
+<rect x="893" y="393" width="133" height="133" stroke="#16a34a"/>
+<rect x="1086" y="286" width="66" height="67" stroke="#16a34a"/>
+<rect x="967" y="127" width="64" height="65" stroke="#16a34a"/>
+<rect x="893" y="393" width="133" height="133" stroke="#16a34a"/>
+<rect x="717" y="388" width="55" height="144" stroke="#16a34a"/>
+<rect x="1187" y="626" width="65" height="66" stroke="#16a34a"/>
+<rect x="506" y="286" width="66" height="67" stroke="#16a34a"/>
+<rect x="597" y="388" width="55" height="144" stroke="#16a34a"/>
+<rect x="728" y="658" width="64" height="73" stroke="#16a34a"/>
+<rect x="643" y="203" width="113" height="112" stroke="#16a34a"/>
+<rect x="608" y="658" width="63" height="73" stroke="#16a34a"/>
+<rect x="130" y="376" width="72" height="190" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="293" y="170" width="109" height="206" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="468" y="378" width="31" height="187" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="642" y="171" width="119" height="121" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="590" y="386" width="68" height="174" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="710" y="386" width="66" height="174" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="904" y="392" width="135" height="153" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="608" y="682" width="74" height="77" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="730" y="682" width="74" height="77" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="495" y="261" width="59" height="65" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="995" y="101" width="64" height="68" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="1068" y="260" width="60" height="65" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="1240" y="258" width="60" height="65" stroke="#ea580c" stroke-dasharray="8 6"/>
+<rect x="1190" y="654" width="61" height="68" stroke="#ea580c" stroke-dasharray="8 6"/>
+</g><g font-size="20"><rect x="40" y="820" width="28" height="18" fill="none" stroke="#16a34a" stroke-width="3"/><text x="78" y="836">SAM 3.1 boxes ("circle", "symbol")</text>
+<rect x="460" y="820" width="28" height="18" fill="none" stroke="#ea580c" stroke-width="3" stroke-dasharray="8 6"/><text x="498" y="836">Muse Spark boxes (asked for every symbol with its tag)</text></g>
+</svg>
