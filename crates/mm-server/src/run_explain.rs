@@ -138,7 +138,7 @@ pub(crate) fn context(events: &[Envelope]) -> Option<Value> {
         *by_spec.entry(s.spec.as_str()).or_default() += 1;
     }
     let grouped = spans(&logged, config.step_s);
-    Some(json!({
+    let mut context = json!({
         "run": {
             "baseline_only": config.baseline,
             "air_handler_requests": config.requests,
@@ -163,7 +163,21 @@ pub(crate) fn context(events: &[Envelope]) -> Option<Value> {
             "detail": s.key.3,
         })).collect::<Vec<_>>(),
         "ended": ended.map(|(state, message)| json!({"state": state, "message": message})),
-    }))
+    });
+    // Only home runs say which building: office contexts (and the digests their recorded
+    // explanations are found by) stay as they were.
+    if config.is_home()
+        && let Some(object) = context.as_object_mut()
+    {
+        object.insert(
+            "building".into(),
+            json!(
+                "a heat pump house in Brussels (BOPTEST bestest_hydronic_heat_pump) on spot \
+                electricity prices; the price-response sequence sets its heating setpoint"
+            ),
+        );
+    }
+    Some(context)
 }
 
 /// FNV-1a 64, hex: a stable key for a context.

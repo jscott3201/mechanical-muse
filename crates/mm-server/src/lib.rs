@@ -13,6 +13,7 @@ pub mod bind_routes;
 pub mod drafts;
 pub mod dto;
 pub mod explain;
+mod home_explain;
 pub mod home_facts;
 mod journal;
 pub mod ledger;

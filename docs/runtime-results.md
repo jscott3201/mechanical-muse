@@ -21,6 +21,8 @@ comfort floor) over the same window.
 | --- | --- | --- | --- | --- |
 | Typical heat (from day 108) | −8.4 % | −7.7 % | −14.8 % | 1.17 → 0.87 kW (−26 %) |
 | Peak heat (from day 16) | −8.3 % | −7.5 % | −81.9 % | 1.63 → 1.03 kW (−37 %) |
+| From day 40 (not tuned on) | −6.9 % | −6.4 % | −45.2 % | 1.44 → 0.96 kW (−34 %) |
+| From day 315 (not tuned on) | −6.0 % | −5.7 % | −71.5 % | 1.57 → 1.20 kW (−24 %) |
 
 - The graph matched its reference: all 1,344 setpoints in each window are identical to what
   `reference.py` computes for the same readings (the probe of the same day), and BOPTEST's KPIs
@@ -31,10 +33,18 @@ comfort floor) over the same window.
   is an illustration of why programs add homes up, not a forecast for any real fleet.
 
 **Rebound.** BOPTEST's own peak electric demand KPI (the highest 15-minute draw) rose: typical
-3.17 → 3.69 kW (+16.4 %), peak 3.63 → 3.76 kW (+3.7 %). Shifting heat out of the expensive hours
+3.17 → 3.69 kW (+16.4 %), peak 3.63 → 3.76 kW (+3.7 %), and +6.4 % and +5.3 % on the two windows it
+was not tuned on. Shifting heat out of the expensive hours
 concentrates some of it into fewer, higher spells before them. Homes answering the same prices
 would add those rebounds up, the known risk of price-driven demand response; this sequence does
 nothing to stagger it.
+
+**Spark explains it.** Muse Spark's explanation of each home run (recorded, served without a key)
+reads the run's facts: how long the setpoint preheated, coasted or ran normally and the mean price
+in each, the power in the most expensive hours against the baseline, and the rebound. Typical
+window: preheated 46.5 h at a mean €0.231/kWh and coasted 75.0 h at €0.242/kWh. The behavior split
+is ours, from the recorded setpoint against the comfort floor now, so a rise before people come
+home counts as preheating too.
 
 **What it does not show.** A perfect forecast (BOPTEST's default); one building, one climate,
 heating only; prices that swing little (with fixed fees, about €0.17 to €0.26 per kWh in the
@@ -42,8 +52,8 @@ typical window and €0.22 to €0.32 in the peak one), so the per-home saving i
 than shifting. The BACnet mirror does not cover the home yet. Its emissions ledger (Scope 2 only, euros) is in
 [emissions.md](emissions.md#the-home): emissions fall with energy only, since BOPTEST gives the
 house one carbon factor all year.
-Two windows the rule was not tuned on (from days 40 and 315) were run only through
-`reference.py`, not yet through the runtime (`docs/results-log.md`).
+The two windows it was not tuned on (from days 40 and 315) ran through the runtime too, with every
+setpoint identical to `reference.py`; their records stay local (not replays).
 
 ## 2026-10-27 (night): duct static pressure reset on every floor
 
