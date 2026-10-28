@@ -24,7 +24,7 @@ Status: offline pipeline (`mm-graph`, `mm-bridge`, `mm-agent`) and the benchmark
 ## Hard rules (these override convenience)
 
 1. **New-work boundary.** The hackathon (2026-10-26 to 2026-11-04) judges only what was built in
-   the event. Everything under `crates/`, `web/`, `specs/`, `docs/` is new work. The pre-existing
+   the event. Everything under `crates/`, `web/`, `website/`, `specs/`, `docs/` is new work. The pre-existing
    components are exactly: open-control-engine, open-control-library, rusty-bacnet, BOPTEST (used as
    dependencies, data, or an external service), plus ordinary third-party libraries. The README's
    "Pre-existing dependencies" table lists each with pinned commit, license, and link. Never present
@@ -54,7 +54,7 @@ Status: offline pipeline (`mm-graph`, `mm-bridge`, `mm-agent`) and the benchmark
    server-side binaries (`mm-server`, and the `mm-bench` CLI for benchmark runs). It never goes to the browser, logs, traces, or test fixtures.
 8. **Meta models only in the product.** Every model call the application makes (authoring, repair,
    explanations, benchmark runs) goes through `ModelClient` to the Meta Model API or the Glimmer
-   endpoint. No other provider's SDK, endpoint, key, or model id in `crates/`, `web/`, `specs/`, or
+   endpoint. No other provider's SDK, endpoint, key, or model id in `crates/`, `web/`, `website/`, `specs/`, or
    `fixtures/`. The coding tools used to build the repo are outside this rule.
 
 ## Architecture
@@ -101,6 +101,7 @@ Engine facts every change must respect (details: `docs/engine-api.md`):
 | `crates/mm-server` | Axum binary: HTTP API, event stream, config, wiring. |
 | `crates/mm-mcp` | MCP server (stdio, official `rmcp` SDK) for coding agents: specs, palette, validate, emit, verify as tools over `mm-agent`/`mm-graph`/`mm-bridge`. No model calls; logs on stderr (`docs/mcp.md`). |
 | `web/` | Vite + React + TypeScript + shadcn/ui front end. |
+| `website/` | Starlight (Astro) docs site, published to GitHub Pages by `.github/workflows/docs-pages.yml` (https://jscott3201.github.io/mechanical-muse/). Short pages in our own words that link to `docs/` for depth; images come from `docs/img`. |
 | `specs/` | Our own sequence specs, vectors, and expected graphs, one folder per sequence. |
 | `fixtures/` | Recorded (scrubbed) model transcripts and CXF/CSV test data. |
 | `docs/` | Design notes: `engine-api.md`, `model-api.md`, `block-graph-schema.md` (+ `.schema.json`), `boptest-point-map.md` (+ `boptest-points.csv`), `plant-reset.md`, `benchmark-split.md` (+ `.json`), `bacnet-device-table.md`, `bacnet-mirror.md`, `mcp.md`, `coding-agents.md`, `DECISIONS.md`, `upstream-gaps.md`, `runtime-results.md`, `emissions.md`, `workbench.md`, `spark-tools.md`, `packaging.md`, `boptest-on-modal.md`, `ci.md`, `results-log.md` (one line per result or adjustment, newest first: append, never rewrite), `demo-script.md`. |
