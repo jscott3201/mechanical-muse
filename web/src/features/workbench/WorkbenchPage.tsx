@@ -84,9 +84,17 @@ function SourceStep({
     }
     setFiles((old) => [...old, ...next].slice(0, 4));
   };
-  const useSample = async (sample: (typeof SAMPLES)[number]) => {
-    const blob = await (await fetch(sample.url)).blob();
-    setFiles([await fileToAttachment(blob, sample.name)]);
+  const loadSample = async (sample: (typeof SAMPLES)[number]) => {
+    setProblem(null);
+    try {
+      const response = await fetch(sample.url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      setFiles([await fileToAttachment(blob, sample.name)]);
+    } catch (e: unknown) {
+      setProblem(`Could not load the sample (${e instanceof Error ? e.message : "network error"}); attach a file or paste text instead.`);
+      return;
+    }
     setText("");
     setPreview(sample.url);
     setSuggested(sample.sequence);
@@ -135,7 +143,7 @@ function SourceStep({
             onChange={(e) => e.target.files && void add(e.target.files)}
           />
         </label>
-        {problem && <p className="text-sm text-destructive">{problem}</p>}
+        {problem && <p role="alert" className="text-sm text-destructive">{problem}</p>}
         {files.length > 0 && (
           <ul className="flex flex-wrap gap-2">
             {files.map((f, i) => (
@@ -165,7 +173,7 @@ function SourceStep({
             <Sparkles aria-hidden="true" /> Read with Muse Spark
           </Button>
           {SAMPLES.map((sample) => (
-            <Button key={sample.url} variant="outline" onClick={() => void useSample(sample)}>
+            <Button key={sample.url} variant="outline" onClick={() => void loadSample(sample)}>
               {sample.label}
             </Button>
           ))}
