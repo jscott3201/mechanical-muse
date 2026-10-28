@@ -114,7 +114,7 @@ export function App() {
             </main>
           </Pane>
           <Pane value="workbench" visited={visited}>
-            <WorkbenchPage onOpenSpec={openSpec} />
+            <WorkbenchPage onOpenSpec={openSpec} active={page === "workbench"} />
           </Pane>
           <Pane value="runs" visited={visited}>
             <RunsPage

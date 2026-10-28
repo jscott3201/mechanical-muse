@@ -72,6 +72,6 @@ suite("faults", () => {
       fault: { point: "floor1_reaAHU_TSup_y", from_step: 30, steps: 60, mode: { kind: "bias", offset: 4 } },
     });
     expect(describe(replayFacts(healthy))).toBe("Hand-built sequences, chilled water");
-    expect(describe(replayFacts(faulted))).toBe("Hand-built sequences, chilled water; test fault: floor1_reaAHU_TSup_y biased by +4");
+    expect(describe(replayFacts(faulted))).toBe("Hand-built sequences, chilled water; test fault: floor1_reaAHU_TSup_y biased by +4 K");
   });
 });

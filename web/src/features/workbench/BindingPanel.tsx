@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useResource } from "@/hooks/useResource";
 import { useConfirmBinding, useProposeBinding } from "@/hooks/useWorkbench";
+import { formatWithUnit } from "@/lib/format";
 import type { Binding } from "@/types/generated/Binding";
 import type { BindingView } from "@/types/generated/BindingView";
 
@@ -31,7 +32,16 @@ function num(text: string, fallback: number): number {
 }
 
 /** The binding as a table; editable when `onChange` is given. */
-function BindingTable({ binding, onChange }: { binding: Binding; onChange?: (b: Binding) => void }) {
+function BindingTable({
+  binding,
+  units = {},
+  onChange,
+}: {
+  binding: Binding;
+  /** Each output's unit, so limits read as the sheet does (°F beside kelvin). */
+  units?: Partial<Record<string, string>>;
+  onChange?: (b: Binding) => void;
+}) {
   const edit = onChange !== undefined;
   const setInput = (i: number, patch: Partial<Binding["inputs"][number]>) =>
     onChange?.({ ...binding, inputs: binding.inputs.map((b, j) => (j === i ? { ...b, ...patch } : b)) });
@@ -163,7 +173,9 @@ function BindingTable({ binding, onChange }: { binding: Binding; onChange?: (b: 
                       <Input aria-label={`Highest ${b.output}`} type="number" step="any" defaultValue={b.max} onBlur={(e) => setOutput(i, { max: num(e.target.value, b.max) })} className="h-7 w-24" />
                     </span>
                   ) : (
-                    `${b.min} to ${b.max}`
+                    <span className="whitespace-normal">
+                      {formatWithUnit(b.min, units[b.output] ?? "")} to {formatWithUnit(b.max, units[b.output] ?? "")}
+                    </span>
                   )}
                 </TableCell>
                 <TableCell className="font-mono text-xs">{b.measured || "—"}</TableCell>
@@ -183,10 +195,12 @@ function BindingTable({ binding, onChange }: { binding: Binding; onChange?: (b: 
  */
 export function BindingPanel({
   spec,
+  units,
   onBound,
   next,
 }: {
   spec: string;
+  units?: Partial<Record<string, string>>;
   onBound: () => void;
   /** Where to go once bound: the run form with a verified draft, or drafting one first. */
   next?: { label: string; href: string };
@@ -235,7 +249,7 @@ export function BindingPanel({
                 </Button>
               )}
             </div>
-            <BindingTable binding={bound.binding} />
+            <BindingTable binding={bound.binding} units={units} />
           </>
         )}
         {!draft && (
@@ -277,7 +291,7 @@ export function BindingPanel({
                 </AlertDescription>
               </Alert>
             )}
-            <BindingTable binding={draft} onChange={setDraft} />
+            <BindingTable binding={draft} units={units} onChange={setDraft} />
             {confirm.state.status === "error" && <ErrorNote error={confirm.state.error} />}
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => confirm.run({ binding: draft })} disabled={confirm.state.status === "running"}>

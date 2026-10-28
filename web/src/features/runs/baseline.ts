@@ -15,7 +15,12 @@ export type BaselineKpis = {
 };
 
 /** Another run of the same window to compare with: how the ledger routes name it, and a caption. */
-export type Comparator = { reference: string; source: string };
+export type Comparator = {
+  reference: string;
+  source: string;
+  /** Its KPIs as BOPTEST reported them, when it has any. */
+  kpis?: Record<string, number>;
+};
 
 function sameRunWindow(r: RunInfo, cfg: RunConfig): boolean {
   return (
@@ -78,7 +83,7 @@ export function findHealthy(cfg: RunConfig, runs: RunInfo[], replays: ReplayInfo
         sameDrafts(r.config.drafts ?? {}, drafts) &&
         sameRunWindow(r, cfg),
     );
-  if (run) return { reference: `run:${run.id}`, source: `run ${run.id}` };
+  if (run) return { reference: `run:${run.id}`, source: `run ${run.id}`, ...(run.kpis ? { kpis: run.kpis } : {}) };
   const replay = replays.find(
     (r) =>
       !r.baseline &&
@@ -88,7 +93,12 @@ export function findHealthy(cfg: RunConfig, runs: RunInfo[], replays: ReplayInfo
       sameDrafts(r.draft_ids ?? {}, drafts) &&
       sameReplayWindow(r, cfg),
   );
-  if (replay) return { reference: `replay:${replay.name}`, source: `recorded run ${replay.recorded_run}` };
+  if (replay)
+    return {
+      reference: `replay:${replay.name}`,
+      source: `recorded run ${replay.recorded_run}`,
+      ...(replay.kpis ? { kpis: replay.kpis } : {}),
+    };
   return null;
 }
 

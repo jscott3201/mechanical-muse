@@ -86,11 +86,12 @@ describe("findHealthy", () => {
       run("run-2", { fault }, { ener_tot: 0.33 }),
       run("run-3", { pressure: true }, { ener_tot: 0.25 }),
     ];
-    expect(findHealthy(faulted, runs, [])).toEqual({ reference: "run:run-1", source: "run run-1" });
+    expect(findHealthy(faulted, runs, [])).toEqual({ reference: "run:run-1", source: "run run-1", kpis: { ener_tot: 0.31 } });
     const recorded = replay({ name: "day185-noon-requests", baseline: false, requests: true });
     expect(findHealthy(faulted, [], [recorded])).toEqual({
       reference: "replay:day185-noon-requests",
       source: "recorded run run-1",
+      kpis: { ener_tot: 0.3255 },
     });
   });
 

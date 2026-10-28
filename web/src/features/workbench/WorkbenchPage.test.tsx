@@ -86,14 +86,46 @@ describe("WorkbenchPage", () => {
     rerender(<WorkbenchPage onOpenSpec={vi.fn()} />);
     expect(opened).toHaveBeenCalledTimes(1);
     expect(again).not.toHaveBeenCalled();
-    // Back on this page, accepting is done and drafting is next.
+    // Back on this page, accepting is done and drafting is next; the reading cannot be accepted twice.
     expect(screen.getByRole("link", { name: "Accept (done)" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Draft & verify (next)" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /create the sequence/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Open fan_on_hot" })).toBeTruthy();
     const accept = calls.find((c) => c.url === "/api/workbench/accept")?.body as {
       key: string;
       draft: { scenarios: { name: string }[] };
     };
     expect(accept.key).toBe("read:abc");
     expect(accept.draft.scenarios.map((s) => s.name)).toEqual(["hot"]);
+  });
+
+  it("marks drafting and binding done from the server when the page shows again", async () => {
+    let drafted = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/api/workbench/read") return new Response(JSON.stringify(view), { status: 200 });
+        if (url === "/api/workbench/accept")
+          return new Response(JSON.stringify({ spec: { summary: { name: "fan_on_hot" } } }), { status: 201 });
+        if (url === "/api/drafts")
+          return new Response(JSON.stringify(drafted ? [{ spec: "fan_on_hot", content_id: "cxf:fnv1a128:01" }] : []), {
+            status: 200,
+          });
+        if (url === "/api/workbench/fan_on_hot/binding" && drafted) return new Response("{}", { status: 200 });
+        return new Response('{"code":"not-found","message":"no"}', { status: 404 });
+      }),
+    );
+    const { rerender } = render(<WorkbenchPage onOpenSpec={vi.fn()} active />);
+    fireEvent.change(screen.getByLabelText("Sequence text"), { target: { value: "Run the fan above 27 °C." } });
+    fireEvent.click(screen.getByRole("button", { name: /Read with Muse Spark/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Accept 2 scenarios/ }));
+    expect(await screen.findByRole("link", { name: "Draft & verify (next)" })).toBeTruthy();
+    // Drafted and bound on the sequence's own page, then back here.
+    drafted = true;
+    rerender(<WorkbenchPage onOpenSpec={vi.fn()} active={false} />);
+    rerender(<WorkbenchPage onOpenSpec={vi.fn()} active />);
+    expect(await screen.findByRole("link", { name: "Draft & verify (done)" })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: "Bind (done)" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Run (next)" })).toBeTruthy();
   });
 });

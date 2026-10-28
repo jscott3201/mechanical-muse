@@ -104,10 +104,22 @@ const TILES: { key: string; label: string }[] = [
   { key: "idis_tot", label: "CO₂ discomfort" },
 ];
 
-/** The headline KPIs beside the baseline: change only, the table below has the values. For all four, lower is better. */
-export function KpiTiles({ kpi, base }: { kpi: Record<string, number>; base: Record<string, number> }) {
+/**
+ * The headline KPIs beside another run of the window: change only, the table below has the
+ * values. For all four, lower is better. `against` names that run ("baseline", "run without
+ * the fault").
+ */
+export function KpiTiles({
+  kpi,
+  base,
+  against = "baseline",
+}: {
+  kpi: Record<string, number>;
+  base: Record<string, number>;
+  against?: string;
+}) {
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Change against the baseline run">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label={`Change against the ${against === "baseline" ? "baseline run" : against}`}>
       {TILES.map(({ key, label }) => {
         const pct = change(kpi[key], base[key]);
         const flat = pct === null || Math.abs(pct) < 0.05;
@@ -115,7 +127,7 @@ export function KpiTiles({ kpi, base }: { kpi: Record<string, number>; base: Rec
         return (
           <Card key={key} className="py-4">
             <CardContent className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">{label} vs baseline</span>
+              <span className="text-xs text-muted-foreground">{label} vs {against}</span>
               <span className="flex items-center gap-1 text-2xl font-semibold tabular-nums">
                 <Icon aria-hidden="true" className="size-5 text-muted-foreground" />
                 {pct === null

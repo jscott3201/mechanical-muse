@@ -28,7 +28,7 @@ describe("faults", () => {
 
   it("says what the fault did to the reading", () => {
     expect(faultText(faultRequest("hold", 30))).toBe("floor1_reaAHU_yCooVal_y held at 1 for steps 30–89");
-    expect(faultModeText({ ...faultRequest("bias", 0), mode: { kind: "bias", offset: -1.5 } })).toBe("biased by −1.5");
+    expect(faultModeText({ ...faultRequest("bias", 0), mode: { kind: "bias", offset: -1.5 } })).toBe("biased by −1.5 K");
     expect(faultText(faultRequest("nan", 20))).toBe("floor1_reaAHU_TSup_y reads NaN for steps 20–24");
   });
 

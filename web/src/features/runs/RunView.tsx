@@ -108,6 +108,7 @@ function RunStream({
   const hasKpis = stream.kpi !== null && stream.kpi !== undefined;
   const comparisons = useComparisons(cfg ?? null, hasKpis);
   const base = comparisons.baseline;
+  const healthyKpis = comparisons.healthy?.kpis ?? null;
   const failSafe = failSafeNote(stream.failSafeSpans);
   const log = useMemo(() => collapseLog(stream.log).reverse(), [stream.log]);
   return (
@@ -177,7 +178,12 @@ function RunStream({
         </CardContent>
       </Card>
 
-      {stream.kpi && base && <KpiTiles kpi={stream.kpi} base={base.kpis} />}
+      {stream.kpi && healthyKpis ? (
+        // A faulted run's headline is what the fault cost: the same run without it.
+        <KpiTiles kpi={stream.kpi} base={healthyKpis} against="run without the fault" />
+      ) : (
+        stream.kpi && base && <KpiTiles kpi={stream.kpi} base={base.kpis} />
+      )}
 
       <RunEmissions runId={runId} hasKpis={hasKpis} fault={cfg?.fault} comparisons={comparisons} />
 

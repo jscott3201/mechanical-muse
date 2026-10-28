@@ -251,6 +251,7 @@ export function SpecDetail({
           <TabsContent value="building">
             <BindingPanel
               spec={name}
+              units={units}
               onBound={binding.reload}
               next={
                 ownDrafts[0]
