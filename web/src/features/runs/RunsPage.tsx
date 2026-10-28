@@ -131,12 +131,34 @@ function GraphChoice({
 }
 
 /** One click sets the whole form: the demo's usual windows. */
-const PRESETS = [
-  { id: "demo", label: "Demo window", detail: "Day 185 from noon, 10 h", day: 185, hour: 12, steps: 300, fault: false, baseline: false },
-  { id: "short", label: "Short check", detail: "Day 185 from noon, 1 h", day: 185, hour: 12, steps: 30, fault: false, baseline: false },
-  { id: "fault", label: "Fault demo", detail: "Day 186 from midnight, 2 h, a test fault at step 20", day: 186, hour: 0, steps: 60, fault: true, baseline: false },
-  { id: "baseline", label: "Baseline", detail: "BOPTEST's own controllers over the demo window", day: 185, hour: 12, steps: 300, fault: false, baseline: true },
-] as const;
+type Preset = {
+  id: string;
+  label: string;
+  detail: string;
+  day: number;
+  hour: number;
+  steps: number;
+  /** The test fault the preset turns on, and the step it starts at. */
+  fault: { kind: FaultKind; step: number } | null;
+  baseline: boolean;
+};
+
+const PRESETS: readonly Preset[] = [
+  { id: "demo", label: "Demo window", detail: "Day 185 from noon, 10 h", day: 185, hour: 12, steps: 300, fault: null, baseline: false },
+  { id: "short", label: "Short check", detail: "Day 185 from noon, 1 h", day: 185, hour: 12, steps: 30, fault: null, baseline: false },
+  { id: "fault", label: "Fault demo", detail: "Day 186 from midnight, 2 h, a blank reading at step 20", day: 186, hour: 0, steps: 60, fault: { kind: "nan", step: 20 }, baseline: false },
+  {
+    id: "cost",
+    label: "Fault cost",
+    detail: "The demo window with floor 1's supply-air reading 4 K high from step 30; compare it with a Demo window run",
+    day: 185,
+    hour: 12,
+    steps: 300,
+    fault: { kind: "bias", step: 30 },
+    baseline: false,
+  },
+  { id: "baseline", label: "Baseline", detail: "BOPTEST's own controllers over the demo window", day: 185, hour: 12, steps: 300, fault: null, baseline: true },
+];
 
 export type DraftChoice = { spec: string; contentId: string };
 
@@ -197,8 +219,11 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
     setHour(p.hour);
     setSteps(p.steps);
     setBaseline(p.baseline);
-    setFault(p.fault);
-    if (p.fault) setFaultStep(20);
+    setFault(p.fault !== null);
+    if (p.fault) {
+      setFaultKind(p.fault.kind);
+      setFaultStep(p.fault.step);
+    }
   };
   return (
     <Card>

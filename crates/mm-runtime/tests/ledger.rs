@@ -279,7 +279,7 @@ fn every_committed_record_reconciles() {
         .filter(|p| p.extension().is_some_and(|x| x == "jsonl"))
         .collect();
     names.sort();
-    assert_eq!(names.len(), 11);
+    assert_eq!(names.len(), 13);
     for path in names {
         let text = std::fs::read_to_string(&path).unwrap();
         let kpis: BTreeMap<String, f64> = text

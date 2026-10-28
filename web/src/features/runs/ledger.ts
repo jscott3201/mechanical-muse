@@ -33,7 +33,7 @@ export function changeText(d: Amounts): string {
  * cost against that run. Without one, only the labelled fault.
  */
 export function faultBanner(f: Fault, vsHealthy: { delta: Amounts; source: string } | null): string {
-  const what = `Injected test fault: ${f.point} ${faultModeText(f)} from step ${f.from_step}`;
+  const what = `${f.point} ${faultModeText(f)} from step ${f.from_step}`;
   return vsHealthy ? `${what}: ${changeText(vsHealthy.delta)} vs ${vsHealthy.source}` : `${what}.`;
 }
 

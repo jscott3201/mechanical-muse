@@ -1,6 +1,8 @@
+import type { Fault } from "@/types/generated/Fault";
 import type { ReplayInfo } from "@/types/generated/ReplayInfo";
 import type { RunConfig } from "@/types/generated/RunConfig";
 
+import { faultModeText } from "./faults";
 import { formatSimTime } from "./trends";
 
 const PLANT = "chw_plant_reset";
@@ -13,10 +15,12 @@ export type RunFacts = {
   own: string[];
   /** Specs that ran from a drafted graph (own sequences included). */
   drafts: string[];
+  /** The labelled test fault the run carried, if any. */
+  fault?: Fault | null;
 };
 
 export function replayFacts(r: ReplayInfo): RunFacts {
-  return { baseline: r.baseline, pressure: r.pressure, own: r.own, drafts: r.drafts ?? [] };
+  return { baseline: r.baseline, pressure: r.pressure, own: r.own, drafts: r.drafts ?? [], fault: r.fault ?? null };
 }
 
 /** Old records may lack `drafts`, `bindings` or `pressure`; treat them as empty. */
@@ -28,11 +32,18 @@ export function configFacts(c: RunConfig): RunFacts {
     pressure: c.pressure ?? false,
     own: Object.keys(bindings).sort(),
     drafts: Object.keys(drafts).sort(),
+    fault: c.fault ?? null,
   };
 }
 
-/** What ran, in words: never calls a hand-built graph a Spark draft or the reverse. */
+/** What ran, in words: never calls a hand-built graph a Spark draft or the reverse, and names a
+ * test fault so a faulted run never reads like its healthy twin. */
 export function describe(f: RunFacts): string {
+  const base = describeGraphs(f);
+  return f.fault ? `${base}; test fault: ${f.fault.point} ${faultModeText(f.fault)}` : base;
+}
+
+function describeGraphs(f: RunFacts): string {
   if (f.baseline) return "BOPTEST baseline, nothing written";
   const pressure = f.pressure ? " and static pressure" : "";
   const ours = f.drafts.filter((s) => !f.own.includes(s));

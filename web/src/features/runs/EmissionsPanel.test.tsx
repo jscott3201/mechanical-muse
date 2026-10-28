@@ -103,7 +103,7 @@ describe("EmissionsPanel", () => {
     expect(within(table).getByText("Gas not in the 120 s samples")).toBeTruthy();
     expect(
       screen.getByText(
-        "Injected test fault: floor1_reaAHU_yCooVal_y held at 1 from step 30: +412 kWh, +$39, +141 kgCO₂e vs run run-3",
+        "floor1_reaAHU_yCooVal_y held at 1 from step 30: +412 kWh, +$39, +141 kgCO₂e vs run run-3",
       ),
     ).toBeTruthy();
   });
@@ -112,7 +112,7 @@ describe("EmissionsPanel", () => {
     render(
       <EmissionsPanel ledger={ledger({ reconciles: false })} vsBaseline={null} baselineSource={null} fault={faultRequest("nan", 20)} vsHealthy={null} healthySource={null} />,
     );
-    expect(screen.getByText("Injected test fault: floor1_reaAHU_TSup_y reads NaN from step 20.")).toBeTruthy();
+    expect(screen.getByText("floor1_reaAHU_TSup_y reads NaN from step 20.")).toBeTruthy();
     expect(screen.getByText(/does not re-price to BOPTEST's/)).toBeTruthy();
   });
 });

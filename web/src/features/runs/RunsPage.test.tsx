@@ -195,6 +195,29 @@ describe("RunsPage test faults", () => {
   });
 });
 
+describe("RunsPage fault cost preset", () => {
+  it("runs the demo window with floor 1's supply-air reading 4 K high from step 30", async () => {
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/bacnet") return bacnetOff();
+      if (init?.method === "POST")
+        return new Response(JSON.stringify({ code: "bad-request", message: "not now" }), { status: 400 });
+      return new Response("[]", { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetch);
+    render(<RunsPage />);
+    act(() => screen.getByRole("button", { name: "Fault cost" }).click());
+    act(() => screen.getByRole("button", { name: /Start/ }).click());
+    await vi.waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true), { timeout: 5000 });
+    const post = fetch.mock.calls.find(([, i]) => i?.method === "POST");
+    // The same window as the Demo window preset, so a healthy run of it is the comparison.
+    expect(JSON.parse(String(post?.[1]?.body))).toMatchObject({
+      start_s: 185 * 86400 + 12 * 3600,
+      steps: 300,
+      fault: { point: "floor1_reaAHU_TSup_y", from_step: 30, steps: 60, mode: { kind: "bias", offset: 4 } },
+    });
+  });
+});
+
 describe("RunsPage with drafts", () => {
   it("starts a run on a chosen verified draft and labels it in the run", async () => {
     const draft = {

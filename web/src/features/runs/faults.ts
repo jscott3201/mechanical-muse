@@ -32,7 +32,7 @@ export const FAULT_CHOICES: readonly Choice[] = [
     point: "floor1_reaAHU_TSup_y",
     steps: 60,
     detail:
-      "Floor 1's supply-air temperature reads 2 K high for 60 steps, as a drifted sensor would. Only the reading is faulted; the setpoints computed from it still reach BOPTEST, within their clamps.",
+      "Floor 1's supply-air temperature reads 4 K high for 60 steps, as a drifted sensor would. Its air handler then sends 3 requests, more than the plant reset ignores, so the plant is driven colder than it needs to be. Only the reading is faulted; the setpoints computed from it still reach BOPTEST, within their clamps.",
   },
 ];
 
@@ -40,11 +40,11 @@ export const FAULT_CHOICES: readonly Choice[] = [
 export function faultRequest(kind: FaultKind, fromStep: number): Fault {
   const c = FAULT_CHOICES.find((x) => x.kind === kind) ?? (FAULT_CHOICES[0] as Choice);
   const mode: Fault["mode"] =
-    c.kind === "hold" ? { kind: "hold", value: 1 } : c.kind === "bias" ? { kind: "bias", offset: 2 } : { kind: "nan" };
+    c.kind === "hold" ? { kind: "hold", value: 1 } : c.kind === "bias" ? { kind: "bias", offset: 4 } : { kind: "nan" };
   return { point: c.point, from_step: fromStep, steps: c.steps, mode };
 }
 
-/** What the fault did to the reading ("reads NaN", "held at 1", "biased by +2"). */
+/** What the fault did to the reading ("reads NaN", "held at 1", "biased by +4"). */
 export function faultModeText(f: Fault): string {
   // Records from before modes carry none; the server fills in NaN, but be safe.
   const mode: Fault["mode"] | undefined = f.mode as Fault["mode"] | undefined;

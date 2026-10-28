@@ -46,7 +46,7 @@ both per m2, times the floor area for kWh. Emissions and cost follow from the fa
 below.
 
 **Reconciliation.** Re-pricing the split must give back BOPTEST's own cost KPI (`cost_tot`).
-`reconciles` is true when it does (to float rounding) and neither carrier is negative. All eleven
+`reconciles` is true when it does (to float rounding) and neither carrier is negative. All thirteen
 committed recorded runs reconcile.
 
 **End uses come from our recorded readings.** Every tick records the 14 power signals (one
@@ -92,6 +92,29 @@ invents a labelled reading for that step, so the stale-data check does not fire 
 run with a fault has a twin of the same window without it (same switches, same drafted graphs by
 content id), the run view prices the fault against that twin; without one it only labels the
 fault.
+
+### A fault's cost, measured (2026-10-27)
+
+BOPTEST on Modal, day 185 from noon, 300 steps of 120 s (10 h), our hand-built AHU requests
+feeding the chilled-water plant reset. Two runs, alike except for a test fault: floor 1's
+supply-air temperature read 4 K high from step 30 for 60 steps (2 h), as a drifted sensor would.
+Records: `fixtures/replays/day185-noon-healthy.jsonl` and
+`day185-noon-fault-sensor-bias.jsonl` (both with every power reading, so end uses show).
+
+- 4 K above setpoint makes floor 1's air handler send 3 requests, more than the 2 the plant
+  reset ignores, so the reset drove the chilled-water setpoint to its cold end: 5.56 °C during
+  the fault against 9.00 °C in the healthy run. It recovered about 70 steps after the reading did.
+- Against the healthy run: +130 kWh, +44 kgCO2e and +$12.25, nearly all Scope 2. Chillers
+  +147 kWh, cooling towers +6, chilled-water pumps −23; gas unchanged. Thermal discomfort was
+  slightly lower (colder water).
+- For scale: the healthy run cost $912 against $972 for BOPTEST's baseline over a baseline run of
+  the same window (a separate record), so two hours of one bad sensor gave back about a fifth of
+  the ten hours' saving.
+- End uses on these live records reconcile with BOPTEST's totals to within 3.4 kWh of
+  13,261 kWh (the "not in the 120 s samples" rows).
+
+One window, one fault, in simulation. The cost is measured as the difference of two runs that
+BOPTEST computed, not estimated from a formula.
 
 Run explanations get the ledger and these comparisons as given facts, rounded, and are told to
 quote rather than compute. A reply that states a number not in its input (beyond a rounded
