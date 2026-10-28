@@ -1,0 +1,1200 @@
+{
+ "schema": "mechanical-muse/vectors/v1",
+ "clock": {
+  "step_s": 60.0,
+  "horizon_s": 240
+ },
+ "scenarios": [
+  {
+   "name": "flat_prices",
+   "description": "Every hour costs the same: no peak hours, so the setpoint is the comfort floor plus 0.2 K (occupied: 294.35 K).",
+   "inputs": {
+    "pri00": 0.25,
+    "pri01": 0.25,
+    "pri02": 0.25,
+    "pri03": 0.25,
+    "pri04": 0.25,
+    "pri05": 0.25,
+    "pri06": 0.25,
+    "pri07": 0.25,
+    "pri08": 0.25,
+    "pri09": 0.25,
+    "pri10": 0.25,
+    "pri11": 0.25,
+    "pri12": 0.25,
+    "pri13": 0.25,
+    "pri14": 0.25,
+    "pri15": 0.25,
+    "pri16": 0.25,
+    "pri17": 0.25,
+    "pri18": 0.25,
+    "pri19": 0.25,
+    "pri20": 0.25,
+    "pri21": 0.25,
+    "pri22": 0.25,
+    "pri23": 0.25,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "small_spread",
+   "description": "Prices differ by only 0.0078125 per kWh across the day, under the 0.01 minimum, so nothing counts as peak even though this hour is the most expensive.",
+   "inputs": {
+    "pri00": 0.2578125,
+    "pri01": 0.2578125,
+    "pri02": 0.2578125,
+    "pri03": 0.25,
+    "pri04": 0.25,
+    "pri05": 0.25,
+    "pri06": 0.25,
+    "pri07": 0.25,
+    "pri08": 0.25,
+    "pri09": 0.25,
+    "pri10": 0.25,
+    "pri11": 0.25,
+    "pri12": 0.25,
+    "pri13": 0.25,
+    "pri14": 0.25,
+    "pri15": 0.25,
+    "pri16": 0.25,
+    "pri17": 0.25,
+    "pri18": 0.25,
+    "pri19": 0.25,
+    "pri20": 0.25,
+    "pri21": 0.25,
+    "pri22": 0.25,
+    "pri23": 0.25,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "peak_now_occupied",
+   "description": "This hour is a peak hour while occupied: coast to 0.1 K above the coming floor (294.25 K), since 1.5 K below the base would be under the floor.",
+   "inputs": {
+    "pri00": 0.25,
+    "pri01": 0.25,
+    "pri02": 0.25,
+    "pri03": 0.25,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.25,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "peak_now_away",
+   "description": "This hour is a peak hour while away (floor 15 degC): coast 1.5 K below the 20.5 degC away setpoint, 292.15 K.",
+   "inputs": {
+    "pri00": 0.25,
+    "pri01": 0.25,
+    "pri02": 0.125,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 288.15,
+    "TLo01": 288.15,
+    "TLo02": 288.15,
+    "THi00": 303.15,
+    "THi01": 303.15,
+    "THi02": 303.15,
+    "THi03": 303.15,
+    "TZon": 293.65
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 292.15,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "peak_soon_occupied",
+   "description": "A peak hour starts in 2 hours while occupied: preheat by 1 K, capped 2 K below the 24 degC ceiling: min(295.35, 295.15) = 295.15 K.",
+   "inputs": {
+    "pri00": 0.125,
+    "pri01": 0.125,
+    "pri02": 0.25,
+    "pri03": 0.25,
+    "pri04": 0.25,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 295.15,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "peak_soon_away",
+   "description": "A peak hour starts in 3 hours while away: preheat to the away setpoint plus 1 K, 294.65 K (the 30 degC ceiling is far).",
+   "inputs": {
+    "pri00": 0.125,
+    "pri01": 0.125,
+    "pri02": 0.125,
+    "pri03": 0.25,
+    "pri04": 0.25,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 288.15,
+    "TLo01": 288.15,
+    "TLo02": 288.15,
+    "THi00": 303.15,
+    "THi01": 303.15,
+    "THi02": 303.15,
+    "THi03": 303.15,
+    "TZon": 293.0
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.65,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "peak_in_four_hours",
+   "description": "The nearest peak hour is 4 hours out, outside the 3-hour look-ahead: no preheat yet, 294.35 K.",
+   "inputs": {
+    "pri00": 0.125,
+    "pri01": 0.125,
+    "pri02": 0.125,
+    "pri03": 0.125,
+    "pri04": 0.25,
+    "pri05": 0.25,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "peak_soon_but_warm",
+   "description": "A peak hour is coming but the room is already more than 0.5 K above normal (294.9 K > 294.85 K): no preheat, 294.35 K.",
+   "inputs": {
+    "pri00": 0.125,
+    "pri01": 0.25,
+    "pri02": 0.25,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.9
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "peak_soon_warm_edge",
+   "description": "The room is exactly 0.5 K above normal (about 294.85 K, the same sum the sequence computes), which is not above it: preheat to 295.15 K.",
+   "inputs": {
+    "pri00": 0.125,
+    "pri01": 0.25,
+    "pri02": 0.25,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.84999999999997
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 295.15,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "ceiling_drops_soon",
+   "description": "A peak hour is coming and the ceiling falls to 23 degC 3 hours ahead: the preheat cap (21 degC) is below normal, so the setpoint stays at normal, 294.35 K.",
+   "inputs": {
+    "pri00": 0.125,
+    "pri01": 0.125,
+    "pri02": 0.25,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 296.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "arrival_in_two_hours",
+   "description": "Away now (floor 15 degC) but occupied from 2 hours ahead: normal rises early to the coming floor plus 0.2 K, 294.35 K, so the slab is warm on arrival.",
+   "inputs": {
+    "pri00": 0.25,
+    "pri01": 0.25,
+    "pri02": 0.25,
+    "pri03": 0.25,
+    "pri04": 0.25,
+    "pri05": 0.25,
+    "pri06": 0.25,
+    "pri07": 0.25,
+    "pri08": 0.25,
+    "pri09": 0.25,
+    "pri10": 0.25,
+    "pri11": 0.25,
+    "pri12": 0.25,
+    "pri13": 0.25,
+    "pri14": 0.25,
+    "pri15": 0.25,
+    "pri16": 0.25,
+    "pri17": 0.25,
+    "pri18": 0.25,
+    "pri19": 0.25,
+    "pri20": 0.25,
+    "pri21": 0.25,
+    "pri22": 0.25,
+    "pri23": 0.25,
+    "TLo00": 288.15,
+    "TLo01": 288.15,
+    "TLo02": 294.15,
+    "THi00": 303.15,
+    "THi01": 303.15,
+    "THi02": 303.15,
+    "THi03": 303.15,
+    "TZon": 293.65
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "arrival_during_peak",
+   "description": "Away, a peak hour now, and occupied from 1 hour ahead: coasting never goes below the coming floor plus 0.1 K, 294.25 K.",
+   "inputs": {
+    "pri00": 0.25,
+    "pri01": 0.125,
+    "pri02": 0.125,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 288.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 303.15,
+    "THi01": 303.15,
+    "THi02": 303.15,
+    "THi03": 303.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.25,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "arrival_before_peak",
+   "description": "Away now, home from 1 hour ahead, a peak hour in 2 hours: normal is the coming floor plus 0.2 K (294.35 K), and the room at 294.5 K is not above normal plus 0.5 K, so preheat to 295.15 K (from normal, not from the 20.5 degC away base).",
+   "inputs": {
+    "pri00": 0.125,
+    "pri01": 0.125,
+    "pri02": 0.25,
+    "pri03": 0.25,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 288.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 303.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.5
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 295.15,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "departure_during_peak",
+   "description": "Home now, away from 1 hour ahead, a peak hour now: the floor now still counts, so coasting stops at 21 degC plus 0.1 K, 294.25 K.",
+   "inputs": {
+    "pri00": 0.25,
+    "pri01": 0.125,
+    "pri02": 0.125,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 288.15,
+    "TLo02": 288.15,
+    "THi00": 297.15,
+    "THi01": 303.15,
+    "THi02": 303.15,
+    "THi03": 303.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.25,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "short_visit_during_peak",
+   "description": "Away now and 2 hours ahead, home only for the hour starting in 1 hour, a peak hour now: coast no lower than that floor plus 0.1 K, 294.25 K.",
+   "inputs": {
+    "pri00": 0.25,
+    "pri01": 0.125,
+    "pri02": 0.125,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 288.15,
+    "TLo01": 294.15,
+    "TLo02": 288.15,
+    "THi00": 303.15,
+    "THi01": 303.15,
+    "THi02": 303.15,
+    "THi03": 303.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.25,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "ceiling_lower_now",
+   "description": "A peak hour is coming and the ceiling is 23 degC now: preheat capped below normal, so normal, 294.35 K.",
+   "inputs": {
+    "pri00": 0.125,
+    "pri01": 0.125,
+    "pri02": 0.25,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 296.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "ceiling_lower_in_one_hour",
+   "description": "A peak hour is coming and the ceiling is 23 degC in 1 hour: normal, 294.35 K.",
+   "inputs": {
+    "pri00": 0.125,
+    "pri01": 0.125,
+    "pri02": 0.25,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 296.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "threshold_edge",
+   "description": "This hour's price equals the threshold exactly (0.21875 with a 0.125 to 0.25 day): at the threshold counts as peak, so coast to 294.25 K.",
+   "inputs": {
+    "pri00": 0.21875,
+    "pri01": 0.125,
+    "pri02": 0.125,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.25,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.25,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "just_below_threshold",
+   "description": "This hour's price is just under the threshold (0.21875 - 2^-10) and the next three hours are cheap: normal, 294.35 K.",
+   "inputs": {
+    "pri00": 0.2177734375,
+    "pri01": 0.125,
+    "pri02": 0.125,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.25,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.125,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "max_in_last_hour",
+   "description": "The day's most expensive hour is the last one (hour 23); this hour sits below the threshold that hour sets: normal. Every hourly price must reach the max.",
+   "inputs": {
+    "pri00": 0.1875,
+    "pri01": 0.125,
+    "pri02": 0.125,
+    "pri03": 0.125,
+    "pri04": 0.125,
+    "pri05": 0.125,
+    "pri06": 0.125,
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": 0.125,
+    "pri23": 0.25,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "min_in_last_hour",
+   "description": "The cheapest hour is the last one (0.0 at hour 23); a 0.1875 hour now is then a peak (threshold 0.1875): coast. Every hourly price must reach the min.",
+   "inputs": {
+    "pri00": 0.1875,
+    "pri01": 0.25,
+    "pri02": 0.25,
+    "pri03": 0.25,
+    "pri04": 0.25,
+    "pri05": 0.25,
+    "pri06": 0.25,
+    "pri07": 0.25,
+    "pri08": 0.25,
+    "pri09": 0.25,
+    "pri10": 0.25,
+    "pri11": 0.25,
+    "pri12": 0.25,
+    "pri13": 0.25,
+    "pri14": 0.25,
+    "pri15": 0.25,
+    "pri16": 0.25,
+    "pri17": 0.25,
+    "pri18": 0.25,
+    "pri19": 0.25,
+    "pri20": 0.25,
+    "pri21": 0.25,
+    "pri22": 0.25,
+    "pri23": 0.0,
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 240.0,
+     "equals": 294.25,
+     "tolerance": 1e-06
+    }
+   ]
+  },
+  {
+   "name": "rolling_day",
+   "description": "The forecast rolls forward: normal, then preheat when the peak comes within 3 hours, then coast when it arrives, then normal once it has passed.",
+   "inputs": {
+    "pri00": [
+     {
+      "t": 0.0,
+      "value": 0.125
+     },
+     {
+      "t": 60.0,
+      "value": 0.125
+     },
+     {
+      "t": 120.0,
+      "value": 0.25
+     },
+     {
+      "t": 180.0,
+      "value": 0.125
+     }
+    ],
+    "pri01": [
+     {
+      "t": 0.0,
+      "value": 0.125
+     },
+     {
+      "t": 60.0,
+      "value": 0.125
+     },
+     {
+      "t": 120.0,
+      "value": 0.25
+     },
+     {
+      "t": 180.0,
+      "value": 0.125
+     }
+    ],
+    "pri02": 0.125,
+    "pri03": [
+     {
+      "t": 0.0,
+      "value": 0.125
+     },
+     {
+      "t": 60.0,
+      "value": 0.25
+     },
+     {
+      "t": 120.0,
+      "value": 0.125
+     },
+     {
+      "t": 180.0,
+      "value": 0.125
+     }
+    ],
+    "pri04": [
+     {
+      "t": 0.0,
+      "value": 0.125
+     },
+     {
+      "t": 60.0,
+      "value": 0.25
+     },
+     {
+      "t": 120.0,
+      "value": 0.125
+     },
+     {
+      "t": 180.0,
+      "value": 0.125
+     }
+    ],
+    "pri05": [
+     {
+      "t": 0.0,
+      "value": 0.25
+     },
+     {
+      "t": 60.0,
+      "value": 0.125
+     },
+     {
+      "t": 120.0,
+      "value": 0.125
+     },
+     {
+      "t": 180.0,
+      "value": 0.125
+     }
+    ],
+    "pri06": [
+     {
+      "t": 0.0,
+      "value": 0.25
+     },
+     {
+      "t": 60.0,
+      "value": 0.125
+     },
+     {
+      "t": 120.0,
+      "value": 0.125
+     },
+     {
+      "t": 180.0,
+      "value": 0.125
+     }
+    ],
+    "pri07": 0.125,
+    "pri08": 0.125,
+    "pri09": 0.125,
+    "pri10": 0.125,
+    "pri11": 0.125,
+    "pri12": 0.125,
+    "pri13": 0.125,
+    "pri14": 0.125,
+    "pri15": 0.125,
+    "pri16": 0.125,
+    "pri17": 0.125,
+    "pri18": 0.125,
+    "pri19": 0.125,
+    "pri20": 0.125,
+    "pri21": 0.125,
+    "pri22": [
+     {
+      "t": 0.0,
+      "value": 0.125
+     },
+     {
+      "t": 60.0,
+      "value": 0.125
+     },
+     {
+      "t": 120.0,
+      "value": 0.125
+     },
+     {
+      "t": 180.0,
+      "value": 0.25
+     }
+    ],
+    "pri23": [
+     {
+      "t": 0.0,
+      "value": 0.125
+     },
+     {
+      "t": 60.0,
+      "value": 0.125
+     },
+     {
+      "t": 120.0,
+      "value": 0.125
+     },
+     {
+      "t": 180.0,
+      "value": 0.25
+     }
+    ],
+    "TLo00": 294.15,
+    "TLo01": 294.15,
+    "TLo02": 294.15,
+    "THi00": 297.15,
+    "THi01": 297.15,
+    "THi02": 297.15,
+    "THi03": 297.15,
+    "TZon": 294.35
+   },
+   "expect": [
+    {
+     "output": "TSet",
+     "from_s": 0.0,
+     "to_s": 0.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSet",
+     "from_s": 60.0,
+     "to_s": 60.0,
+     "equals": 295.15,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSet",
+     "from_s": 120.0,
+     "to_s": 120.0,
+     "equals": 294.25,
+     "tolerance": 1e-06
+    },
+    {
+     "output": "TSet",
+     "from_s": 180.0,
+     "to_s": 240.0,
+     "equals": 294.35,
+     "tolerance": 1e-06
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,262 @@
+{
+ "name": "home_price_response",
+ "description": "Heating setpoint for one home with a heat pump and floor heating that shifts heat out of peak-price hours while keeping the room inside its comfort band. The sequence keeps no state: each step, TSet depends only on the inputs at that step. Prices: pri00 is the price for the current hour and pri01..pri23 the next 23 hours. Let dayMax and dayMin be the largest and smallest of pri00..pri23, spread = dayMax - dayMin, and threshold = dayMin + peak_share * spread. There are peak hours only when spread is greater than min_spread. When there are, the current hour is a peak hour if pri00 >= threshold (at the threshold counts), and a peak hour is coming if the largest of pri01, pri02 and pri03 is >= threshold. Comfort: TLo00..TLo02 are the lower comfort limit now, in 1 h and in 2 h; THi00..THi03 the upper limit now and in 1, 2 and 3 h. floorSoon is the largest of TLo00..TLo02 and ceilingSoon the smallest of THi00..THi03. base = the larger of (TLo00 + margin) and away_setpoint. normal = the larger of base and (floorSoon + margin). If the current hour is a peak hour, TSet = the larger of (base - coast_drop) and (floorSoon + coast_margin). Otherwise, if a peak hour is coming and TZon is not above normal + warm_band (exactly at it is not above), TSet = preheat: the smaller of (normal + preheat_amount) and (ceilingSoon - ceiling_gap), but never below normal. Otherwise TSet = normal. Temperatures are in kelvin; prices are per kWh in any currency.",
+ "inputs": [
+  {
+   "name": "pri00",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 0 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri01",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 1 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri02",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 2 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri03",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 3 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri04",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 4 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri05",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 5 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri06",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 6 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri07",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 7 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri08",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 8 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri09",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 9 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri10",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 10 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri11",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 11 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri12",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 12 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri13",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 13 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri14",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 14 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri15",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 15 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri16",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 16 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri17",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 17 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri18",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 18 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri19",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 19 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri20",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 20 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri21",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 21 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri22",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 22 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri23",
+   "type": "real",
+   "unit": "1/kWh",
+   "meaning": "Electricity price for the hour starting 23 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "TLo00",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Lower comfort limit (floor) 0 h from now"
+  },
+  {
+   "name": "TLo01",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Lower comfort limit (floor) 1 h from now"
+  },
+  {
+   "name": "TLo02",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Lower comfort limit (floor) 2 h from now"
+  },
+  {
+   "name": "THi00",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Upper comfort limit (ceiling) 0 h from now"
+  },
+  {
+   "name": "THi01",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Upper comfort limit (ceiling) 1 h from now"
+  },
+  {
+   "name": "THi02",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Upper comfort limit (ceiling) 2 h from now"
+  },
+  {
+   "name": "THi03",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Upper comfort limit (ceiling) 3 h from now"
+  },
+  {
+   "name": "TZon",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Zone (room) temperature now"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "TSet",
+   "type": "real",
+   "unit": "K",
+   "meaning": "Heating setpoint for the zone"
+  }
+ ],
+ "params": [
+  {
+   "name": "peak_share",
+   "value": 0.75,
+   "unit": "1",
+   "meaning": "Share of the way from the day's lowest to highest price at which an hour counts as peak"
+  },
+  {
+   "name": "min_spread",
+   "value": 0.01,
+   "unit": "1/kWh",
+   "meaning": "A day whose prices differ by no more than this has no peak hours"
+  },
+  {
+   "name": "margin",
+   "value": 0.2,
+   "unit": "K",
+   "meaning": "Normal setpoint above the comfort floor"
+  },
+  {
+   "name": "away_setpoint",
+   "value": 293.65,
+   "unit": "K",
+   "meaning": "Lowest normal setpoint (20.5 degC), used when the floor is low because nobody is home"
+  },
+  {
+   "name": "coast_drop",
+   "value": 1.5,
+   "unit": "K",
+   "meaning": "How far below base the setpoint drops during a peak hour"
+  },
+  {
+   "name": "coast_margin",
+   "value": 0.1,
+   "unit": "K",
+   "meaning": "Coasting never goes below the coming floor plus this"
+  },
+  {
+   "name": "preheat_amount",
+   "value": 1.0,
+   "unit": "K",
+   "meaning": "Added to normal before a peak hour"
+  },
+  {
+   "name": "ceiling_gap",
+   "value": 2.0,
+   "unit": "K",
+   "meaning": "Preheat stays at least this far below the coming ceiling"
+  },
+  {
+   "name": "warm_band",
+   "value": 0.5,
+   "unit": "K",
+   "meaning": "No preheat when the room is more than this above normal"
+  }
+ ]
+}
