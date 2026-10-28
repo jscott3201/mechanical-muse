@@ -20,7 +20,9 @@ rules and graph schema; palette for block classes and their ports; draft a block
 validate_graph for fast structural findings; verify_graph to emit CXF, load it into the pinned \
 open-control-engine and replay the spec's test vectors (passes X of Y scenarios). On a failure, \
 read `feedback` (the same repair text our own agent gets), fix the graph and verify again. \
-Every result is deterministic: the same graph gives the same content id and verdict.";
+run_ledger and compare_runs report recorded runs' Scope 1 and 2 energy, emissions and cost (simulation, \
+BOPTEST's factors). Every result is deterministic: the same graph gives the same content id and \
+verdict.";
 
 /// The MCP server: our tools behind the SDK's handler trait.
 #[derive(Clone)]

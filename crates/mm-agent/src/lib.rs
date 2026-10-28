@@ -10,6 +10,7 @@ mod binder;
 mod client;
 mod explain;
 mod feedback;
+mod numbers;
 mod prompt;
 mod reader;
 mod recorded;
@@ -23,6 +24,7 @@ pub use explain::{
     Explained, ExplainedPart, Explanation, RunExplainedItem, RunExplanation, check_explanation,
     check_run_explanation, explain, explain_request, explain_run, explain_run_request,
 };
+pub use numbers::unsupported_numbers;
 pub use prompt::{
     AUTHORING_RULES, Exemplar, ParamHint, PointSpec, TaskSpec, palette_listing,
     system_instructions, task_message,

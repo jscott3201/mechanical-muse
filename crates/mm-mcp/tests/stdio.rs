@@ -134,7 +134,9 @@ fn a_client_session_over_stdio() {
             "palette",
             "validate_graph",
             "emit_cxf",
-            "verify_graph"
+            "verify_graph",
+            "run_ledger",
+            "compare_runs"
         ]
     );
 

@@ -14,6 +14,8 @@ const replay = (over: Partial<ReplayInfo>): ReplayInfo => ({
   drafts: [],
   pressure: false,
   own: [],
+  requests: false,
+  draft_ids: {},
   ...over,
 });
 

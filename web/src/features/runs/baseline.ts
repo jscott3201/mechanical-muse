@@ -9,7 +9,27 @@ export type BaselineKpis = {
   /** True when they come from a recorded run rather than one run on this server. */
   recorded: boolean;
   kpis: Record<string, number>;
+  /** The run as the ledger routes name it: `run:<id>` or `replay:<record>`. */
+  reference: string;
 };
+
+/** Another run of the same window to compare with: how the ledger routes name it, and a caption. */
+export type Comparator = { reference: string; source: string };
+
+function sameRunWindow(r: RunInfo, cfg: RunConfig): boolean {
+  return (
+    r.config.start_s === cfg.start_s &&
+    r.config.steps === cfg.steps &&
+    r.config.step_s === cfg.step_s &&
+    r.config.case === cfg.case &&
+    r.kpis !== undefined
+  );
+}
+
+/** Replays carry no step length; every record so far uses the runtime's 120 s step. */
+function sameReplayWindow(r: ReplayInfo, cfg: RunConfig): boolean {
+  return r.start_s === cfg.start_s && r.ticks === cfg.steps && cfg.step_s === 120 && r.kpis !== undefined;
+}
 
 /**
  * The baseline to set beside a run: one with the same start and the same number of steps that
@@ -18,24 +38,56 @@ export type BaselineKpis = {
  */
 export function findBaseline(cfg: RunConfig, runs: RunInfo[], replays: ReplayInfo[]): BaselineKpis | null {
   if (cfg.baseline) return null;
+  const run = [...runs].reverse().find((r) => r.config.baseline && !r.config.replay && sameRunWindow(r, cfg));
+  if (run?.kpis) return { source: `baseline run ${run.id}`, recorded: false, kpis: run.kpis, reference: `run:${run.id}` };
+  const replay = replays.find((r) => r.baseline && sameReplayWindow(r, cfg));
+  if (replay?.kpis)
+    return {
+      source: `recorded baseline run ${replay.recorded_run}`,
+      recorded: true,
+      kpis: replay.kpis,
+      reference: `replay:${replay.name}`,
+    };
+  return null;
+}
+
+/** Same specs drafted, from the same graphs (content ids), not only the same spec names. */
+function sameDrafts(a: Partial<Record<string, string>>, b: Partial<Record<string, string>>): boolean {
+  const x = Object.keys(a).sort();
+  const y = Object.keys(b).sort();
+  return x.length === y.length && x.every((k, i) => k === y[i] && a[k] === b[k]);
+}
+
+/**
+ * For a run with a test fault: the same run without it (same window, same switches and drafts,
+ * no fault, not a baseline). None for a run without a fault.
+ */
+export function findHealthy(cfg: RunConfig, runs: RunInfo[], replays: ReplayInfo[]): Comparator | null {
+  if (!cfg.fault || cfg.baseline) return null;
+  const drafts: Partial<Record<string, string>> = cfg.drafts ?? {};
   const run = [...runs]
     .reverse()
     .find(
       (r) =>
-        r.config.baseline &&
+        !r.config.baseline &&
+        !r.config.fault &&
         !r.config.replay &&
-        r.config.start_s === cfg.start_s &&
-        r.config.steps === cfg.steps &&
-        r.config.step_s === cfg.step_s &&
-        r.config.case === cfg.case &&
-        r.kpis !== undefined,
+        r.config.requests === cfg.requests &&
+        (r.config.pressure ?? false) === (cfg.pressure ?? false) &&
+        sameDrafts(r.config.drafts ?? {}, drafts) &&
+        sameRunWindow(r, cfg),
     );
-  if (run?.kpis) return { source: `baseline run ${run.id}`, recorded: false, kpis: run.kpis };
-  // Replays carry no step length; every record so far uses the runtime's 120 s step.
+  if (run) return { reference: `run:${run.id}`, source: `run ${run.id}` };
   const replay = replays.find(
-    (r) => r.baseline && r.start_s === cfg.start_s && r.ticks === cfg.steps && cfg.step_s === 120 && r.kpis !== undefined,
+    (r) =>
+      !r.baseline &&
+      !r.fault &&
+      r.requests === cfg.requests &&
+      r.pressure === (cfg.pressure ?? false) &&
+      sameDrafts(r.draft_ids ?? {}, drafts) &&
+      sameReplayWindow(r, cfg),
   );
-  if (replay?.kpis) return { source: `recorded baseline run ${replay.recorded_run}`, recorded: true, kpis: replay.kpis };
+  if (replay) return { reference: `replay:${replay.name}`, source: `recorded run ${replay.recorded_run}` };
   return null;
 }
 

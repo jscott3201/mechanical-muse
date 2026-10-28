@@ -69,6 +69,8 @@ findings (`unknown-class`, `undriven`, `type-mismatch`, ...), engine diagnostics
 | `validate_graph` | `graph`, `spec` (optional) | `ok`, `code`, validator `findings`, and `interface_problems` against the spec |
 | `emit_cxf` | `graph`, `spec` (optional) | CXF text, byte count and the engine content id; with a spec the graph takes the spec's name, as in `verify_graph` |
 | `verify_graph` | `graph`, `spec` | `passed`, `summary` ("passes X of Y scenarios"), `stage` (interface, validate, emit, load, replay), `code`, `content_id`, every scenario's result (a failure gives the first failing time, output, expected and actual values and the window), and `feedback`, the repair message our agent would get (loop chains, inputs at the failing time) |
+| `run_ledger` | `record` | A recorded run's Scope 1 (gas) and Scope 2 (electricity) energy, kgCO2e and USD, `reconciles`, `measured`, end uses when measured, discomfort KPIs ([emissions.md](emissions.md)) |
+| `compare_runs` | `a`, `b` | Both ledgers and `delta` = b minus a; `window-mismatch` unless both cover the same window |
 
 What the tools keep back: `get_spec` shows scenario names and descriptions but not expected
 values, and no tool returns a spec's reference graph, so the task stays a task. `verify_graph`'s
@@ -76,6 +78,18 @@ feedback does name a failing scenario's expected value, as our agent's vector-fe
 does; a graph repaired against it has been repaired against the scoring vectors and should be
 reported that way. Passing all scenarios means the graph passes these vectors; it is not a proof
 that the sequence is correct.
+
+### Ledger tools
+
+`run_ledger` and `compare_runs` read recorded runs (`<name>.jsonl`) from `MM_REPLAYS_DIR`, else
+`fixtures/replays` (found like the specs). They call the same code as the HTTP API's ledger routes
+(`mm_server::ledger` over `mm_runtime::ledger`): the exact split of BOPTEST's energy and emission
+KPIs into gas and electricity, re-priced against its cost KPI, and end uses from the recorded
+power readings when the record has all fourteen. Records from before those readings were kept
+give scope totals only (`measured: false`). The numbers are simulation results under BOPTEST's
+factors and prices for this test case; see [emissions.md](emissions.md) for what they do and do
+not cover. Codes: `unknown-record`, `no-kpis`, `window-mismatch`, `no-replays`,
+`invalid-arguments`. `crates/mm-mcp/tests/ledger.rs` drives both through the binary.
 
 ## Example session
 
