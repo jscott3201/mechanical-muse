@@ -30,4 +30,21 @@ describe("RunExplanationPanel", () => {
     expect(screen.getByText("Planned sensor fault test")).toBeTruthy();
     expect(fetch.mock.calls[0]?.[0]).toBe("/api/runs/run-7/explain");
   });
+
+  it("offers no retry on a keyless server and says a model key is needed", async () => {
+    const body = { code: "no-model", message: "no model key on this server and no recorded explanation of this run" };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body), { status: 503 })));
+    render(<RunExplanationPanel runId="run-7" ended />);
+    fireEvent.click(screen.getByRole("button", { name: /Explain these events/ }));
+    expect(await screen.findByText(/needs a model key on the server/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+
+  it("still offers a retry for other failures", async () => {
+    const body = { code: "model-error", message: "the model call failed" };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body), { status: 502 })));
+    render(<RunExplanationPanel runId="run-7" ended />);
+    fireEvent.click(screen.getByRole("button", { name: /Explain these events/ }));
+    expect(await screen.findByRole("button", { name: "Try again" })).toBeTruthy();
+  });
 });

@@ -128,4 +128,15 @@ describe("WorkbenchPage", () => {
     expect(await screen.findByRole("link", { name: "Bind (done)" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Run (next)" })).toBeTruthy();
   });
+
+  it("says so when the sample sheet cannot be loaded", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("not found", { status: 404 })),
+    );
+    render(<WorkbenchPage onOpenSpec={vi.fn()} active />);
+    fireEvent.click(screen.getByRole("button", { name: "Use the sample sequence sheet" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Could not load the sample \(HTTP 404\)/);
+    expect((screen.getByRole("button", { name: /Read with Muse Spark/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
 });

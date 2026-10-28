@@ -77,7 +77,17 @@ function ReplayButton({
 export function ReplayList({ highlight, onStarted }: { highlight: string | null; onStarted: (run: RunInfo) => void }) {
   const replays = useResource<ReplayInfo[]>("/api/replays");
   const [speed, setSpeed] = useState(1);
-  if (replays.status !== "ready" || replays.data.length === 0) return null;
+  if (replays.status === "loading") return null;
+  // A server started without a recordings folder answers 404 `no-replays`: that is an empty
+  // list, not a failure. Anything else is shown, so a broken list never looks like an empty one.
+  const none = replays.status === "ready" ? replays.data.length === 0 : replays.error.code === "no-replays";
+  if (replays.status === "error" && !none) return <ErrorNote error={replays.error} onRetry={replays.reload} />;
+  if (none || replays.status !== "ready")
+    return (
+      <p className="flex items-center gap-2 px-3 text-sm text-muted-foreground">
+        <History aria-hidden="true" className="size-4" /> No recorded runs on this server.
+      </p>
+    );
   return (
     <Card>
       <CardHeader>

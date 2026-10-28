@@ -1,4 +1,5 @@
 import { Building2, Cpu, LoaderCircle, Moon, Network, Server, ServerOff, Sparkles, Sun, Workflow } from "lucide-react";
+import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,13 +8,28 @@ import type { Resource } from "@/hooks/useResource";
 import type { Theme } from "@/hooks/useTheme";
 import type { Health } from "@/types/generated/Health";
 
+/**
+ * A status chip whose detail is a tooltip. The chip is a button, so the detail opens on keyboard
+ * focus as well as hover, and a tap toggles it (a tooltip alone never opens on touch).
+ */
 function Chip({ icon, label, detail, tone = "outline" }: { icon: React.ReactNode; label: string; detail: string; tone?: "outline" | "secondary" | "destructive" }) {
+  const [open, setOpen] = useState(false);
   return (
-    <Tooltip>
+    <Tooltip open={open} onOpenChange={setOpen}>
       <TooltipTrigger asChild>
-        <Badge variant={tone} className="cursor-default">
-          {icon}
-          {label}
+        <Badge asChild variant={tone} className="cursor-default">
+          <button
+            type="button"
+            // The tooltip closes itself on press; a press here toggles it instead.
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.preventDefault();
+              setOpen((o) => !o);
+            }}
+          >
+            {icon}
+            {label}
+          </button>
         </Badge>
       </TooltipTrigger>
       <TooltipContent>{detail}</TooltipContent>
@@ -35,10 +51,10 @@ export function AppHeader({ health, theme, onToggleTheme }: { health: Resource<H
             <p className="text-xs text-muted-foreground">The muse proposes. The engine checks.</p>
           </div>
         </div>
-        <div className="flex flex-1 flex-wrap items-center gap-2" aria-label="Server status">
+        <div className="flex flex-1 flex-wrap items-center gap-2" role="group" aria-label="Server status">
           {health.status === "loading" && (
             <Badge variant="secondary">
-              <LoaderCircle aria-hidden="true" className="animate-spin" /> connecting
+              <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> connecting
             </Badge>
           )}
           {health.status === "error" && (

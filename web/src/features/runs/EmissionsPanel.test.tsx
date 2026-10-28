@@ -1,12 +1,12 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Amounts } from "@/types/generated/Amounts";
 import type { EndUseView } from "@/types/generated/EndUseView";
 import type { LedgerComparison } from "@/types/generated/LedgerComparison";
 import type { RunLedger } from "@/types/generated/RunLedger";
 
-import { EmissionsPanel } from "./EmissionsPanel";
+import { EmissionsPanel, RunEmissions } from "./EmissionsPanel";
 import { faultRequest } from "./faults";
 
 const amounts = (kwh: number, kg: number, usd: number): Amounts => ({ kwh, kg_co2e: kg, usd });
@@ -114,5 +114,20 @@ describe("EmissionsPanel", () => {
     );
     expect(screen.getByText("floor1_reaAHU_TSup_y reads NaN from step 20.")).toBeTruthy();
     expect(screen.getByText(/does not re-price to BOPTEST's/)).toBeTruthy();
+  });
+});
+
+describe("RunEmissions", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("says why there is no ledger instead of showing nothing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ code: "no-kpis", message: "the run has no KPIs yet" }), { status: 409 })),
+    );
+    render(<RunEmissions runId="run-1" hasKpis fault={undefined} comparisons={{ baseline: null, healthy: null }} />);
+    expect(await screen.findByText(/No emissions ledger for this run/)).toBeTruthy();
+    expect(screen.getByText("no-kpis")).toBeTruthy();
+    expect(screen.getByText(/the run has no KPIs yet/)).toBeTruthy();
   });
 });

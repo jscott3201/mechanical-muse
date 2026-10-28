@@ -71,9 +71,9 @@ export function Receipt({ receipt, units }: { receipt: ReceiptDto; units?: Outpu
                 <TableCell className="whitespace-normal">
                   <span className="inline-flex items-start gap-1">
                     {s.result === "pass" ? (
-                      <CircleCheck aria-label="pass" className="size-4 shrink-0" />
+                      <CircleCheck role="img" aria-label="pass" className="size-4 shrink-0" />
                     ) : (
-                      <CircleX aria-label={s.result} className="size-4 shrink-0 text-destructive" />
+                      <CircleX role="img" aria-label={s.result} className="size-4 shrink-0 text-destructive" />
                     )}
                     <Outcome s={s} units={units} />
                   </span>

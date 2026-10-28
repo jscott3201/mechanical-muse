@@ -281,7 +281,9 @@ describe("RunsPage with drafts", () => {
     vi.stubGlobal("fetch", fetch);
     render(<RunsPage />);
     const choice = await screen.findByRole("button", { name: /Drafted …51caee/ });
-    expect(choice.textContent).toContain("(recorded)");
+    // Said once, in the detail line.
+    expect(choice.textContent?.match(/recorded/g)).toHaveLength(1);
+    expect(choice.textContent).toContain("recorded session");
     act(() => choice.click());
     act(() => screen.getByRole("button", { name: /Start/ }).click());
     await vi.waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true), { timeout: 5000 });
@@ -297,7 +299,7 @@ describe("RunsPage with drafts", () => {
       FakeSource.last?.emit(JSON.stringify({ run_id: "run-9", seq: 0, kind: "started", config: started.config, sequences }));
       await new Promise((r) => setTimeout(r, 5));
     });
-    expect(screen.getByText(/Drafted by muse-spark-1.3 \(recorded run\)/)).toBeTruthy();
+    expect(screen.getByText(/Drafted by muse-spark-1.3 \(recorded session\)/)).toBeTruthy();
     expect(screen.getByText("Hand-built reference")).toBeTruthy();
   });
 });
@@ -403,5 +405,55 @@ describe("RunsPage BACnet note", () => {
     render(<RunsPage />);
     await vi.waitFor(() => expect(fetch.mock.calls.some(([u]) => u === "/api/bacnet")).toBe(true));
     expect(screen.queryByText(/BACnet/)).toBeNull();
+  });
+});
+
+describe("RunsPage run not on the server", () => {
+  it("says a linked run is gone after a restart, without a Stop button", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => (url === "/api/bacnet" ? bacnetOff() : new Response("[]", { status: 200 }))),
+    );
+    render(<RunsPage run="run-gone" />);
+    expect(await screen.findByText(/This run is not on this server \(runs are kept in memory/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Stop run/ })).toBeNull();
+    expect(screen.queryByText(/Waiting for the run to start/)).toBeNull();
+  });
+});
+
+describe("RunsPage gap banner", () => {
+  it("does not carry a gap banner over to another run", async () => {
+    const other = "run-other";
+    const info = (id: string) => ({
+      id,
+      config: { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 30, step_s: 120, case: "c" },
+      state: "running",
+      ticks: 3,
+      events: 8,
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url === "/api/bacnet"
+          ? bacnetOff()
+          : url.includes("/ledger")
+            ? noLedger()
+            : new Response(JSON.stringify(url === "/api/runs" ? [info(runId), info(other)] : []), { status: 200 }),
+      ),
+    );
+    const { rerender } = render(<RunsPage run={runId} />);
+    // Each gap re-subscribes; past the limit the banner stays up.
+    for (let i = 0; i < 4; i++) {
+      await vi.waitFor(() => expect(FakeSource.last?.readyState).toBe(1), { timeout: 5000 });
+      const source = FakeSource.last;
+      await act(async () => {
+        for (const line of gapped) source?.emit(line);
+        await new Promise((r) => setTimeout(r, 10));
+      });
+    }
+    expect(await screen.findByText(/Events are missing from this stream/)).toBeTruthy();
+    rerender(<RunsPage run={other} />);
+    await vi.waitFor(() => expect(FakeSource.last?.url).toBe(`/api/runs/${other}/events`), { timeout: 5000 });
+    expect(screen.queryByText(/Events are missing from this stream/)).toBeNull();
   });
 });

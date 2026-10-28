@@ -15,6 +15,7 @@ import { memo, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatWire } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { BlockView } from "@/types/generated/BlockView";
 import type { GraphView } from "@/types/generated/GraphView";
@@ -140,11 +141,48 @@ function Legend() {
   );
 }
 
-function ConnectionTable({ graph }: { graph: GraphView }) {
+/**
+ * The graph as tables: every block with its class, parameters and whether a problem names it
+ * (on the canvas, parameters are a hover title and problems an outline), then every connection.
+ */
+function GraphTables({ graph, flagged }: { graph: GraphView; flagged: ReadonlySet<string> }) {
   const end = (e: { node: string; port?: string }) => (e.port ? `${e.node}.${e.port}` : e.node);
+  const flaggedPoints = [...graph.inputs, ...graph.outputs].filter((p) => flagged.has(p.name)).map((p) => p.name);
   return (
-    <div className="max-h-[480px] overflow-auto">
-      <Table>
+    <div className="flex max-h-[480px] flex-col gap-4 overflow-auto">
+      {flaggedPoints.length > 0 && (
+        <p className="flex items-center gap-1 text-sm">
+          <TriangleAlert aria-hidden="true" className="size-4 shrink-0 text-destructive" />
+          Has a problem: <span className="font-mono text-xs">{flaggedPoints.join(", ")}</span>
+        </p>
+      )}
+      <Table aria-label="Blocks">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Block</TableHead>
+            <TableHead>Class</TableHead>
+            <TableHead>Parameters</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {graph.blocks.map((b) => (
+            <TableRow key={b.id}>
+              <TableCell className="font-mono text-xs">
+                <span className="inline-flex items-center gap-1">
+                  {flagged.has(b.id) && <TriangleAlert aria-hidden="true" className="size-3 shrink-0 text-destructive" />}
+                  {b.id}
+                  {flagged.has(b.id) && <span className="font-sans text-destructive">(has a problem)</span>}
+                </span>
+              </TableCell>
+              <TableCell className="font-mono text-xs">{b.class}</TableCell>
+              <TableCell className="font-mono text-xs whitespace-normal">
+                {b.params.length === 0 ? "none" : b.params.map((p) => `${p.name} = ${formatWire(p.value)}`).join(", ")}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <Table aria-label="Connections">
         <TableHeader>
           <TableRow>
             <TableHead>From</TableHead>
@@ -168,8 +206,8 @@ function ConnectionTable({ graph }: { graph: GraphView }) {
 
 /**
  * A read-only block graph: inputs left, outputs right, blocks in layers. Blocks or points
- * named in `flagged` are outlined (a diagnostic's subject). A table of connections is one
- * click away for anyone who would rather read than look.
+ * named in `flagged` are outlined (a diagnostic's subject). Tables of the blocks and the
+ * connections are one click away for anyone who would rather read than look.
  */
 export function GraphCanvas({
   graph,
@@ -235,7 +273,7 @@ export function GraphCanvas({
         </Button>
       </div>
       {asTable ? (
-        <ConnectionTable graph={graph} />
+        <GraphTables graph={graph} flagged={new Set(flagged)} />
       ) : (
         <div className="w-full rounded-md border" style={{ height }}>
           <ReactFlow

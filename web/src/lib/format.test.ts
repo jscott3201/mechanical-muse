@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { formatNumber, formatWire, formatWithUnit } from "./format";
+import {
+  formatNumber,
+  formatWire,
+  formatWithUnit,
+  fractionToPercent,
+  kelvinToCelsius,
+  pascalsToKilopascals,
+  wattsToKilowatts,
+} from "./format";
 
 describe("formatWithUnit", () => {
   it("adds Celsius and Fahrenheit to temperatures but not to temperature differences", () => {
@@ -19,6 +27,13 @@ describe("formatWithUnit", () => {
     expect(formatWire(true)).toBe("true");
     expect(formatWire("NaN")).toBe("NaN");
     expect(formatWire({ class: 3, ordinal: 1 })).toBe("enum 3#1");
+  });
+
+  it("converts SI values for display", () => {
+    expect(kelvinToCelsius(273.15)).toBe(0);
+    expect(pascalsToKilopascals(45000)).toBe(45);
+    expect(wattsToKilowatts(1500)).toBe(1.5);
+    expect(fractionToPercent(0.25)).toBe(25);
   });
 
   it("never shows negative zero", () => {

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import type { ExplainRequest } from "@/types/generated/ExplainRequest";
 import type { ExplanationView } from "@/types/generated/ExplanationView";
 
-import { ErrorNote } from "../ErrorNote";
+import { ExplainErrorNote } from "../ErrorNote";
 
 /**
  * Muse Spark's plain-language reading of a graph. Model-written and labelled so; it explains, it
@@ -42,7 +42,7 @@ export function ExplanationPanel({
       </div>
     );
   }
-  if (state.status === "error") return <ErrorNote error={state.error} onRetry={explain.run} />;
+  if (state.status === "error") return <ExplainErrorNote error={state.error} onRetry={explain.run} />;
   const e = state.data;
   return (
     <section aria-label="Explanation" className="flex flex-col gap-3 rounded-lg border p-4">
