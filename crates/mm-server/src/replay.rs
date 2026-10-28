@@ -118,6 +118,8 @@ fn info(name: &str, events: &[Envelope]) -> ReplayInfo {
             RunEvent::Kpi { values } => Some(values.clone()),
             _ => None,
         }),
+        requests: config.as_ref().is_some_and(|c| c.requests),
+        fault: config.as_ref().and_then(|c| c.fault.clone()),
     }
 }
 

@@ -322,6 +322,13 @@ pub struct ReplayInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub kpis: Option<BTreeMap<String, f64>>,
+    /// True when the recorded run fed the plant reset the air handlers' requests.
+    #[serde(default)]
+    pub requests: bool,
+    /// The test fault the recorded run injected, if any.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub fault: Option<Fault>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, TS)]

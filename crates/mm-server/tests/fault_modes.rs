@@ -120,7 +120,10 @@ async fn a_valve_held_open_raises_requests_and_cools_the_plant_reset() {
     assert_eq!((healthy.len(), faulted.len()), (50, 50));
 
     assert!(healthy.iter().all(|t| requests(t) == 2));
-    assert!(faulted.iter().all(|t| requests(t) == 3), "the stuck valve adds one");
+    assert!(
+        faulted.iter().all(|t| requests(t) == 3),
+        "the stuck valve adds one"
+    );
     let (last_h, last_f) = (tsup_set(&healthy[49]), tsup_set(&faulted[49]));
     assert!(last_f < last_h, "faulted {last_f} vs healthy {last_h}");
     assert!((278.15..=288.15).contains(&last_f));

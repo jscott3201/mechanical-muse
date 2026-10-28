@@ -37,6 +37,7 @@ const replay = (over: Partial<ReplayInfo>): ReplayInfo => ({
   drafts: [],
   pressure: false,
   own: [],
+  requests: false,
   state: "completed",
   kpis: { ener_tot: 0.3255 },
   ...over,
