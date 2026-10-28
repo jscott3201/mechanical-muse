@@ -217,12 +217,7 @@ impl Authoring {
         {
             return Err(StartError::Active(active.id.clone()));
         }
-        reg.next += 1;
-        let started = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or_default();
-        let id = format!("author-{started}-{}", reg.next);
+        let id = crate::journal::fresh_id("author", &mut reg.next, self.config.records.as_deref());
         let session = Arc::new(AuthorSession {
             id: id.clone(),
             config: AuthorConfig {

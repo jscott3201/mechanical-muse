@@ -35,6 +35,23 @@ pub(crate) fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
     m.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
+/// A new id `<prefix>-<unix seconds>-<n>`, bumping `next`. Ids sort in start order and the
+/// seconds keep them apart across restarts; within the same second after a restart `next` starts
+/// over, so an id whose record already exists in `dir` is skipped rather than reused.
+pub(crate) fn fresh_id(prefix: &str, next: &mut u64, dir: Option<&Path>) -> String {
+    let started = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or_default();
+    loop {
+        *next += 1;
+        let id = format!("{prefix}-{started}-{next}");
+        if dir.is_none_or(|d| !d.join(format!("{id}.jsonl")).exists()) {
+            return id;
+        }
+    }
+}
+
 pub struct Journal<T> {
     /// For log messages only.
     name: String,
@@ -45,11 +62,14 @@ pub struct Journal<T> {
 
 impl<T: Entry> Journal<T> {
     /// A journal that also writes `<dir>/<name>.jsonl` when `dir` is given (best effort: a
-    /// record that cannot be opened is logged and skipped).
+    /// record that cannot be opened is logged and skipped). An existing record is never
+    /// overwritten: the new journal then keeps its events in memory only.
     pub fn new(name: &str, dir: Option<&Path>) -> Self {
         let record = dir.and_then(|dir| {
             std::fs::create_dir_all(dir)
-                .and_then(|()| std::fs::File::create(dir.join(format!("{name}.jsonl"))))
+                .and_then(|()| {
+                    std::fs::File::create_new(dir.join(format!("{name}.jsonl")))
+                })
                 .map(std::io::BufWriter::new)
                 .map_err(|e| tracing::warn!(%name, error = %e, "no record on disk"))
                 .ok()
@@ -237,6 +257,41 @@ mod tests {
 
     fn note(last: bool) -> impl FnOnce(u64) -> Note {
         move |seq| Note { seq, last }
+    }
+
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir()
+            .join(format!("journal-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// Ids restart from 1 after a restart: one that names an earlier record must not truncate it.
+    #[test]
+    fn an_existing_record_is_never_truncated() {
+        let dir = scratch("keep");
+        std::fs::write(dir.join("run-1-1.jsonl"), "earlier\n").unwrap();
+        let journal = Journal::<Note>::new("run-1-1", Some(&dir));
+        journal.append(note(true));
+        assert_eq!(
+            std::fs::read_to_string(dir.join("run-1-1.jsonl")).unwrap(),
+            "earlier\n"
+        );
+        assert_eq!(journal.len(), 1);
+    }
+
+    #[test]
+    fn a_fresh_id_skips_ids_that_have_a_record() {
+        let dir = scratch("ids");
+        let mut next = 0;
+        let first = fresh_id("run", &mut next, Some(&dir));
+        std::fs::write(dir.join(format!("{first}.jsonl")), "").unwrap();
+        // As after a restart in the same second: the counter starts over.
+        let mut next = 0;
+        let second = fresh_id("run", &mut next, Some(&dir));
+        assert_ne!(first, second);
+        assert!(!dir.join(format!("{second}.jsonl")).exists());
     }
 
     /// The producer may be marked finished before its last event is logged. A reconnect in

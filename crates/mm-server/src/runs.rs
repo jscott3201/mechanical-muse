@@ -229,13 +229,7 @@ impl Runs {
         {
             return Err(StartError::Active(active.id.clone()));
         }
-        reg.next += 1;
-        // Ids sort in start order; the prefix keeps them unique across server restarts.
-        let started = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or_default();
-        let id = format!("run-{started}-{}", reg.next);
+        let id = crate::journal::fresh_id("run", &mut reg.next, self.config.records.as_deref());
         let journal = Arc::new(Journal::new(&id, self.config.records.as_deref()));
         let (stop, _) = watch::channel(false);
         let handle = Arc::new(RunHandle {
