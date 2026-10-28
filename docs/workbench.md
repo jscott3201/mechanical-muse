@@ -157,12 +157,69 @@ Writing `floorN_TSupAirSet` also changes what our air handler requests sequence 
 supply air setpoint, because BOPTEST reports the override back. That is intended: the requests
 compare the measured supply air with the setpoint actually in force.
 
+## Try to break it
+A verified draft has passed only the scenarios Spark proposed and the engineer accepted. Those
+can miss edges. Once the sequence has a verified draft, the engineer can ask Spark to try to break
+it (the button sits with the verified drafts on the sequence's Graph tab):
+- **What Spark sees.** The written sequence as accepted (description, points, parameters,
+  clock), the accepted scenarios and the open questions. It never sees the draft, so its
+  expectations come from the sequence, not from what one draft happens to do. The sequence's name
+  is left out too, so a revision accepted under a new name asks the same question.
+- **What it proposes.** Three to five new scenarios, each with a one-line reason naming the edge:
+  a value exactly at a threshold, the last tick of a hold, an interrupted delay, two inputs
+  changing on the same tick, a point the open questions leave unsettled. Same schema as the
+  reader's scenarios, medium effort, one call (`mm_agent::attack`).
+- **The checks.** Each proposal is checked on its own with `check_task`. One that cannot run
+  fairly is dropped, with the reason listed. A name that clashes with an accepted scenario gets a
+  suffix. At most five are kept.
+- **The replay.** The server replays every proposal against the verified draft the engineer
+  picked, one fresh engine each, and reports pass, or the first failing check as authoring does
+  (output, instant, expected and got). This is only a test: nothing runs on the building, and the
+  sequence's own scenarios and receipts do not change.
+- **Who decides.** A failing proposal means the draft or the proposal is wrong. The UI says so,
+  labels everything "Proposed by Muse Spark: tests, not verdicts", and selects nothing. The
+  engineer picks the proposals they agree with and accepts them as a new revision (`<name>_r2`,
+  then `_r3`) through `/api/workbench/accept`, so every accept check applies. The revision is
+  then drafted, verified and repaired like any sequence. The original stays as it was.
+
+`POST /api/workbench/{name}/attack` `{draft: <content id>}` returns `AttackView`:
+- `key`: a digest of what was sent to the model;
+- `model` and `source` (`live`, or `recorded`);
+- the accepted `sequence`;
+- each proposal with its `result`;
+- the `problems` (the proposals the checks dropped).
+
+It answers 404 for an unknown sequence and 400 for one of our own specs or a content id that is
+not a verified draft of this sequence. It answers 503 `no-model` without a key and without a
+recorded reply for that key. Replies are cached by key: in memory, under `<runs>/attacks/`, and
+read-only from `fixtures/attacks/`, which is served labelled recorded. Replays are never cached.
+
+### First live attack (2026-10-28)
+`make live-attack` asked Spark to break revision B's verified draft. It used the committed reading
+and drafting session; only the attack was live (58 s, `fixtures/attacks/`). Spark proposed four
+scenarios, and the checks dropped none:
+
+| Proposal | Edge it probes | Draft |
+| --- | --- | --- |
+| `oat_exact_thresholds` | Outdoor air exactly at 60 °F, then exactly at 70 °F (the reset's ends) | passes |
+| `humidity_exact_boundaries` | Return humidity exactly 70 % (must not latch), then exactly 65 % (must not release) | passes |
+| `dehum_entry_continuity_reset` | A short dip below 70 % inside the 5-minute entry delay must restart it | passes |
+| `simultaneous_oat_dehum_exit` | The override releases on the same tick that outdoor air moves to mid-band | passes |
+
+The draft held on all four. Our hand-written reference for revision B
+(`fixtures/sequences/ahu-sat-reset-reference.py --rev b`) also agrees with every one of the 68
+instants the proposals check. That holds when "above 70 %" is read as strict, as the sheet
+says. Read inclusively, 4 instants of `humidity_exact_boundaries` differ. That is exactly the
+edge the proposal probes, and the draft and Spark agree on the strict reading. One attack on one
+sequence, not a rate.
+
 ## Without a key
 `fixtures/sequences/ahu-sat-reset-sample.{md,pdf,png}` is a one-page sheet we wrote for this demo
 (an AHU supply air temperature reset in °F, with a start-up hold and a dehumidification override).
 `fixtures/readings/` holds Spark's live reading of the PNG. `fixtures/recordings/ahu1_sat_stpt.json`
 holds Spark's live drafting session for the accepted reading. So `make demo` plays the whole flow
-back, labelled recorded, and every check still runs.
+back, labelled recorded, and every check still runs. For revision B accepted as `ahu1_sat_rev_b`,
+`fixtures/attacks/` also plays back Spark's attempt to break its verified draft.
 
 ## Results so far (one document, written by us; a small sample)
 - **Pasted text** (`make live-read`): one model call; 5 points, 11 parameters, 8 open questions
