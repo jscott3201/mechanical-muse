@@ -21,6 +21,7 @@ const view: AttackView = {
   model: "muse-spark-1.3",
   source: "recorded",
   draft: "cxf:fnv1a128:abc",
+  reading_key: "read:1a23",
   sequence: {
     name: "sat",
     title: "SAT",
@@ -90,8 +91,9 @@ describe("AttackPanel", () => {
     fireEvent.click(accept);
     expect(await screen.findByText("Accepted as sat_r3")).toBeTruthy();
     const sent = calls.find((c) => c.url.endsWith("/api/workbench/accept"));
+    // The revision keeps the reading it came from as provenance, not the attack's key.
     expect(sent?.body).toMatchObject({
-      key: "attack:00ff",
+      key: "read:1a23",
       draft: { name: "sat_r3", title: "SAT", scenarios: [{ name: "accepted_one" }, { name: "hold_ends" }] },
     });
   });

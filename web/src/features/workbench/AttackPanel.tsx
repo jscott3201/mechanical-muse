@@ -134,7 +134,7 @@ function Proposals({ view }: { view: AttackView }) {
       </ul>
       {view.problems.length > 0 && (
         <div className="text-sm text-muted-foreground">
-          <p>Dropped by the checks:</p>
+          <p>Not shown (dropped by the checks, or could not be replayed):</p>
           <ul className="list-disc pl-5">
             {view.problems.map((m) => (
               <li key={m}>{m}</li>
@@ -168,7 +168,7 @@ function Proposals({ view }: { view: AttackView }) {
             />
           </div>
           <Button
-            onClick={() => accept.run({ draft: revisionDraft(view.sequence, picked, revision), key: view.key })}
+            onClick={() => accept.run({ draft: revisionDraft(view.sequence, picked, revision), key: view.reading_key ?? null })}
             disabled={chosen.size === 0 || total > MAX_SCENARIOS || accept.state.status === "running"}
           >
             <GitBranchPlus aria-hidden="true" /> Accept selected as revision {revision}

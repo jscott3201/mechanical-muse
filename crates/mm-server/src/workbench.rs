@@ -287,6 +287,16 @@ fn workbench_dir(state: &AppState) -> Option<PathBuf> {
 
 /// The draft saved when `name` was accepted on this server (with its open questions and each
 /// scenario's rationale), if there is one. `name` must already be a known sequence's name.
+/// The reading key an accepted sequence was saved with (its provenance), if any.
+pub(crate) fn saved_reading_key(state: &AppState, name: &str) -> Option<String> {
+    let dir = workbench_dir(state)?;
+    let text = std::fs::read_to_string(dir.join(format!("{name}.json"))).ok()?;
+    serde_json::from_str::<Saved>(&text)
+        .ok()
+        .filter(|s| s.draft.name == name)
+        .and_then(|s| s.key)
+}
+
 pub(crate) fn saved_draft(state: &AppState, name: &str) -> Option<SequenceDraft> {
     let dir = workbench_dir(state)?;
     let text = std::fs::read_to_string(dir.join(format!("{name}.json"))).ok()?;

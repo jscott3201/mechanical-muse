@@ -155,6 +155,38 @@ async fn proposals_replay_against_the_verified_draft_and_never_touch_the_gate() 
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    assert_eq!(body["code"], "built-in");
+    // A verified draft of another sequence is not a draft of this one.
+    let other: mm_graph::BlockGraph = serde_json::from_slice(
+        &std::fs::read(
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../specs/chw_plant_reset/graph.json"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    state.authoring().drafts.insert(mm_server::drafts::Draft {
+        info: mm_server::author_dto::DraftInfo {
+            content_id: "cxf:fnv1a128:another_sequence".into(),
+            spec: "chw_plant_reset".into(),
+            scenarios: 10,
+            model: "muse-spark-1.3".into(),
+            source: mm_server::author_dto::ModelSource::Recorded,
+            session: "test".into(),
+            attempts_used: 1,
+            stored_seq: 0,
+        },
+        graph: other,
+    });
+    let (status, body) = call(
+        &state,
+        "POST",
+        &uri,
+        Some(json!({"draft": "cxf:fnv1a128:another_sequence"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    assert_eq!(body["code"], "unknown-draft");
     let (status, body) = call(&state, "POST", &uri, Some(json!({"draft": draft}))).await;
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{body}");
     assert_eq!(body["code"], "no-model");

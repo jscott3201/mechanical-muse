@@ -18,7 +18,12 @@ draft: string,
 /**
  * The accepted sequence the proposals extend; a revision is this plus the chosen ones.
  */
-sequence: SequenceDraft, proposals: Array<AttackProposal>, 
+sequence: SequenceDraft, 
+/**
+ * The reading the accepted sequence came from (`read:<hex>`), to keep as a revision's
+ * provenance; absent when this server did not save one.
+ */
+reading_key?: string, proposals: Array<AttackProposal>, 
 /**
  * Proposals the checks dropped, and why.
  */

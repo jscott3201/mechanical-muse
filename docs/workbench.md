@@ -190,7 +190,7 @@ it (the button sits with the verified drafts on the sequence's Graph tab):
 - the `problems` (the proposals the checks dropped).
 
 It answers 404 for an unknown sequence and 400 for one of our own specs or a content id that is
-not a verified draft of this sequence. It answers 503 `no-model` without a key and without a
+not a verified draft of this sequence. It answers 409 `model-busy` while another model call for the workbench is under way, and 503 `no-model` without a key and without a
 recorded reply for that key. Replies are cached by key: in memory, under `<runs>/attacks/`, and
 read-only from `fixtures/attacks/`, which is served labelled recorded. Replays are never cached.
 

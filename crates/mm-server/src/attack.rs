@@ -29,7 +29,9 @@ use crate::author_dto::ModelSource;
 use crate::dto::ScenarioReport;
 use crate::routes::{AppState, Failure};
 use crate::specs::Spec;
-use crate::workbench::{ScenarioDraft, SequenceDraft, from_draft, saved_draft, to_draft};
+use crate::workbench::{
+    ScenarioDraft, SequenceDraft, from_draft, saved_draft, saved_reading_key, to_draft,
+};
 
 /// Which verified draft to attack: its content id (a stored draft of this sequence).
 #[derive(Debug, Clone, PartialEq, Deserialize, TS)]
@@ -73,6 +75,11 @@ pub struct AttackView {
     pub draft: String,
     /// The accepted sequence the proposals extend; a revision is this plus the chosen ones.
     pub sequence: SequenceDraft,
+    /// The reading the accepted sequence came from (`read:<hex>`), to keep as a revision's
+    /// provenance; absent when this server did not save one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub reading_key: Option<String>,
     pub proposals: Vec<AttackProposal>,
     /// Proposals the checks dropped, and why.
     pub problems: Vec<String>,
@@ -257,6 +264,7 @@ async fn attack(
         model,
         source,
         draft: request.draft,
+        reading_key: saved_reading_key(&state, &name),
         sequence,
         proposals,
         problems,
@@ -319,7 +327,10 @@ async fn propose(
         proposals: as_drafts.scenarios,
         problems: out.attack.problems,
     };
-    state.attacks().remember(&record);
+    // A reply the checks emptied is not kept, so the next click asks again.
+    if !record.proposals.is_empty() {
+        state.attacks().remember(&record);
+    }
     Ok(record)
 }
 
