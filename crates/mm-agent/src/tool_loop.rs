@@ -93,9 +93,18 @@ where
         };
         usage.add(reply.usage);
         let asked = function_calls(&reply.output_items);
-        request.input.extend(reply.output_items.iter().cloned());
-        items.extend(reply.output_items.iter().cloned());
-        if asked.is_empty() || request.tools.is_empty() {
+        let answering = !asked.is_empty() && !request.tools.is_empty();
+        // Replay only the function calls that get an output below: an unanswered or
+        // malformed call left in the history makes the next request fail.
+        let kept: Vec<Value> = reply
+            .output_items
+            .iter()
+            .filter(|item| answering_keeps(item, answering))
+            .cloned()
+            .collect();
+        request.input.extend(kept.iter().cloned());
+        items.extend(kept);
+        if !answering {
             return Drafted {
                 reply: Ok(ModelReply {
                     output_items: items,
@@ -165,4 +174,13 @@ where
             items.push(note);
         }
     }
+}
+
+/// Whether an output item goes back into the history: everything but function calls that
+/// will not be answered (no tools on this call, or no `call_id`/`name` to answer).
+fn answering_keeps(item: &Value, answering: bool) -> bool {
+    if item.get("type").and_then(Value::as_str) != Some("function_call") {
+        return true;
+    }
+    answering && !function_calls(std::slice::from_ref(item)).is_empty()
 }

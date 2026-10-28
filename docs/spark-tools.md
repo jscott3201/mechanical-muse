@@ -17,7 +17,8 @@ is unchanged.
 
 Code: `crates/mm-agent/src/tools.rs` (the checks), `tool_loop.rs` (one attempt's tool turns),
 `repair.rs` (`author_with_tools`). The checks are the same functions the receipt and the MCP
-server (`mm-mcp`) use, so all three give the same verdicts. They are deterministic.
+server (`mm-mcp`) use (validator, emitter, load and replay), but only the receipt decides: a
+`check_graph` "ok" is not a verdict on the draft. The checks are deterministic.
 
 Safeguards:
 - Arguments are model output. Each is parsed and checked (size limit 256 KB, JSON object, the
@@ -66,7 +67,8 @@ of classes the prompt already lists.
 
 "Cut off" is a reply that hit the 32,000-token output cap (reasoning counts against it); "content
 filter" is an HTTP 400 saying the prompt triggered the provider's content policy, which ends a
-session. Neither has to do with tools; both happened only in sessions without tools here.
+session. Both happened only in sessions without tools here; with two sessions a side we can't
+say whether that is chance. The lookup cap also changed between the two rounds (see above).
 
 What we read from it, with four sessions a side:
 - CHW plant reset: with tools, 2 of 2 verified; without, 0 of 2. This spec is hard for Spark
@@ -79,8 +81,9 @@ What we read from it, with four sessions a side:
   similar or shorter on the plant reset (fewer wasted attempts) and the same or about three
   times longer on revision B.
 - Spark's own checks are not the receipt. In the committed session, attempt 1's tool replays
-  passed six scenarios, and Spark answered without replaying the other four; the receipt then
-  failed that draft and attempt 2 fixed it.
+  passed six scenarios, then it ran out of tool turns before replaying the other four (Spark
+  replays one scenario per turn, so 8 turns cover about six of ten); the receipt then failed that
+  draft and attempt 2 fixed it.
 
 This is a handful of sessions, not a benchmark. Tools look like they help on the harder spec, at
 a real token cost. They stay off by default.

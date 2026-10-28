@@ -366,8 +366,9 @@ async fn author(session: &AuthorSession, state: &AppState) -> Result<Done, Strin
         feedback: mm_agent::Feedback::WithVectors,
     };
     let palette = state.palette();
-    // Replay runs inline on this worker thread; one session at a time and well under a second
-    // per draft, so it does not starve the runtime.
+    // Replay runs inline on this worker thread, one session at a time. A tools session adds up
+    // to 24 single-scenario replays to the receipt's; each takes milliseconds, so it does not
+    // starve the runtime.
     let observe = |progress: Progress<'_>| match progress {
         Progress::Drafting { attempt, of } => {
             session.publish(AuthorEvent::Drafting { attempt, of });

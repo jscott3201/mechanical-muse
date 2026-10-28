@@ -442,3 +442,55 @@ async fn run<C: ModelClient>(
     .await;
     (trace, summaries)
 }
+
+/// Every function_call in a request's history has its output, or the API refuses the request.
+fn assert_calls_answered(request: &ModelRequest) {
+    let of = |kind: &str| -> Vec<String> {
+        request
+            .input
+            .iter()
+            .filter(|i| i["type"] == kind)
+            .map(|i| i["call_id"].as_str().unwrap_or("").to_owned())
+            .collect()
+    };
+    assert_eq!(of("function_call"), of("function_call_output"));
+}
+
+#[tokio::test]
+async fn unanswered_or_malformed_calls_never_reach_the_history() {
+    let (task, vectors, right) = spec();
+    let palette = Palette::pinned().unwrap();
+    // A malformed call (no call_id) beside a good one, then a call on the tool-less last
+    // call together with a wrong graph, then the right graph.
+    let mut first = calls(&[("c1", "describe_block", r#"{"class":"Reals.Add"}"#.into())]);
+    first
+        .output_items
+        .push(json!({"type": "function_call", "name": "check_graph", "arguments": "{}"}));
+    let mut stray = answer(&wrong_cap(&right));
+    stray
+        .output_items
+        .push(json!({"type": "function_call", "call_id": "c2",
+        "name": "check_graph", "arguments": "{}"}));
+    let model = ScriptedModel::new(vec![first, stray, answer(&right)]);
+    let limits = ToolLimits {
+        max_turns: 1,
+        ..ToolLimits::default()
+    };
+    let trace = author_with_tools(
+        &model,
+        &palette,
+        &task,
+        &vectors,
+        &[],
+        &config(),
+        limits,
+        |_| {},
+    )
+    .await;
+    assert!(trace.verified.is_some());
+    let requests = model.requests();
+    assert_eq!(requests.len(), 3);
+    for request in &requests {
+        assert_calls_answered(request);
+    }
+}
