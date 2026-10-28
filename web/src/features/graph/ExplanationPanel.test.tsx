@@ -38,4 +38,13 @@ describe("ExplanationPanel", () => {
     // Blocks the model named that the graph lacks are reported, not shown as parts.
     expect(screen.getByText(/1 block this graph does not have \(\s*ghost\)/)).toBeTruthy();
   });
+
+  it("offers no retry on a keyless server and says a model key is needed", async () => {
+    const body = { code: "no-model", message: "no model key on this server and no recorded explanation of this graph" };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body), { status: 503 })));
+    render(<ExplanationPanel spec="chw_plant_reset" onFocusBlocks={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /Explain with Muse Spark/ }));
+    expect(await screen.findByText(/needs a model key on the server/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+  });
 });
