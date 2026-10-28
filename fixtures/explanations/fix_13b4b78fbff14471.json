@@ -1,0 +1,14 @@
+{
+  "key": "fix:13b4b78fbff14471",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "before": 1,
+  "after": 2,
+  "summary": "The earlier draft failed to hold the discharge air temperature setpoint low during startup and restart windows, returning values above expected. The edge-triggered hold combined with inverted enable and OR logic did not keep the forcing active through the needed interval. The later draft replaced that network with a delayed enable inverted to drive the low selection, and it passed every scenario.",
+  "changes": [
+    {
+      "title": "Replace edge hold network with delayed enable inversion",
+      "text": "Removed `enableEdge`, `startupHold`, `notEnable` and `offOrStartup` with their wires to `forceLowSel`, and added `startupDelay` fed from enable with `startupNot` driving `forceLowSel` so the low request remains asserted through the startup interval that previously showed high setpoint in the startup and restart scenarios."
+    }
+  ]
+}

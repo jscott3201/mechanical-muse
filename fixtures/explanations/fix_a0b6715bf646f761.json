@@ -1,0 +1,14 @@
+{
+  "key": "fix:a0b6715bf646f761",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "before": 1,
+  "after": 2,
+  "summary": "Earlier draft was refused by the engine for an algebraic loop through `addNew`, `limiter`, `switchFreeze`, `switchSamplerIn` and `sampler`. Later draft inserted `resetDelay` fed by `switchOut` to break that cycle and rerouted its outputs to `addNew` and `switchFreeze` in place of `sampler`.",
+  "changes": [
+    {
+      "title": "Break algebraic loop with delay",
+      "text": "Added state-holding block `resetDelay` with input from `switchOut` and outputs to `addNew` and `switchFreeze`, replacing the direct feeds from `sampler` that were part of the reported direct-feedthrough cycle. This follows the engine remedy to insert a delay to break the loop."
+    }
+  ]
+}

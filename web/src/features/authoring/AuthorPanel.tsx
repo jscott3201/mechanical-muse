@@ -24,6 +24,7 @@ import { ErrorNote } from "../ErrorNote";
 import { ExplanationPanel } from "../graph/ExplanationPanel";
 import { GraphCanvas } from "../graph/GraphCanvas";
 import { Outcome, type OutputUnits } from "../Receipt";
+import { FixExplanationPanel } from "./FixExplanationPanel";
 import { recordedBlocks } from "./recorded";
 import { SparkChecks } from "./SparkChecks";
 
@@ -163,7 +164,18 @@ function flaggedNodes(view: AttemptView): string[] {
   return [...new Set(problems.map((p) => p.node).filter((n): n is string => Boolean(n)))];
 }
 
-function AttemptRow({ attempt, spec, units }: { attempt: AttemptEntry; spec: string; units?: OutputUnits | undefined }) {
+function AttemptRow({
+  attempt,
+  spec,
+  units,
+  fixOf,
+}: {
+  attempt: AttemptEntry;
+  spec: string;
+  units?: OutputUnits | undefined;
+  /** The session, when this attempt and the one before it both drafted a graph: its fix can be explained. */
+  fixOf?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const [focus, setFocus] = useState<string[]>([]);
   const graph = attempt.view?.graph;
@@ -180,6 +192,7 @@ function AttemptRow({ attempt, spec, units }: { attempt: AttemptEntry; spec: str
       {attempt.view ? (
         <>
           <Verdict view={attempt.view} units={units} />
+          {fixOf && <FixExplanationPanel sessionId={fixOf} after={attempt.index} />}
           {graph && (
             <div className="flex flex-col gap-2">
               <div>
@@ -282,7 +295,7 @@ export function AuthorPanel({
         <CardTitle>Draft with Muse Spark</CardTitle>
         <CardDescription className="max-w-prose">
           Muse Spark reads this task and writes a block graph. Each draft is checked: interface,
-          validator, engine load, then all {scenarios} scenarios. What fails goes back to the model,
+          validator, engine load, then all {scenarios} scenarios. What fails goes back to the model,{" "}
           {attemptsText(stream.config?.max_attempts ?? null, source)}. A passing draft is stored with its receipt.
         </CardDescription>
       </CardHeader>
@@ -368,9 +381,11 @@ export function AuthorPanel({
         )}
         {/* Always present, so screen readers hear each attempt as it arrives. */}
         <ol aria-label="Attempts" aria-live="polite" className="flex flex-col gap-2 empty:hidden">
-          {stream.attempts.map((a) => (
-            <AttemptRow key={a.index} attempt={a} spec={spec} units={units} />
-          ))}
+          {stream.attempts.map((a, i) => {
+            const prev = i > 0 ? stream.attempts[i - 1] : undefined;
+            const repairable = sessionId !== null && Boolean(a.view?.graph) && Boolean(prev?.view?.graph);
+            return <AttemptRow key={a.index} attempt={a} spec={spec} units={units} fixOf={repairable ? sessionId : null} />;
+          })}
         </ol>
         {stream.ended && (
           <section aria-label="Session result" className="flex flex-col gap-1">

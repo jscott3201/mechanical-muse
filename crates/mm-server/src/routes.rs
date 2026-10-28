@@ -249,6 +249,7 @@ pub fn app(state: AppState) -> Router {
         .merge(crate::author_routes::routes())
         .merge(crate::explain::routes())
         .merge(crate::run_explain::routes())
+        .merge(crate::fix_explain::routes())
         .merge(crate::workbench::routes())
         .merge(crate::bind_routes::routes())
         .merge(crate::attack::routes())
