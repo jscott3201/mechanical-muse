@@ -81,8 +81,8 @@ A peak-price hour now takes precedence over one coming.
   windows it was not tuned on (14 days from day 40 and from day 315) the rule, run from
   `reference.py`, still beat BOPTEST's controller on cost (−6.9 %, −6.0 %) and discomfort
   (−45 %, −72 %) and cut mean power in the most expensive quarter of 15-minute prices by 37 % and 23 % (`docs/results-log.md`).
-  Through the runtime on BOPTEST's two heating windows, the verified graph sent exactly the
-  setpoints `reference.py` computes (`docs/runtime-results.md`).
+  Through the runtime, on BOPTEST's two heating windows and on these two, the verified graph sent
+  exactly the setpoints `reference.py` computes (`docs/runtime-results.md`).
 - Moving heat raises the single highest 15-minute draw (BOPTEST's peak demand KPI rose 16 % and
   4 % in the two live windows). Nothing here staggers that rebound across homes.
 - Prices in this building swing little (about 0.17 to 0.26 euro per kWh including fixed fees),
