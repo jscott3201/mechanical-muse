@@ -1,0 +1,17 @@
+---
+// An SVG diagram from docs/img, served as a file. Its own styles follow the color scheme.
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata;
+  alt: string;
+  caption?: string;
+}
+
+const { src, alt, caption } = Astro.props;
+---
+
+<figure class="mm-figure not-content">
+  <img src={src.src} width={src.width} height={src.height} alt={alt} loading="lazy" />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>

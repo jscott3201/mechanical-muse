@@ -1,0 +1,72 @@
+---
+title: Mechanical Muse
+description: Muse Spark drafts building control sequences as block graphs; a deterministic engine replays test vectors before anything runs.
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import Diagram from '../../components/Diagram.astro';
+import Screenshot from '../../components/Screenshot.astro';
+import pipeline from '@img/pipeline.svg';
+import authoringLight from '@img/screens/authoring-light.png';
+import authoringDark from '@img/screens/authoring-dark.png';
+
+**The muse proposes. The engine checks.**
+
+Mechanical Muse is an agent built on Meta's Muse Spark. It turns a written sequence of
+operations into running building control logic, and that logic may run only once it passes its
+tests. Muse Spark drafts the logic as a block graph. A deterministic control engine replays test
+vectors against every draft, and failures go back to Spark for repair. Only a draft with a green
+verification receipt runs on an emulated large office building.
+
+Built solo by Justin Scott for the Meta Global AI Developer Hackathon (Indie track), October 26
+to November 4, 2026.
+
+<Diagram
+  src={pipeline}
+  alt="How Mechanical Muse works: Muse Spark drafts, mm-graph emits CXF, mm-bridge replays test vectors on open-control-engine, failures go back for repair, and only a green receipt reaches the runtime, BOPTEST, the web app and a read-only BACnet mirror"
+/>
+
+## Why it matters
+
+Engineers write building control sequences as prose. A controls contractor programs them by
+hand for each building, and they are rarely tested against the written intent before they run.
+Language models can draft control logic, but nobody should let unchecked model output drive a
+building. Mechanical Muse puts a gate in between:
+
+- **Model output is untrusted.** Nothing Spark writes reaches the building or the BACnet mirror
+  without a recorded green receipt: a content id plus "passes X of Y" test vectors, replayed on
+  a deterministic engine.
+- **Failures are specific.** A refused draft comes back with the engine's typed diagnostic code,
+  or the scenario and instant where an output went wrong. Spark repairs against that, within a
+  fixed budget.
+- **Engineers stay in charge.** Bring your own sequence as text, a PDF or a photo. Spark proposes
+  test scenarios and point bindings; the engineer accepts or corrects them before they count.
+
+<Screenshot
+  light={authoringLight}
+  dark={authoringDark}
+  alt="Three authoring attempts: refused by the engine as an algebraic loop, then passing 8 of 10 scenarios, then 10 of 10 with a content id"
+  caption="Red, then green: a recorded Muse Spark session on the chilled-water plant reset."
+/>
+
+## The pipeline
+
+| Step | What happens | Who built it |
+| --- | --- | --- |
+| Draft | Muse Spark (Meta Model API, structured output) reads a spec and drafts a compact block-graph JSON | Agent `mm-agent`: built in the event. Model: Meta's Muse Spark |
+| Emit | A catalog-backed validator and a deterministic emitter turn the graph into CXF (CDL as JSON-LD) | `mm-graph`: built in the event |
+| Verify | The CXF is loaded with typed diagnostics and the spec's test vectors are replayed | Bridge `mm-bridge`: built in the event. Engine: open-control-engine, used unmodified |
+| Repair | Diagnostics and failing scenarios go back to Spark until the vectors pass or the budget runs out | `mm-agent`: built in the event |
+| Run | A verified sequence runs in a supervisory loop against an emulated large office | Runtime `mm-runtime`: built in the event. Emulator: BOPTEST, used unmodified |
+| Mirror | Live points are served read-only as one BACnet/IP device | `mm-bacnet`: built in the event. Protocol stack: rusty-bacnet, used unmodified |
+| Show | A React web app shows authoring, receipts, live trends, KPIs and explanations | `mm-server` and `web/`: built in the event |
+
+The [Provenance](/mechanical-muse/provenance/) page lists every pre-existing component with its
+pinned commit and license.
+
+<CardGrid>
+  <LinkCard title="Getting started" href="/mechanical-muse/getting-started/" description="Run the recorded demo in two minutes; add a key and BOPTEST for live mode." />
+  <LinkCard title="How it works" href="/mechanical-muse/how-it-works/authoring/" description="The authoring loop, receipts, runtime fail-safe and the rest." />
+  <LinkCard title="Sequences" href="/mechanical-muse/sequences/" description="Our five control sequence specs and how each was validated." />
+  <LinkCard title="Results" href="/mechanical-muse/results/benchmark/" description="Benchmark and BOPTEST numbers, with their caveats." />
+</CardGrid>

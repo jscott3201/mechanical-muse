@@ -1,0 +1,67 @@
+---
+title: Emissions ledger
+description: Each BOPTEST run's energy, emissions and cost, split into Scope 1 gas and Scope 2 electricity from BOPTEST's own KPIs and factors.
+---
+
+import Screenshot from '../../../components/Screenshot.astro';
+import emissionsLight from '@img/screens/emissions-light.png';
+import emissionsDark from '@img/screens/emissions-dark.png';
+import faultLight from '@img/screens/fault-cost-light.png';
+import faultDark from '@img/screens/fault-cost-dark.png';
+
+Every BOPTEST run, live or recorded, gets a ledger: the HVAC plant's energy, the emissions it
+stands for, and its cost, split into **Scope 1** (gas burnt on site, the boiler) and **Scope 2**
+(electricity bought: chillers, pumps, towers, fans). Two runs of the same window can be
+compared. Nothing reads these numbers to decide a control action.
+
+<Screenshot
+  light={emissionsLight}
+  dark={emissionsDark}
+  alt="Energy and emissions panel: Scope 1 796 kgCO2e (−848 kg, −51.6 % vs baseline), Scope 2 2,138 kgCO2e (−20.9 %), cost $695 (−$269), thermal discomfort lower; footer: simulation on BOPTEST's factors, HVAC loads only, no Scope 3"
+  caption="Revision B on day 143 against the baseline over the same window: the reheat gas halves."
+/>
+
+## Method
+
+- **Scope totals are exact.** BOPTEST reports total energy and total emissions. Its emission
+  factors for this test case are constant, so the two totals give two linear equations in
+  electricity and gas, and the split is exact. Re-pricing the split must give back BOPTEST's own
+  cost KPI; every committed recorded run does.
+- **End uses** come from the 14 power readings the runtime records each 120 s step, integrated
+  the way BOPTEST's KPI calculator does. What 120 s samples cannot see lands in an
+  "unattributed" row, so each scope's rows still add up to its exact total.
+- **Factors and prices** are BOPTEST v0.9.0's for this test case: 0.341 kgCO2/kWh electricity,
+  0.18108 kgCO2/kWh gas, $0.094/kWh and $0.024/kWh (constant price scenario only).
+
+## What a fault costs
+
+A run with a labelled test fault is priced against its twin: the same window and settings
+without the fault.
+
+<Screenshot
+  light={faultLight}
+  dark={faultDark}
+  alt="Energy and emissions panel of the sensor-bias replay: an injected test fault banner with +130 kWh, +$12 and +44 kgCO2e against the healthy run, scope cards and the end-use table"
+  caption="Floor 1's supply-air reading biased 4 K high for two hours, priced against the same ten hours without the fault."
+/>
+
+On day 185 from noon (10 h), a 4 K high bias on floor 1's supply-air reading for 2 h made the
+plant reset drive the chilled water to its cold end: **+130 kWh, +44 kgCO2e and +$12.25**, nearly
+all chiller electricity. That is about a fifth of the ten hours' saving against BOPTEST's
+baseline. One window, one fault, in simulation.
+
+## What this is not
+
+- **A simulation, not an inventory.** BOPTEST's emulated building and weather over a chosen
+  window, not metered data and not a GHG report.
+- **BOPTEST's average factors**, not a utility's or a grid's marginal emissions.
+- **HVAC only, Scopes 1 and 2 only.** No lighting or plug loads, no refrigerant leakage, no
+  Scope 3.
+
+Muse Spark's run explanations get the ledger as given facts and are told to quote, not compute.
+A reply that states a number not in its input is sent back once, then refused.
+
+## Learn more
+
+- [docs/emissions.md](https://github.com/jscott3201/mechanical-muse/blob/main/docs/emissions.md):
+  formulas, signals, factors with their BOPTEST source files, and the API routes.

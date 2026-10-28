@@ -1,0 +1,32 @@
+/* Show the screenshot that matches Starlight's theme (its toggle sets data-theme on <html>). */
+:root[data-theme='light'] .mm-dark-only,
+:root[data-theme='dark'] .mm-light-only {
+  display: none;
+}
+
+.mm-figure {
+  margin-block: 1.5rem;
+}
+
+.mm-figure img {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.mm-figure figcaption {
+  color: var(--sl-color-gray-3);
+  font-size: var(--sl-text-sm);
+  margin-top: 0.5rem;
+}
+
+.mm-placeholder {
+  border: 2px dashed var(--sl-color-gray-4);
+  border-radius: 0.5rem;
+  color: var(--sl-color-gray-3);
+  margin-block: 1.5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+}

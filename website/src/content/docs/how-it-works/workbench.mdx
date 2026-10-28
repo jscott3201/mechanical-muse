@@ -1,0 +1,57 @@
+---
+title: Bring your own sequence
+description: The workbench, where an engineer's own sequence (text, PDF or photo) becomes a verified, bound, running sequence.
+---
+
+import Screenshot from '../../../components/Screenshot.astro';
+import workbenchLight from '@img/screens/workbench-light.png';
+import workbenchDark from '@img/screens/workbench-dark.png';
+
+An engineer gives Muse Spark a written sequence of operations: pasted text, a PDF, or a photo of
+the sheet. From there it goes through the same gate as our own specs.
+
+<Screenshot
+  light={workbenchLight}
+  dark={workbenchDark}
+  alt="The Bring your own page: Muse Spark's recorded reading of the revision B sheet, with the task, six open questions and the sequence's points"
+  caption="Muse Spark's reading of a photographed sequence sheet: the task, what the sheet leaves open, and the points."
+/>
+
+## The flow
+
+1. **Read.** Spark turns the document into our task format, proposes test scenarios, and lists
+   what the document leaves open (exact-threshold behavior, start-up values, a lost sensor) as
+   open questions instead of deciding silently.
+2. **Accept.** The proposed expected values are model output. They become the gate only after
+   the engineer reviews them. Each scenario shows as a timeline beside an editable table, and any
+   scenario can be corrected or turned off. Checks refuse scenarios that cannot run fairly
+   (unknown points, missing inputs, steps off the clock grid, wrong types, check windows outside
+   the run). They cannot tell whether an expected value is right; that is the engineer's call.
+3. **Draft.** Spark drafts a block graph against the accepted scenarios, with the usual
+   [repair loop](/mechanical-muse/how-it-works/authoring/). A verified draft downloads as CXF.
+4. **Bind.** Spark proposes which BOPTEST reading feeds each input and which setpoint each
+   output writes, within what limits. The server checks the proposal (points exist and are the
+   right kind, every input bound once, limits finite and inside the setpoint's range, nothing
+   written twice). The engineer edits and confirms it.
+5. **Run.** The verified draft runs on BOPTEST beside our own sequences. Its scenarios are
+   replayed again before it loads, and the runtime's fail-safe applies.
+
+A workbench sequence has no hand-built reference graph, and the UI says so.
+
+## What it found
+
+The sample sheet (an AHU supply-air temperature reset we wrote for the demo) ran safely and did
+what it says. Revision A's dehumidification thresholds latched its override on in this building,
+so its reset never acted. Revision B raised them, went through the whole flow again live, and
+saved energy in spring and autumn but not in summer. The numbers and their caveats are on
+[Runtime results](/mechanical-muse/results/runtime/#bring-your-own-sequence-revision-b).
+
+## Without a key
+
+`make demo` plays the whole flow back from committed recordings (Spark's reading, drafting
+session and binding), labelled recorded. Every check still runs.
+
+## Learn more
+
+- [docs/workbench.md](https://github.com/jscott3201/mechanical-muse/blob/main/docs/workbench.md):
+  API, binding rules and full results.

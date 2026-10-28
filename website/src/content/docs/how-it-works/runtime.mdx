@@ -1,0 +1,64 @@
+---
+title: Runtime and fail-safe
+description: How a verified sequence runs against BOPTEST in a supervisory loop, and what happens when a reading or frame goes bad.
+---
+
+import Screenshot from '../../../components/Screenshot.astro';
+import runLight from '@img/screens/run-light.png';
+import runDark from '@img/screens/run-dark.png';
+
+`mm-runtime` runs verified sequences against BOPTEST's `multizone_office_complex_air` test case
+(an emulated large office: three floors, 15 VAV zones) in a supervisory loop. BOPTEST is a
+pre-existing building emulator, used unmodified as an external service.
+
+## One step
+
+Every 120 s of simulation time:
+
+1. Take BOPTEST's latest readings and build one engine frame from them. Every input is
+   submitted on every frame; time is BOPTEST simulation seconds, never the wall clock.
+2. Run one frame of each loaded sequence (for example, three air handler request sequences
+   feeding the chilled-water plant reset).
+3. Clamp each output to the setpoint's safe range, reject non-finite values, and write the
+   setpoints to BOPTEST. A point is written only while its equipment is enabled; otherwise it
+   is released to BOPTEST's own controller.
+
+The runtime only maps points, steps frames and enforces the fail-safe. Control strategy lives in
+verified CXF graphs, never in ad-hoc Rust.
+
+## Fail-safe
+
+The engine has no fail-safe policy of its own; the runtime owns it. On a refused frame, a
+missing (NaN) reading or stale data, the runtime writes no new setpoint from that sequence. It
+holds the last good values or hands the setpoints back to BOPTEST's baseline controller, emits
+a degraded event, and keeps advancing. The web app shows the degraded state, and the sequence
+writes again once its inputs are good.
+
+Tests drive this path without BOPTEST, through a fake plant behind the same trait.
+
+## Test faults
+
+A run can inject a labelled test fault on one reading: blank (NaN), stuck at a value, or biased
+by an offset. A blank reading triggers the fail-safe. A biased reading is believed, so it shows
+what a drifted sensor costs (see [Emissions ledger](/mechanical-muse/how-it-works/emissions/)).
+
+<Screenshot
+  light={runLight}
+  dark={runDark}
+  alt="A replayed run: the sequences that ran with their content ids, KPI tiles against the baseline, and chilled-water and pressure trends"
+  caption="A replay of revision B on BOPTEST beside our own sequences: content ids, KPIs against the baseline, and trends."
+/>
+
+## Runs, replays and baselines
+
+- One live BOPTEST run at a time; one replay may play beside it.
+- Recorded runs replay over the same event stream, labelled "replay", at 1×, 4× or 10×.
+- KPIs come from BOPTEST itself and are compared with a baseline run (BOPTEST's own
+  controllers, nothing written) over the same window.
+
+## Learn more
+
+- [Runtime results](/mechanical-muse/results/runtime/)
+- [docs/boptest-point-map.md](https://github.com/jscott3201/mechanical-muse/blob/main/docs/boptest-point-map.md):
+  which BOPTEST points feed which inputs, and the clamps.
+- [docs/runtime-results.md](https://github.com/jscott3201/mechanical-muse/blob/main/docs/runtime-results.md)

@@ -1,0 +1,21 @@
+---
+// A light and a dark capture of the same screen; site.css shows the one matching the theme.
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+
+interface Props {
+  light: ImageMetadata;
+  dark: ImageMetadata;
+  alt: string;
+  caption?: string;
+}
+
+const { light, dark, alt, caption } = Astro.props;
+const sizes = '(min-width: 72rem) 48rem, 100vw';
+---
+
+<figure class="mm-figure not-content">
+  <Image class="mm-light-only" src={light} alt={alt} widths={[800, 1400]} sizes={sizes} />
+  <Image class="mm-dark-only" src={dark} alt={alt} widths={[800, 1400]} sizes={sizes} />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
