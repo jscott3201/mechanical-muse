@@ -233,3 +233,45 @@ async fn tools_need_a_key_or_a_tools_recording() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[tokio::test]
+async fn the_committed_tools_session_plays_back_red_then_green() {
+    let state = state(&repo("fixtures/recordings"));
+    let (status, info) = call(
+        &state,
+        "POST",
+        "/api/specs/chw_plant_reset/author",
+        json!({"source": "recorded", "tools": true}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{info}");
+    assert_eq!(info["config"]["tools"], true);
+    let id = info["id"].as_str().unwrap().to_owned();
+    let all = events(&state, &id).await;
+    let results: Vec<&str> = all
+        .iter()
+        .filter(|e| e["kind"] == "checked")
+        .map(|e| e["attempt"]["result"].as_str().unwrap())
+        .collect();
+    assert_eq!(results, ["replay-failed", "passed"]);
+    let checks: Vec<&Value> = all.iter().filter(|e| e["kind"] == "tool-call").collect();
+    assert!(checks.len() >= 10, "{}", checks.len());
+    // Spark's own replays in attempt 1 all passed, yet the receipt failed that draft (Spark
+    // had not replayed the scenarios it missed): the tools never stand in for the full replay.
+    assert!(
+        checks
+            .iter()
+            .any(|e| e["call"]["summary"].as_str().unwrap().contains("failed at"))
+    );
+    assert_eq!(all.last().unwrap()["state"], "verified");
+    // The plain recording is still what a session without tools plays.
+    let (status, plain) = call(
+        &state,
+        "POST",
+        "/api/specs/chw_plant_reset/author",
+        json!({"source": "recorded"}),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{plain}");
+    assert_eq!(plain["config"]["tools"], false);
+}
