@@ -4,8 +4,10 @@ BOPTEST's worker is an x86 image. On Apple silicon it runs under emulation, whic
 slow to start (16 to 26 minutes to initialize our demo window) and slow to step. Running BOPTEST
 on [Modal](https://modal.com) instead puts it on native x86 hardware: in our measurements
 initialize took 170 s and each 120 s control step 0.24 s, tunnel round trip included, with
-results identical to the local run (`docs/runtime-results.md`). It is the faster way to try the
-live loop, and an alternative to the local Docker setup for anyone reviewing the project.
+results identical to the local run ([runtime-results.md](runtime-results.md)). We use it as a
+test host for our own live runs. It is not a hosted demo: nothing is kept running for reviewers,
+who run the app locally (README) and can use either a local BOPTEST or this setup on their own
+Modal account.
 
 BOPTEST is pre-existing work by IBPSA (see the README's dependency table); this only packages
 its v0.9.0 services into one container. Modal is a hosting service; nothing here depends on it

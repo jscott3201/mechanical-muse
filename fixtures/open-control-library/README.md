@@ -7,6 +7,9 @@ Apache-2.0 license. They are test data, not work done during the hackathon.
 Each folder holds one fault rule's `card.md`, `rule.cxf.jsonld` and `vectors.json` from
 `faults/<family>/<ID>/`. `points/` holds the point dictionaries for the families used here.
 
+The cards' relative links (such as `diagram.svg` and the playbooks) point into the upstream
+repository; those files are not copied here, so the links do not resolve in this repository.
+
 | Rule | Why it is here |
 | --- | --- |
 | AHU-0027 | Smallest rule (2 blocks); the worked example in `docs/block-graph-schema.md` |

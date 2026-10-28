@@ -1,10 +1,11 @@
 # Packaging: run it without Rust or Node
 
 One image holds the whole app: the web app, served by `mm-server` on port 8080, plus the specs and
-the recorded sessions, runs and explanations. Two ways to start it, neither needing a Rust or Node
-toolchain: Docker Compose on your machine, or Modal.
+the recorded sessions, runs and explanations. There is no hosted public instance: reviewers run it
+on their own machine, with Docker Compose (no Rust or Node toolchain needed) or with `make demo`
+(see the README).
 
-## Docker Compose (recommended)
+## Docker Compose
 
 Needs Docker with Compose v2.24 or later (Docker Desktop is fine). From the repo root:
 
@@ -49,7 +50,8 @@ Live BOPTEST runs need a BOPTEST v0.9.0 the container can reach:
 
 - On this machine: `export BOPTEST_DIR=<checkout>; make boptest-up` (see the README), then
   `MM_BOPTEST_URL=http://host.docker.internal:80 docker compose -f compose.demo.yaml up`.
-- On Modal (native x86, much faster on Apple silicon): `make boptest-modal`
+- On Modal, which is how we test live runs ourselves (native x86, much faster on Apple silicon;
+  needs your own Modal account): `make boptest-modal`
   ([boptest-on-modal.md](boptest-on-modal.md)), then
   `MM_BOPTEST_URL=<printed url> docker compose -f compose.demo.yaml up`.
 
@@ -62,28 +64,15 @@ The read-only BACnet mirror is not enabled in the container: BACnet/IP relies on
 which Docker's default network does not carry to your LAN. Run `mm-server` natively for it
 ([bacnet-mirror.md](bacnet-mirror.md)).
 
-## Modal
+## Modal (a testing aid, not a hosted demo)
 
-Needs the `modal` CLI, logged in (`modal setup`). From the repo root:
-
-```sh
-modal serve deploy/modal/mm_demo.py       # temporary URL while the command runs (make modal-demo)
-modal deploy deploy/modal/mm_demo.py      # stays deployed, scales to zero when idle
-modal app stop mm-demo                    # stop it
-```
-
-Modal builds the same `Dockerfile` on its own x86 builders (the first build takes several
-minutes), then prints the web endpoint URL. That URL is public: anyone holding it can use the app.
-It runs in recorded mode unless you set, in the shell that runs `modal serve` or `modal deploy`:
-
-- `MM_BOPTEST_URL`: a BOPTEST for live runs, for example the tunnel URL from
-  `make boptest-modal` (BOPTEST has no authentication; do not post either URL).
-- `MM_MODAL_SECRET`: the name of a Modal secret holding `MODEL_API_KEY`, for live Muse Spark.
-  Create it once with `modal secret create mm-model-key MODEL_API_KEY=<key>` and pass
-  `MM_MODAL_SECRET=mm-model-key`. Live calls through a public URL are billed to that key.
-
-The app runs one container (the server keeps runs in memory and drives one live run at a time).
-Runs and verified drafts made there are lost when it scales down.
+`deploy/modal/mm_demo.py` (`make modal-demo`) builds the same `Dockerfile` on Modal's x86
+builders and serves it at a temporary URL while the command runs. We use it only to test the
+image on x86; it is not how to try the app, and no instance is kept running. Needs the `modal`
+CLI, logged in (`modal setup`). Its URL is public while it runs, so do not post it; it runs in
+recorded mode unless `MM_BOPTEST_URL` or `MM_MODAL_SECRET` (the name of a Modal secret holding
+`MODEL_API_KEY`) is set in the shell that starts it. `modal app stop mm-demo` stops it. The
+module's docstring has the details.
 
 ## What is in the image
 
@@ -102,7 +91,8 @@ read-only except a temporary `runs/`. `.dockerignore` keeps `.env` files, `runs/
 
 - **Apple silicon.** The app image builds natively for arm64 and for x86-64. BOPTEST's worker is
   x86-only, so a local BOPTEST runs under emulation: 16 to 26 minutes to initialize the demo
-  window, and slow steps. Use `make boptest-modal` for live runs, or stay in recorded mode.
+  window, and slow steps. Stay in recorded mode, or run BOPTEST on native x86 (we use
+  `make boptest-modal` for our own live runs).
 - **Port 8080 in use.** `MM_PORT=9090 docker compose -f compose.demo.yaml up`, then open
   http://localhost:9090.
 - **Health.** `curl -fsS http://localhost:8080/api/health` returns the engine rev, the spec count,

@@ -1,6 +1,6 @@
 # Benchmark design: cards, vectors, verifier, split, exemplars, risks
 
-Source repo: `open-control-library` (137 fault rules, all `status: verified`, `ENGINE_PIN` `41e997fd`). The split was computed by a prototype script (`make_split.py`, kept in local research notes); machine-readable lists are in `docs/benchmark-split.json`.
+Source repo: `open-control-library` (137 fault rules, all `status: verified`, `ENGINE_PIN` `41e997fd`). The split was computed by a prototype script (`make_split.py`, not in the repository); machine-readable lists are in `docs/benchmark-split.json`.
 
 ## 1. What a rule folder contains
 
@@ -34,7 +34,7 @@ Output per directory: the path; `content_id: cxf:fnv1a128:...` (engine export id
 
 **"Verified" in this library** (`SCHEMA.md` "Verification" + `lint.rs`): (1) the rule loads in the pinned engine; (2) every scenario passes at every tick of every assertion window; (3) lint passes: card schema/enums, `id` equals folder, every `points` entry resolves in the family point dictionary, card `points`/`outputs` equal the CXF boundary inputs/outputs exactly, every `params.*.cxf` path resolves to a parameter node, vectors only touch declared points/outputs, scenario names unique, `diagram.svg` exists; (4) `verified.engine_rev` prefixes `ENGINE_PIN`, `verified.content_id` equals the engine's export id, `date` set. It is *executable-spec conformance against author-written scenarios on one engine revision*: no formal equivalence, no external Modelica oracle, and gating/NO_EVAL stays with the host. For a benchmark only (1) and (2) apply (`--replay-only`).
 
-**Environment gotchas.** `build.rs` hard-asserts that `../../../open-control` (a sibling directory of the library clone) is at exactly `ENGINE_PIN` with a clean tracked tree. The engine clone here is named `open-control-engine`, is at `4196a8d` (merge of PR #337), and the pinned `41e997f` is not in the shallow clone; either fetch and check out `41e997f` as `open-control`, or re-pin and re-verify (every `verified.content_id` is tied to the pin). I did not build or run `cxf-verify`.
+**Environment gotchas** (historical note from before the pipeline existed; vector replay is now done by `crates/mm-bridge` on the pinned engine, and the library's `cxf-verify` is not built). `build.rs` hard-asserts that `../../../open-control` (a sibling directory of the library clone) is at exactly `ENGINE_PIN` with a clean tracked tree. At the time, the local engine clone was named `open-control-engine` at `4196a8d` (merge of PR #337), and the pinned `41e997f` was not in the shallow clone; building `cxf-verify` would have needed `41e997f` checked out as `open-control`, or a re-pin and re-verify (every `verified.content_id` is tied to the pin). `cxf-verify` was never built or run for this project.
 
 **Metric design.** A constant-`false` graph passes 720 of 1,760 scenarios (40.9%); constant `true` passes 30 (1.7%). Report **rule-level all-scenario pass** as the headline, scenario pass rate as a secondary, and keep load failure and lint-style interface mismatch separate.
 

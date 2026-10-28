@@ -1,6 +1,6 @@
 # Compact block-graph format (v0 proposal)
 
-The LLM emits this JSON through structured output; a deterministic emitter expands it to CXF JSON-LD; the Open Control Engine (via `cxf-verify` or `oce-api`) verifies it. Files: schema `docs/block-graph.schema.json` (71 lines), and `crates/mm-graph`, the Rust port of a Python prototype of the converter, emitter and validator (the prototype is not in the repository).
+The LLM emits this JSON through structured output; a deterministic emitter expands it to CXF JSON-LD; the Open Control Engine verifies it (`oce-api`, driven by `crates/mm-bridge`). Files: schema `docs/block-graph.schema.json` (71 lines), and `crates/mm-graph`, the Rust port of a Python prototype of the converter, emitter and validator (the prototype is not in the repository).
 
 ## 1. What shaped the format
 
@@ -109,7 +109,7 @@ Addressing: a bare token is a boundary input (as source) or boundary output (as 
 - **Name hygiene:** `cxf-verify` resolves a vector's input name by `.name`/`#name` suffix and errors on ambiguity, so boundary names must not equal block port names (`u`, `y`, `u1`, `u2`, ...). The validator should enforce a minimum length of 2 and a port-name blacklist.
 - **Not in v0 (cheap later wins):** inline literals as edge sources to avoid `Constant` blocks (39 library, 149 G36 instances), eliding port names on single-port blocks, width-driven classes.
 
-## 4. Two library rules converted by script (round-trip proven)
+## 4. Two library rules converted by script (round-trip checked)
 
 The prototype converter (not in the repository; `mm-graph` is the port) read the CXF into the compact form and regenerated it from the compact JSON plus the palette. Wire form below (pretty-printed here, minified in the size measurements).
 
@@ -130,10 +130,10 @@ The prototype converter (not in the repository; `mm-graph` is the port) read the
 
 Port order matters (`Subtract` is `u1 - u2`, so `gap = mat - sat`); the palette line `Reals.Subtract(u1:R,u2:R)->(y:R)` must make that explicit to the model.
 
-**Result over all 137 rules** (`scripts/final_sizes.py`, `scripts/rt_semantic.py`):
+**Result over all 137 rules** (first measured with prototype scripts that are not in the repository; the round trip is now checked by `crates/mm-graph/tests/library_roundtrip.rs`: six fixture rules on every test run, and all 137 in `whole_library_round_trips`, an ignored test that needs `MM_LIBRARY_DIR` pointing at a library checkout):
 - 137/137 regenerate a semantically identical graph (same `@id` set, same node bodies; a singleton object equals a singleton array; doubles compared numerically).
 - 130/137 are exactly equal to the library file after JSON parsing, including node order. The 7 others differ cosmetically: node order (AHU-0023, CHW-0002, HW-0006, HW-0008), root `S231:hasOutput` written as a single object instead of an array (HP-0005, RTU-0009), and the literal `"0.30"` vs `"0.3"` (RTU-0007).
-- Not yet checked: engine `content_id` equality (needs `cxf-verify` built at the pinned engine; see `benchmark-split.md`). The 130 exact matches should be identical; the 7 are the ones to try first.
+- Engine `content_id` equality: settled in [upstream-gaps.md](upstream-gaps.md). Re-emitted rules keep their id when the node order is unchanged (`crates/mm-bridge/tests/emitted_cxf_loads.rs::reemitted_library_rules_keep_their_content_id`); the id depends on node order, so the four reordered rules get a different id (`content_id_depends_on_node_order`).
 
 ## 5. What the emitter must supply
 
@@ -153,7 +153,7 @@ Port order matters (`Subtract` is `u1 - u2`, so `gap = mat - sat`); the palette 
 
 ## 6. Pre-engine validator (palette-level, prototype `validate_compact`)
 
-Checks: ids/names unique and dot-free; every class in the palette; every parameter known to the class and every `Required` parameter present; every edge endpoint exists; endpoint types match (`Real`/`Boolean`/`Integer`); every block input and every output driven exactly once. 0 findings on all 137 converted library rules. Seeded mutation test over the 137 rules (`scripts/mutation.py`): deleting an edge, adding a second driver, an unknown class, and dropping a required parameter are each flagged in 137/137 mutants; a boundary-type swap in 35/35 mutants where one was possible. The engine's own `composite/<rule-id>: ` diagnostics (with node IRI as subject) are the second line of defense for the repair loop.
+Checks: ids/names unique and dot-free; every class in the palette; every parameter known to the class and every `Required` parameter present; every edge endpoint exists; endpoint types match (`Real`/`Boolean`/`Integer`); every block input and every output driven exactly once. 0 findings on all 137 converted library rules. Seeded mutation test over the 137 rules (a prototype script, not in the repository; `crates/mm-graph/tests/validator.rs` now seeds the same mutations, and more, into a known-good graph and asserts each finding code): deleting an edge, adding a second driver, an unknown class, and dropping a required parameter are each flagged in 137/137 mutants; a boundary-type swap in 35/35 mutants where one was possible. The engine's own `composite/<rule-id>: ` diagnostics (with node IRI as subject) are the second line of defense for the repair loop.
 
 ## 7. Size: raw CXF vs compact JSON, all 137 rules
 

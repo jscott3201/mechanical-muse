@@ -130,7 +130,7 @@ Energy, and thermal discomfort, against the baseline over each window:
 | --- | --- | --- | --- |
 | Day 110 (April), 06:00, 8 h | −4.6 % | **−54.4 %** | −48.5 % |
 | Day 143 (May), 06:00, 8 h (tuned on) | −3.3 % | −37.3 % | −10.7 % |
-| Day 150 (May–June), 00:00, 24 h | −3.2 % | **−23.4 %** | −66.0 % |
+| Day 150 (late May), 00:00, 24 h | −3.2 % | **−23.4 %** | −66.0 % |
 | Day 157 (June), 06:00, 8 h | −4.8 % | −4.9 % | −9.4 % |
 | Day 199 (July), 06:00, 8 h | −5.6 % | −3.3 % | **+7.8 %** |
 | Day 262 (September), 06:00, 8 h | −2.4 % | **−55.4 %** | −76.2 % |
