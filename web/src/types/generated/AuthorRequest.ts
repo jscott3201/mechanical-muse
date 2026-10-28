@@ -12,4 +12,10 @@ effort?: string,
 /**
  * Drafts allowed, including the first (1 to 5).
  */
-attempts?: number, };
+attempts?: number, 
+/**
+ * Let Spark check its own drafts with function tools (`check_graph`, `replay_scenario`,
+ * `describe_block`) before it answers. Default false. A recorded session uses whatever its
+ * recording did.
+ */
+tools?: boolean, };

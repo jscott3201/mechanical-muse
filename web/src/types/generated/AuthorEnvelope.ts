@@ -4,9 +4,10 @@ import type { AuthorConfig } from "./AuthorConfig";
 import type { AuthorState } from "./AuthorState";
 import type { DraftInfo } from "./DraftInfo";
 import type { TokenUsage } from "./TokenUsage";
+import type { ToolCallView } from "./ToolCallView";
 
 export type AuthorEnvelope = { session_id: string, 
 /**
  * Position in the session's event log, from 0; also the SSE event id.
  */
-seq: number, } & ({ "kind": "started", config: AuthorConfig, } | { "kind": "drafting", attempt: number, of: number, } | { "kind": "checked", attempt: AttemptView, } | { "kind": "ended", state: AuthorState, draft?: DraftInfo, message?: string, usage: TokenUsage, });
+seq: number, } & ({ "kind": "started", config: AuthorConfig, } | { "kind": "drafting", attempt: number, of: number, } | { "kind": "tool-call", attempt: number, call: ToolCallView, } | { "kind": "checked", attempt: AttemptView, } | { "kind": "ended", state: AuthorState, draft?: DraftInfo, message?: string, usage: TokenUsage, });

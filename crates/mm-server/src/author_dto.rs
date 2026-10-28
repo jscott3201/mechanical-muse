@@ -34,6 +34,12 @@ pub struct AuthorRequest {
     #[serde(default)]
     #[ts(optional)]
     pub attempts: Option<u32>,
+    /// Let Spark check its own drafts with function tools (`check_graph`, `replay_scenario`,
+    /// `describe_block`) before it answers. Default false. A recorded session uses whatever its
+    /// recording did.
+    #[serde(default)]
+    #[ts(optional)]
+    pub tools: Option<bool>,
 }
 
 /// The settings a session actually uses.
@@ -47,6 +53,8 @@ pub struct AuthorConfig {
     pub max_attempts: u32,
     /// Always `with-vectors` here: repair messages name the failing scenarios.
     pub feedback: String,
+    /// Spark may call its own checks while drafting. They never count as verification.
+    pub tools: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
@@ -125,6 +133,20 @@ pub struct TokenUsage {
     pub reasoning: u64,
 }
 
+/// One of Spark's own checks while drafting: a tool call and what our check said. Spark's
+/// check, not the receipt; the receipt is the attempt's result.
+#[derive(Debug, Clone, PartialEq, Serialize, TS)]
+#[ts(export)]
+pub struct ToolCallView {
+    /// `check_graph`, `replay_scenario` or `describe_block`.
+    pub name: String,
+    /// A short summary of the arguments (scenario or class, and the draft's size).
+    pub args: String,
+    pub ok: bool,
+    /// One line, e.g. "scenario x failed at 240 s: y expected 285.93, got 291.48".
+    pub summary: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, TS)]
 #[ts(export)]
 pub struct AttemptView {
@@ -132,6 +154,10 @@ pub struct AttemptView {
     #[serde(flatten)]
     pub result: AttemptResult,
     pub usage: TokenUsage,
+    /// Model calls this attempt made (1 without tools).
+    pub calls: u32,
+    /// Spark's own checks before it answered, in order (tools sessions only).
+    pub tool_calls: Vec<ToolCallView>,
     /// The drafted graph, when the reply parsed and its blocks are in the catalog.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -163,6 +189,11 @@ pub enum AuthorEvent {
     Drafting {
         attempt: u32,
         of: u32,
+    },
+    /// Spark called one of its own checks while drafting `attempt` (tools sessions only).
+    ToolCall {
+        attempt: u32,
+        call: ToolCallView,
     },
     Checked {
         attempt: AttemptView,
