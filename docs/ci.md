@@ -1,7 +1,7 @@
 # CI and test habits
 
 Adapted from rusty-bacnet's CI and kept small. The workflow is `.github/workflows/ci.yml`; `make
-ci` runs the same steps locally.
+ci` runs the same steps locally. The documentation site has its own workflow (see Docs site).
 
 ## Jobs
 
@@ -16,6 +16,22 @@ ci` runs the same steps locally.
 
 Triggers: pull requests to `main`, pushes to `main`, a weekly run (advisory databases change on
 their own) and manual dispatch. Only `main` saves the Rust cache; PRs restore it.
+
+## Docs site
+
+`.github/workflows/docs-pages.yml` builds the Starlight site in `website/` (Node per
+`website/.nvmrc`, `npm ci` from `website/package-lock.json`, `npm run build`). It runs only when
+`website/`, `docs/img/` (the site uses those images) or the workflow itself changes:
+
+- On a pull request to `main`: build only, read-only token.
+- On a push to `main` (or manual dispatch from `main`): build, upload the site as a Pages
+  artifact, then deploy it with `actions/deploy-pages` (`pages: write` and `id-token: write`,
+  on the deploy job only). Publishing needs the repository's Pages source set to "GitHub
+  Actions".
+
+It is a separate workflow, not part of `CI OK`: a docs-only change does not run the Rust and web
+jobs, and a docs build failure does not block `CI OK`. Locally: `cd website && npm ci && npm run
+build` (or `npm run dev`).
 
 ## Pins
 

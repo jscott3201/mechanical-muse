@@ -1,0 +1,75 @@
+name: Docs
+
+# The Starlight documentation site in website/, adapted from rusty-bacnet's docs-pages.yml.
+# Pull requests that touch the site build it only; pushes to main build it and publish it to
+# GitHub Pages (Settings > Pages > Source: GitHub Actions). Separate from ci.yml and its
+# CI OK status. Actions are pinned to commit SHAs. See docs/ci.md.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "website/**"
+      - "docs/img/**"
+      - ".github/workflows/docs-pages.yml"
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - "docs/img/**"
+      - ".github/workflows/docs-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # PR builds cancel superseded runs; publications to Pages share one lane and never cancel.
+  group: docs-pages-${{ github.event_name == 'pull_request' && github.ref || 'publish' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Docs build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: website/.nvmrc
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      # Lockfile only; npm 11 blocks dependency install scripts unless approved.
+      - name: Install
+        run: npm ci --no-audit
+      - name: Build
+        run: npm run build
+      - name: Package the site for Pages
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: website/dist
+
+  deploy:
+    name: Publish to GitHub Pages
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # No checkout or rebuild: deploy-pages takes this run's github-pages artifact.
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
