@@ -30,6 +30,12 @@ comfort floor) over the same window.
 - The web app's fleet view multiplies the per-home cut by 10,000 homes (about 3 and 6 MW). That
   is an illustration of why programs add homes up, not a forecast for any real fleet.
 
+**Rebound.** BOPTEST's own peak electric demand KPI (the highest 15-minute draw) rose: typical
+3.17 → 3.69 kW (+16.4 %), peak 3.63 → 3.76 kW (+3.7 %). Shifting heat out of the expensive hours
+concentrates some of it into fewer, higher spells before them. Homes answering the same prices
+would add those rebounds up, the known risk of price-driven demand response; this sequence does
+nothing to stagger it.
+
 **What it does not show.** A perfect forecast (BOPTEST's default); one building, one climate,
 heating only; prices that swing little (about €0.17 to €0.26 per kWh with fixed fees), so the
 per-home saving is small. Energy also falls, so part of the cost cut is plain saving rather
