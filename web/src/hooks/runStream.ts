@@ -11,13 +11,14 @@ import type { RunState } from "@/types/generated/RunState";
 import type { SequenceInfo } from "@/types/generated/SequenceInfo";
 import type { SupervisorEvent } from "@/types/generated/SupervisorEvent";
 
-type WireValue = number | boolean | string | { class: number; ordinal: number };
+/** A tick as the server sends it; its fields' types come from the generated envelope. */
+type TickEnvelope = Extract<Envelope, { kind: "tick" }>;
 
 export interface TickPoint {
   seq: number;
   /** BOPTEST simulation seconds; null when the readings carried no time. */
   t: number | null;
-  outputs: Record<string, Record<string, WireValue>>;
+  outputs: TickEnvelope["outputs"];
   writes: Record<string, number>;
   readings: Record<string, number>;
 }

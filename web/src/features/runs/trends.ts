@@ -1,9 +1,11 @@
 /**
  * Ticks of a run -> chart series. This is the one place that knows the demo's BOPTEST point
- * names (by their ids) and converts units for display (K -> °C, Pa -> kPa, W -> kW).
+ * names (by their ids) and which display unit each chart takes (K -> °C, Pa -> kPa, W -> kW);
+ * the conversions themselves live in `lib/format`.
  */
 import type { Series } from "@/components/viz/LineChart";
 import type { TickPoint } from "@/hooks/runStream";
+import { fractionToPercent, kelvinToCelsius, pascalsToKilopascals, wattsToKilowatts } from "@/lib/format";
 import type { Binding } from "@/types/generated/Binding";
 
 export const POINTS = {
@@ -57,50 +59,36 @@ function totalRequests(t: TickPoint): number | null {
   return seen ? total : null;
 }
 
+/** A conversion applied to a value only when there is one: a missing value stays missing. */
+const conv = (to: (v: number) => number) => (v: number | undefined): number | null => {
+  const n = num(v);
+  return n === null ? null : to(n);
+};
+const celsius = conv(kelvinToCelsius);
+const kpa = conv(pascalsToKilopascals);
+const kw = conv(wattsToKilowatts);
+const percent = conv(fractionToPercent);
+
 export function trends(ticks: TickPoint[]): Trends {
-  const c = (k: number) => num(k) === null ? null : k - 273.15;
   return {
     supplyTemperature: [
-      series("set", "setpoint sent", "var(--viz-1)", ticks, (t) => {
-        const v = num(t.writes[POINTS.tsupSet]);
-        return v === null ? null : c(v);
-      }, true),
-      series("meas", "measured", "var(--viz-2)", ticks, (t) => {
-        const v = num(t.readings[POINTS.tsup]);
-        return v === null ? null : c(v);
-      }),
+      series("set", "setpoint sent", "var(--viz-1)", ticks, (t) => celsius(t.writes[POINTS.tsupSet]), true),
+      series("meas", "measured", "var(--viz-2)", ticks, (t) => celsius(t.readings[POINTS.tsup])),
     ],
     pressure: [
-      series("set", "setpoint sent", "var(--viz-1)", ticks, (t) => {
-        const v = num(t.writes[POINTS.dpSet]);
-        return v === null ? null : v / 1000;
-      }, true),
-      series("meas", "measured", "var(--viz-2)", ticks, (t) => {
-        const v = num(t.readings[POINTS.dp]);
-        return v === null ? null : v / 1000;
-      }),
+      series("set", "setpoint sent", "var(--viz-1)", ticks, (t) => kpa(t.writes[POINTS.dpSet]), true),
+      series("meas", "measured", "var(--viz-2)", ticks, (t) => kpa(t.readings[POINTS.dp])),
     ],
     requests: [series("req", "requests", "var(--viz-1)", ticks, totalRequests)],
     valves: FLOORS.map((f, i) =>
-      series(`f${f}`, `floor ${f}`, `var(--viz-${i + 1})`, ticks, (t) => {
-        const v = num(t.readings[POINTS.valve(f)]);
-        return v === null ? null : v * 100;
-      }),
+      series(`f${f}`, `floor ${f}`, `var(--viz-${i + 1})`, ticks, (t) => percent(t.readings[POINTS.valve(f)])),
     ),
-    chillerPower: [
-      series("chi", "chillers", "var(--viz-1)", ticks, (t) => {
-        const v = num(t.readings[POINTS.chillers]);
-        return v === null ? null : v / 1000;
-      }),
-    ],
+    chillerPower: [series("chi", "chillers", "var(--viz-1)", ticks, (t) => kw(t.readings[POINTS.chillers]))],
     ductSetpoints: FLOORS.map((f, i) =>
       series(`f${f}`, floorLabel(f), `var(--viz-${i + 1})`, ticks, (t) => num(t.writes[POINTS.ductSet(f)]), true),
     ),
     fanPower: FLOORS.map((f, i) =>
-      series(`f${f}`, floorLabel(f), `var(--viz-${i + 1})`, ticks, (t) => {
-        const v = num(t.readings[POINTS.fan(f)]);
-        return v === null ? null : v / 1000;
-      }),
+      series(`f${f}`, floorLabel(f), `var(--viz-${i + 1})`, ticks, (t) => kw(t.readings[POINTS.fan(f)])),
     ),
   };
 }
@@ -149,7 +137,7 @@ export function ownTrends(ticks: TickPoint[], bindings: Record<string, Binding>)
     const unitOf = (template: string) => units?.[template] ?? (units === undefined && KELVIN_NAME.test(template) ? "K" : "");
     for (const o of b.outputs.filter((o) => o.point !== "")) {
       const k = unitOf(`${o.point}_u`) === "K";
-      const show = (v: number | null) => (v === null ? null : k ? v - 273.15 : v);
+      const show = (v: number | null) => (v === null ? null : k ? kelvinToCelsius(v) : v);
       charts.push({
         id: `${spec}-${o.output}`,
         title: `${o.output} (${spec})`,
@@ -172,7 +160,7 @@ export function ownTrends(ticks: TickPoint[], bindings: Record<string, Binding>)
         series: floors.map((f, i) =>
           series(`in${f}`, floors.length > 1 ? `floor ${f}` : "read", `var(--viz-${i + 1})`, ticks, (t) => {
             const v = num(t.readings[onFloor(input.point, f)]);
-            return v === null ? null : k ? v - 273.15 : v;
+            return v === null ? null : k ? kelvinToCelsius(v) : v;
           }),
         ),
       });

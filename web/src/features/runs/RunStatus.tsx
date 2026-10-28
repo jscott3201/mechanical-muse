@@ -12,8 +12,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import type { RunStreamState } from "@/hooks/runStream";
-
-export type Connection = "idle" | "connecting" | "open" | "reconnecting" | "closed";
+import type { Connection } from "@/hooks/useEventStream";
 
 type StatusProps = {
   stream: RunStreamState;
