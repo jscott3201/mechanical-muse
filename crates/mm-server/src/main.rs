@@ -61,7 +61,8 @@ async fn main() -> anyhow::Result<()> {
     };
     let spark = match std::env::var("MODEL_API_KEY") {
         Ok(key) if !key.trim().is_empty() => Some(std::sync::Arc::new(
-            mm_agent::SparkClient::new(key).context("building the model client")?,
+            mm_agent::SparkClient::new(key.trim().to_owned())
+                .context("building the model client")?,
         )),
         _ => None,
     };

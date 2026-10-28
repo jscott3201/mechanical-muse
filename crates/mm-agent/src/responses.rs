@@ -180,7 +180,9 @@ pub struct SparkClient {
 impl SparkClient {
     /// `mm-server` reads the key from `MODEL_API_KEY` and passes it here; nothing else should.
     pub fn new(api_key: String) -> Result<Self, ModelError> {
-        if api_key.trim().is_empty() {
+        // A key pasted into an env file often carries a newline, which is not a valid header.
+        let api_key = api_key.trim().to_owned();
+        if api_key.is_empty() {
             return Err(ModelError::Config {
                 message: "empty API key".into(),
             });
@@ -288,5 +290,18 @@ impl ModelClient for SparkClient {
                 None => return Err(failure.error),
             }
         }
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_key_is_sent_without_surrounding_whitespace() {
+        let client = SparkClient::new(" key-value\n".into()).unwrap();
+        assert_eq!(client.api_key.0, "key-value");
+        assert!(SparkClient::new(" \n".into()).is_err());
     }
 }
