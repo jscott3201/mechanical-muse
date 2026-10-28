@@ -4,7 +4,7 @@
 
 use std::path::Path;
 
-use mm_runtime::ledger::{self, Carrier, Ledger, Line};
+use mm_runtime::ledger::{self, Basis, Carrier, Ledger, Line, Prices};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -15,52 +15,79 @@ use crate::run_dto::{Envelope, Fault, RunConfig, RunEvent};
 #[ts(export)]
 pub struct LedgerFactors {
     pub electricity_kg_per_kwh: f64,
-    pub gas_kg_per_kwh: f64,
-    pub electricity_usd_per_kwh: f64,
-    pub gas_usd_per_kwh: f64,
+    /// Absent when the building burns no fuel on site.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub gas_kg_per_kwh: Option<f64>,
+    /// Constant prices per kWh; absent when the price varies (the home's spot prices).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub electricity_price_per_kwh: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub gas_price_per_kwh: Option<f64>,
+    /// ISO code every cost here is in (BOPTEST's own for the test case).
+    pub currency: String,
     /// Floor area BOPTEST divides its KPIs by (m2).
     pub area_m2: f64,
     pub source: String,
 }
 
 impl LedgerFactors {
-    pub fn boptest() -> Self {
+    pub fn of(basis: &Basis) -> Self {
+        let (e, g) = match basis.prices {
+            Prices::Constant { electricity, gas } => (Some(electricity), Some(gas)),
+            Prices::Varying => (None, None),
+        };
         Self {
-            electricity_kg_per_kwh: ledger::ELEC_KG_PER_KWH,
-            gas_kg_per_kwh: ledger::GAS_KG_PER_KWH,
-            electricity_usd_per_kwh: ledger::ELEC_USD_PER_KWH,
-            gas_usd_per_kwh: ledger::GAS_USD_PER_KWH,
-            area_m2: ledger::AREA_M2,
-            source: "BOPTEST v0.9.0 multizone_office_complex_air: emissions.csv, prices.csv \
-                (Constant), config.json"
-                .into(),
+            electricity_kg_per_kwh: basis.electricity_kg_per_kwh,
+            gas_kg_per_kwh: basis.gas_kg_per_kwh,
+            electricity_price_per_kwh: e,
+            gas_price_per_kwh: g.filter(|_| basis.gas_kg_per_kwh.is_some()),
+            currency: basis.currency.to_owned(),
+            area_m2: basis.area_m2,
+            source: basis.source.to_owned(),
         }
+    }
+
+    /// The office's factors.
+    pub fn boptest() -> Self {
+        Self::of(&Basis::office())
     }
 }
 
-/// Energy, emissions and cost of one carrier, or their sum, or a change in them.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
+/// Energy, emissions and cost of one carrier, or their sum, or a change in them. Cost is in the
+/// ledger's currency.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct Amounts {
     pub kwh: f64,
     pub kg_co2e: f64,
-    pub usd: f64,
+    pub cost: f64,
 }
 
 impl Amounts {
-    fn of(carrier: Carrier, kwh: f64) -> Self {
-        Self {
-            kwh,
-            kg_co2e: kwh * carrier.kg_per_kwh(),
-            usd: kwh * carrier.usd_per_kwh(),
-        }
-    }
-
     fn plus(self, o: Self) -> Self {
         Self {
             kwh: self.kwh + o.kwh,
             kg_co2e: self.kg_co2e + o.kg_co2e,
-            usd: self.usd + o.usd,
+            cost: self.cost + o.cost,
+        }
+    }
+
+    fn minus(self, o: Self) -> Self {
+        Self {
+            kwh: self.kwh - o.kwh,
+            kg_co2e: self.kg_co2e - o.kg_co2e,
+            cost: self.cost - o.cost,
+        }
+    }
+
+    fn of_ledger(l: &Ledger, carrier: Carrier) -> Self {
+        Self {
+            kwh: l.kwh(carrier),
+            kg_co2e: l.kg_co2e(carrier),
+            cost: l.cost(carrier),
         }
     }
 }
@@ -84,7 +111,11 @@ impl From<&Line> for EndUseView {
             id: l.id.clone(),
             label: l.label.clone(),
             scope: l.carrier.scope(),
-            amounts: Amounts::of(l.carrier, l.kwh),
+            amounts: Amounts {
+                kwh: l.kwh,
+                kg_co2e: l.kg_co2e,
+                cost: l.cost,
+            },
             measured: l.measured,
         }
     }
@@ -122,14 +153,17 @@ pub struct LedgerSubject {
 pub struct RunLedger {
     pub subject: LedgerSubject,
     pub factors: LedgerFactors,
-    /// Gas burnt on site (the boiler).
+    /// Fuel burnt on site (the office's boiler); zero for an all-electric building.
     pub scope1: Amounts,
-    /// Electricity bought (chillers, pumps, towers, fans, freeze coils).
+    /// Electricity bought.
     pub scope2: Amounts,
     pub total: Amounts,
-    /// BOPTEST's own operating cost KPI for the run.
-    pub boptest_cost_usd: f64,
-    /// True when the exact split re-prices to BOPTEST's cost and neither scope is negative.
+    /// BOPTEST's own operating cost KPI for the run, in the factors' currency.
+    pub boptest_cost: f64,
+    /// BOPTEST's cost over the run's energy: what each kWh cost on average.
+    pub average_price_per_kwh: f64,
+    /// The split checks against BOPTEST (constant prices: re-prices to its cost; varying
+    /// prices: its emissions equal the energy times the factor) and neither scope is negative.
     pub reconciles: bool,
     /// True when every KPI power signal was recorded in every tick, so `end_uses` is filled.
     pub measured: bool,
@@ -182,7 +216,7 @@ pub enum LedgerFailure {
     Kpis(#[from] ledger::LedgerError),
     #[error("{0}")]
     WindowMismatch(String),
-    #[error("the ledger covers the office only, not {0}")]
+    #[error("no ledger basis for test case {0}")]
     OtherBuilding(String),
 }
 
@@ -225,10 +259,8 @@ pub fn from_events(reference: &str, events: &[Envelope]) -> Result<RunLedger, Le
             _ => None,
         })
         .ok_or(LedgerFailure::NotStarted)?;
-    // The factors, prices and end uses here are the office's.
-    if config.case != mm_runtime::preset::CASE {
-        return Err(LedgerFailure::OtherBuilding(config.case.clone()));
-    }
+    let basis = Basis::for_case(&config.case)
+        .ok_or_else(|| LedgerFailure::OtherBuilding(config.case.clone()))?;
     let kpis = events
         .iter()
         .rev()
@@ -248,23 +280,30 @@ pub fn from_events(reference: &str, events: &[Envelope]) -> Result<RunLedger, Le
         .iter()
         .filter(|e| matches!(e.event, RunEvent::Tick { .. }))
         .count();
-    let l = ledger::compute(kpis, &samples)?;
+    let l = ledger::compute_for(&basis, kpis, &samples)?;
     Ok(view(
+        &basis,
         subject(reference, config, u32::try_from(ticks).unwrap_or(u32::MAX)),
         &l,
     ))
 }
 
-fn view(subject: LedgerSubject, l: &Ledger) -> RunLedger {
-    let scope1 = Amounts::of(Carrier::Gas, l.gas_kwh);
-    let scope2 = Amounts::of(Carrier::Electricity, l.electricity_kwh);
+fn view(basis: &Basis, subject: LedgerSubject, l: &Ledger) -> RunLedger {
+    let scope1 = Amounts::of_ledger(l, Carrier::Gas);
+    let scope2 = Amounts::of_ledger(l, Carrier::Electricity);
+    let total = scope1.plus(scope2);
     RunLedger {
         subject,
-        factors: LedgerFactors::boptest(),
+        factors: LedgerFactors::of(basis),
         scope1,
         scope2,
-        total: scope1.plus(scope2),
-        boptest_cost_usd: l.boptest_cost_usd,
+        total,
+        boptest_cost: l.boptest_cost,
+        average_price_per_kwh: if total.kwh > 0.0 {
+            l.boptest_cost / total.kwh
+        } else {
+            0.0
+        },
         reconciles: l.reconciles,
         measured: l.measured,
         missing: l.missing.clone(),
@@ -303,54 +342,34 @@ pub fn window_mismatch(a: &LedgerSubject, b: &LedgerSubject) -> Option<String> {
     })
 }
 
-/// Rebuilds the core ledger from a view, so the delta is computed in one place.
-fn core(v: &RunLedger) -> Ledger {
-    let carrier = |scope| {
-        if scope == 1 {
-            Carrier::Gas
-        } else {
-            Carrier::Electricity
-        }
-    };
-    Ledger {
-        electricity_kwh: v.scope2.kwh,
-        gas_kwh: v.scope1.kwh,
-        boptest_cost_usd: v.boptest_cost_usd,
-        repriced_cost_usd: v.total.usd,
-        reconciles: v.reconciles,
-        measured: v.measured,
-        missing: v.missing.clone(),
-        end_uses: v
-            .end_uses
-            .iter()
-            .map(|e| Line {
-                id: e.id.clone(),
-                label: e.label.clone(),
-                carrier: carrier(e.scope),
-                kwh: e.amounts.kwh,
-                measured: e.measured,
-            })
-            .collect(),
-        tdis_tot: v.tdis_tot,
-        idis_tot: v.idis_tot,
-    }
-}
-
 /// `b − a`, refused unless both cover the same window.
 pub fn compare(a: RunLedger, b: RunLedger) -> Result<LedgerComparison, LedgerFailure> {
     if let Some(why) = window_mismatch(&a.subject, &b.subject) {
         return Err(LedgerFailure::WindowMismatch(why));
     }
-    let d = ledger::delta(&core(&a), &core(&b));
-    let scope1 = Amounts::of(Carrier::Gas, d.gas_kwh);
-    let scope2 = Amounts::of(Carrier::Electricity, d.electricity_kwh);
+    // End uses only when both runs recorded every signal.
+    let end_uses = if a.measured && b.measured {
+        b.end_uses
+            .iter()
+            .filter_map(|eb| {
+                let ea = a.end_uses.iter().find(|e| e.id == eb.id)?;
+                Some(EndUseView {
+                    amounts: eb.amounts.minus(ea.amounts),
+                    ..eb.clone()
+                })
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let diff = |x: Option<f64>, y: Option<f64>| Some(y? - x?);
     let delta = LedgerDelta {
-        scope1,
-        scope2,
-        total: scope1.plus(scope2),
-        end_uses: d.end_uses.iter().map(EndUseView::from).collect(),
-        tdis_tot: d.tdis_tot,
-        idis_tot: d.idis_tot,
+        scope1: b.scope1.minus(a.scope1),
+        scope2: b.scope2.minus(a.scope2),
+        total: b.total.minus(a.total),
+        end_uses,
+        tdis_tot: diff(a.tdis_tot, b.tdis_tot),
+        idis_tot: diff(a.idis_tot, b.idis_tot),
     };
     Ok(LedgerComparison { a, b, delta })
 }

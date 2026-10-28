@@ -12,7 +12,7 @@ import type { Fault } from "@/types/generated/Fault";
 import type { LedgerComparison } from "@/types/generated/LedgerComparison";
 import type { RunLedger } from "@/types/generated/RunLedger";
 
-import { LEDGER_FOOTER, endUsesMissing, faultBanner, percentOf, signed, signedUsd } from "./ledger";
+import { digitsFor, endUsesMissing, faultBanner, ledgerFooter, money, percentOf, signed, signedMoney } from "./ledger";
 
 /** The run's ledger and its comparisons, fetched once the run has reported BOPTEST's KPIs. */
 export function RunEmissions({
@@ -54,11 +54,11 @@ export function RunEmissions({
   );
 }
 
-function Change({ d, base, unit }: { d: number; base: number; unit: string }) {
+function Change({ d, base, unit, digits }: { d: number; base: number; unit: string; digits: number }) {
   const pct = percentOf(d, base);
   return (
     <span className="text-xs text-muted-foreground tabular-nums">
-      vs baseline: {signed(d)} {unit}
+      vs baseline: {signed(d, digits)} {unit}
       {pct === null ? "" : ` (${signed(pct, 1)} %)`}
     </span>
   );
@@ -71,6 +71,9 @@ function ScopeCard({
   a,
   d,
   base,
+  currency,
+  digits,
+  none,
 }: {
   title: string;
   note: string;
@@ -78,6 +81,10 @@ function ScopeCard({
   a: Amounts;
   d: Amounts | null;
   base: Amounts | null;
+  currency: string;
+  digits: number;
+  /** The scope does not apply to this building: say so instead of showing zeros. */
+  none?: boolean;
 }) {
   return (
     <Card className="py-4">
@@ -86,11 +93,17 @@ function ScopeCard({
           {icon}
           {title}
         </span>
-        <span className="text-2xl font-semibold tabular-nums">{formatNumber(a.kg_co2e, 0)} kgCO₂e</span>
-        <span className="text-sm tabular-nums">
-          {formatNumber(a.kwh, 0)} kWh · ${formatNumber(a.usd, 0)}
-        </span>
-        {d && base && <Change d={d.kg_co2e} base={base.kg_co2e} unit="kg" />}
+        {none ? (
+          <span className="text-2xl font-semibold">None</span>
+        ) : (
+          <>
+            <span className="text-2xl font-semibold tabular-nums">{formatNumber(a.kg_co2e, digits)} kgCO₂e</span>
+            <span className="text-sm tabular-nums">
+              {formatNumber(a.kwh, digits)} kWh · {money(a.cost, currency, digits)}
+            </span>
+            {d && base && <Change d={d.kg_co2e} base={base.kg_co2e} unit="kg" digits={digits} />}
+          </>
+        )}
         <span className="text-xs text-muted-foreground">{note}</span>
       </CardContent>
     </Card>
@@ -116,13 +129,20 @@ export function EmissionsPanel({
   const d = vsBaseline?.delta ?? null;
   const base = vsBaseline?.a ?? null;
   const deltaById = new Map((d?.end_uses ?? []).map((e) => [e.id, e.amounts]));
+  const f = ledger.factors;
+  const cur = f.currency;
+  const digits = digitsFor(f);
+  // An all-electric building burns nothing on site, and its prices may vary hour by hour.
+  const allElectric = f.gas_kg_per_kwh === undefined;
+  const spot = f.electricity_price_per_kwh === undefined;
   return (
     <Card>
       <CardHeader>
         <CardTitle>Energy &amp; emissions</CardTitle>
         <CardDescription>
-          Scope 1 (gas burnt on site) and Scope 2 (electricity bought), split exactly from BOPTEST&apos;s energy and
-          emission KPIs for this run.
+          {allElectric
+            ? "All electric: Scope 2 (electricity bought) only, from BOPTEST's energy, emission and cost KPIs for this run."
+            : "Scope 1 (gas burnt on site) and Scope 2 (electricity bought), split exactly from BOPTEST's energy and emission KPIs for this run."}
           {vsBaseline && baselineSource ? ` Changes are against the ${baselineSource}, same window.` : ""}
         </CardDescription>
       </CardHeader>
@@ -135,38 +155,54 @@ export function EmissionsPanel({
               {faultBanner(
                 fault,
                 vsHealthy && healthySource ? { delta: vsHealthy.delta.total, source: healthySource } : null,
+                cur,
+                digits,
               )}
             </AlertDescription>
           </Alert>
         )}
         {!ledger.reconciles && (
           <p className="flex items-center gap-2 text-sm text-destructive">
-            <TriangleAlert aria-hidden="true" className="size-4" /> The split does not re-price to BOPTEST&apos;s
-            cost (${formatNumber(ledger.boptest_cost_usd, 2)}); treat these numbers with care.
+            <TriangleAlert aria-hidden="true" className="size-4" />{" "}
+            {spot
+              ? "BOPTEST's emissions do not match its energy times the factor"
+              : `The split does not re-price to BOPTEST's cost (${money(ledger.boptest_cost, cur, 2)})`}
+            ; treat these numbers with care.
           </p>
         )}
         <div className="grid gap-3 sm:grid-cols-3">
           <ScopeCard
             title="Scope 1"
-            note="Gas: the boiler (zone reheat)"
+            note={allElectric ? "No fuel burnt on site: the heat pump runs on electricity" : "Gas: the boiler (zone reheat)"}
             icon={<Factory aria-hidden="true" className="size-4" />}
             a={ledger.scope1}
             d={d?.scope1 ?? null}
             base={base?.scope1 ?? null}
+            currency={cur}
+            digits={digits}
+            none={allElectric}
           />
           <ScopeCard
             title="Scope 2"
-            note="Electricity: chillers, pumps, towers, fans"
+            note={allElectric ? "Electricity: heat pump, its fan, the floor pump" : "Electricity: chillers, pumps, towers, fans"}
             icon={<Zap aria-hidden="true" className="size-4" />}
             a={ledger.scope2}
             d={d?.scope2 ?? null}
             base={base?.scope2 ?? null}
+            currency={cur}
+            digits={digits}
           />
           <Card className="py-4">
             <CardContent className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Total and comfort</span>
-              <span className="text-2xl font-semibold tabular-nums">${formatNumber(ledger.total.usd, 0)}</span>
-              {d && <span className="text-xs text-muted-foreground tabular-nums">vs baseline: {signedUsd(d.total.usd)}</span>}
+              <span className="text-2xl font-semibold tabular-nums">{money(ledger.total.cost, cur, digits)}</span>
+              {d && <span className="text-xs text-muted-foreground tabular-nums">vs baseline: {signedMoney(d.total.cost, cur, digits)}</span>}
+              {spot && (
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  Average price paid {money(ledger.average_price_per_kwh, cur, 4)}/kWh
+                  {base ? ` (baseline ${money(base.average_price_per_kwh, cur, 4)})` : ""}
+                </span>
+              )}
               <span className="text-sm tabular-nums">
                 Thermal discomfort {ledger.tdis_tot === undefined ? "no data" : `${formatNumber(ledger.tdis_tot, 3)} K·h per zone`}
               </span>
@@ -187,7 +223,7 @@ export function EmissionsPanel({
                   <TableHead>Scope</TableHead>
                   <TableHead className="text-right">kWh</TableHead>
                   <TableHead className="text-right">kgCO₂e</TableHead>
-                  <TableHead className="text-right">$</TableHead>
+                  <TableHead className="text-right">{cur === "EUR" ? "€" : "$"}</TableHead>
                   {deltaById.size > 0 && <TableHead className="text-right">vs baseline (kgCO₂e)</TableHead>}
                 </TableRow>
               </TableHeader>
@@ -200,11 +236,11 @@ export function EmissionsPanel({
                       <TableCell>
                         <Badge variant="outline">{e.scope}</Badge>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{formatNumber(e.amounts.kwh, 0)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatNumber(e.amounts.kg_co2e, 0)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatNumber(e.amounts.usd, 0)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatNumber(e.amounts.kwh, digits)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatNumber(e.amounts.kg_co2e, digits)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatNumber(e.amounts.cost, digits)}</TableCell>
                       {deltaById.size > 0 && (
-                        <TableCell className="text-right tabular-nums">{change ? signed(change.kg_co2e) : "—"}</TableCell>
+                        <TableCell className="text-right tabular-nums">{change ? signed(change.kg_co2e, digits) : "—"}</TableCell>
                       )}
                     </TableRow>
                   );
@@ -212,14 +248,15 @@ export function EmissionsPanel({
               </TableBody>
             </Table>
             <p className="mt-1 text-xs text-muted-foreground">
-              End uses integrate the power readings recorded every 120 s; the rows marked as not in the samples are the
-              rest of BOPTEST&apos;s exact total (its finer integration and the last step).
+              End uses integrate the power readings recorded every {ledger.subject.step_s} s; the rows marked as not in
+              the samples are the rest of BOPTEST&apos;s exact total (its finer integration and the last step).
+              {spot ? " With spot prices, each end use is priced at the run's average price paid." : ""}
             </p>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">{endUsesMissing(ledger)}</p>
         )}
-        <p className="border-t pt-3 text-xs text-muted-foreground">{LEDGER_FOOTER}</p>
+        <p className="border-t pt-3 text-xs text-muted-foreground">{ledgerFooter(f)}</p>
       </CardContent>
     </Card>
   );

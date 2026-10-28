@@ -69,7 +69,7 @@ findings (`unknown-class`, `undriven`, `type-mismatch`, ...), engine diagnostics
 | `validate_graph` | `graph`, `spec` (optional) | `ok`, `code`, validator `findings`, and `interface_problems` against the spec |
 | `emit_cxf` | `graph`, `spec` (optional) | CXF text, byte count and the engine content id; with a spec the graph takes the spec's name, as in `verify_graph` |
 | `verify_graph` | `graph`, `spec` | `passed`, `summary` ("passes X of Y scenarios"), `stage` (interface, validate, emit, load, replay), `code`, `content_id`, every scenario's result (a failure gives the first failing time, output, expected and actual values and the window), and `feedback`, the repair message our agent would get (loop chains, inputs at the failing time) |
-| `run_ledger` | `record` | A recorded run's Scope 1 (gas) and Scope 2 (electricity) energy, kgCO2e and USD, `reconciles`, `measured`, end uses when measured, discomfort KPIs ([emissions.md](emissions.md)) |
+| `run_ledger` | `record` | A recorded run's Scope 1 (gas) and Scope 2 (electricity) energy, kgCO2e and cost (`factors.currency`: USD office, EUR home), `reconciles`, `measured`, end uses when measured, discomfort KPIs ([emissions.md](emissions.md)) |
 | `compare_runs` | `a`, `b` | Both ledgers and `delta` = b minus a; `window-mismatch` unless both cover the same window |
 
 What the tools keep back: `get_spec` shows scenario names and descriptions but not expected

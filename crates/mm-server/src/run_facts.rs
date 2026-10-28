@@ -23,7 +23,9 @@ fn r3(x: f64) -> f64 {
 }
 
 fn amounts(a: &Amounts) -> Value {
-    json!({"kwh": r0(a.kwh), "kg_co2e": r0(a.kg_co2e), "usd": r0(a.usd)})
+    // Key names unchanged: recorded explanations are found by a digest of these facts, and
+    // facts are only built for office runs, whose costs are in USD.
+    json!({"kwh": r0(a.kwh), "kg_co2e": r0(a.kg_co2e), "usd": r0(a.cost)})
 }
 
 fn pct(change: f64, base: f64) -> Option<f64> {
@@ -48,7 +50,7 @@ fn change(c: &LedgerComparison) -> Value {
             "scope2_electricity": amounts(&d.scope2),
             "total": amounts(&d.total),
             "total_kg_co2e_percent": pct(d.total.kg_co2e, c.a.total.kg_co2e),
-            "total_usd_percent": pct(d.total.usd, c.a.total.usd),
+            "total_usd_percent": pct(d.total.cost, c.a.total.cost),
             "thermal_discomfort_kh_per_zone": d.tdis_tot.map(r3),
         },
     })

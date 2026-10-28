@@ -85,7 +85,7 @@ fn ledgers_and_comparisons_of_recorded_runs() {
     assert_eq!(l["measured"], false);
     let c = ok(2);
     assert!(near(&c["b"]["scope1"]["kg_co2e"], 796.0));
-    assert!(near(&c["delta"]["total"]["usd"], 694.97 - 963.53));
+    assert!(near(&c["delta"]["total"]["cost"], 694.97 - 963.53));
     assert_eq!(err(3), "window-mismatch");
     assert_eq!(err(4), "unknown-record");
     assert_eq!(err(5), "invalid-arguments");

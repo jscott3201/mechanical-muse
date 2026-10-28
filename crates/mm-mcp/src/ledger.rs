@@ -18,12 +18,12 @@ pub fn definitions() -> Vec<Value> {
         json!({
             "name": "run_ledger",
             "title": "Scope 1 and 2 ledger of a recorded run",
-            "description": "Energy (kWh), emissions (kgCO2e) and cost (USD) of one recorded \
-                BOPTEST run: Scope 1 (gas, the boiler) and Scope 2 (electricity), split exactly \
-                from BOPTEST's own KPIs with its constant factors and prices, re-priced against \
-                its cost KPI (`reconciles`). End uses (chillers, pumps, towers, fans, freeze \
-                coils, boiler) only when the record has every power reading (`measured`). \
-                Simulation results; HVAC loads only, no Scope 3.",
+            "description": "Energy (kWh), emissions (kgCO2e) and cost (in `factors.currency`: \
+                USD for the office, EUR for the home) of one recorded BOPTEST run: Scope 1 (gas, \
+                the office's boiler; none for the all-electric home) and Scope 2 (electricity), \
+                from BOPTEST's own KPIs with its factors for the test case and checked against \
+                them (`reconciles`). End uses only when the record has every power reading \
+                (`measured`). Simulation results; heating and cooling loads only, no Scope 3.",
             "inputSchema": {
                 "type": "object",
                 "properties": {"record": record("The run")},

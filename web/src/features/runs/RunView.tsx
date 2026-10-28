@@ -198,8 +198,7 @@ function RunStream({
         />
       )}
 
-      {/* The emissions ledger covers the office only. */}
-      {!home && <RunEmissions runId={runId} hasKpis={hasKpis} fault={cfg?.fault} comparisons={comparisons} />}
+      <RunEmissions runId={runId} hasKpis={hasKpis} fault={cfg?.fault} comparisons={comparisons} />
 
       {home && stream.ticks.length > 0 && <HomeCharts ticks={stream.ticks} />}
 

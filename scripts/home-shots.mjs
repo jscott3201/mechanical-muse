@@ -4,7 +4,7 @@
 //   node scripts/home-shots.mjs http://127.0.0.1:8080 <out-dir> <port>
 // It replays fixtures/replays/home-day108-sequence (the recorded home baseline of the same
 // window sits beside it) and writes home-run-{light,dark}.png (the top of the run view) and
-// home-charts-{light,dark}.png (the charts). Resize to 1600 px wide before committing.
+// home-emissions-{light,dark}.png (the ledger) and home-charts-{light,dark}.png (the charts). Resize to 1600 px wide before committing.
 import { writeFileSync } from "node:fs";
 
 const [base, out, port] = process.argv.slice(2);
@@ -71,6 +71,10 @@ for (const theme of ["light", "dark"]) {
   await sleep(600);
   let { data } = await send("Page.captureScreenshot", { format: "png" });
   writeFileSync(`${out}/home-run-${theme}.png`, Buffer.from(data, "base64"));
+  await evaluate(`(() => { const h = [...document.querySelectorAll("div")].find(d => d.textContent.trim().startsWith("Energy & emissions")); h && h.scrollIntoView(); window.scrollBy(0, -90); return true; })()`);
+  await sleep(800);
+  ({ data } = await send("Page.captureScreenshot", { format: "png" }));
+  writeFileSync(`${out}/home-emissions-${theme}.png`, Buffer.from(data, "base64"));
   await evaluate(`(() => { const h = [...document.querySelectorAll("h3, div")].find(d => d.textContent.trim().startsWith("Room temperature and comfort band")); h && h.scrollIntoView(); window.scrollBy(0, -100); return true; })()`);
   await sleep(800);
   ({ data } = await send("Page.captureScreenshot", { format: "png" }));
