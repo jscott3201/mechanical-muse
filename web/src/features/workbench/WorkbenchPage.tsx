@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useResource } from "@/hooks/useResource";
 import { useAcceptSequence, useReadSequence } from "@/hooks/useWorkbench";
 import { formatWithUnit } from "@/lib/format";
 import {
@@ -20,6 +21,8 @@ import {
   totalProblem,
   withExpected,
 } from "@/lib/workbench";
+import type { BindingView } from "@/types/generated/BindingView";
+import type { DraftInfo } from "@/types/generated/DraftInfo";
 import type { PointDraft } from "@/types/generated/PointDraft";
 import type { ReadView } from "@/types/generated/ReadView";
 import type { SequenceDraft } from "@/types/generated/SequenceDraft";
@@ -30,8 +33,19 @@ import { JourneyBar } from "./JourneyBar";
 import { ScenarioTimeline } from "./ScenarioTimeline";
 
 const SAMPLES = [
-  { url: "/samples/ahu-sat-reset-sample.png", name: "ahu-sat-reset-sample.png", label: "Use the sample sequence sheet" },
-  { url: "/samples/ahu-sat-reset-sample-v2.png", name: "ahu-sat-reset-sample-v2.png", label: "Revision B of the sample" },
+  {
+    url: "/samples/ahu-sat-reset-sample.png",
+    name: "ahu-sat-reset-sample.png",
+    label: "Use the sample sequence sheet",
+    sequence: null,
+  },
+  {
+    url: "/samples/ahu-sat-reset-sample-v2.png",
+    name: "ahu-sat-reset-sample-v2.png",
+    label: "Revision B of the sample",
+    // Kept apart from revision A's sequence, and matching the recorded revision B runs.
+    sequence: "ahu1_sat_rev_b",
+  },
 ] as const;
 
 function Elapsed({ since }: { since: number }) {
@@ -44,14 +58,21 @@ function Elapsed({ since }: { since: number }) {
 }
 
 /** Step 1: the engineer's document, as text, PDF or image. */
-function SourceStep({ onRead }: { onRead: (text: string, files: WorkbenchAttachment[]) => void }) {
+function SourceStep({
+  onRead,
+}: {
+  onRead: (text: string, files: WorkbenchAttachment[], sequence: string | null) => void;
+}) {
   const [text, setText] = useState("");
+  // A sample may suggest its sequence name; any other input drops the suggestion.
+  const [suggested, setSuggested] = useState<string | null>(null);
   const [files, setFiles] = useState<WorkbenchAttachment[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
   const add = async (list: FileList | File[]) => {
     setProblem(null);
+    setSuggested(null);
     const next: WorkbenchAttachment[] = [];
     for (const f of Array.from(list)) {
       const p = fileProblem(f) ?? totalProblem([...files, ...next], f.size);
@@ -68,6 +89,7 @@ function SourceStep({ onRead }: { onRead: (text: string, files: WorkbenchAttachm
     setFiles([await fileToAttachment(blob, sample.name)]);
     setText("");
     setPreview(sample.url);
+    setSuggested(sample.sequence);
   };
 
   return (
@@ -86,7 +108,10 @@ function SourceStep({ onRead }: { onRead: (text: string, files: WorkbenchAttachm
           <textarea
             id="wb-text"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              setSuggested(null);
+            }}
             rows={8}
             placeholder="3.1 While the AHU is off, the setpoint is 55 °F. …"
             className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
@@ -136,7 +161,7 @@ function SourceStep({ onRead }: { onRead: (text: string, files: WorkbenchAttachm
           <img src={preview} alt="The sample sequence sheet" className="max-h-80 w-auto self-start rounded-md border" />
         )}
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => onRead(text, files)} disabled={!text.trim() && files.length === 0}>
+          <Button onClick={() => onRead(text, files, suggested)} disabled={!text.trim() && files.length === 0}>
             <Sparkles aria-hidden="true" /> Read with Muse Spark
           </Button>
           {SAMPLES.map((sample) => (
@@ -222,14 +247,17 @@ function ExpectedInput({
 /** Step 2: the engineer reviews Spark's reading, keeps or edits scenarios, and accepts. */
 function ReviewStep({
   view,
+  name,
   onAccepted,
   onRestart,
 }: {
   view: ReadView;
+  /** A sequence name to start from instead of the one Spark proposed (still editable). */
+  name: string | null;
   onAccepted: (spec: string) => void;
   onRestart: () => void;
 }) {
-  const [draft, setDraft] = useState<SequenceDraft>(view.draft);
+  const [draft, setDraft] = useState<SequenceDraft>(name ? { ...view.draft, name } : view.draft);
   const [kept, setKept] = useState<Set<string>>(() => new Set(view.draft.scenarios.map((s) => s.name)));
   const accept = useAcceptSequence();
   const unitOf = useMemo(() => {
@@ -431,38 +459,95 @@ function ReviewStep({
   );
 }
 
-export function WorkbenchPage({ onOpenSpec }: { onOpenSpec: (spec: string) => void }) {
+/** Where the accepted sequence stands, from the server; reloaded each time the page shows. */
+function useAcceptedFacts(spec: string | null, active: boolean) {
+  const drafts = useResource<DraftInfo[]>(spec ? "/api/drafts" : null);
+  // A sequence with no confirmed binding answers 404: "not bound yet", not an error to show.
+  const binding = useResource<BindingView>(spec ? `/api/workbench/${encodeURIComponent(spec)}/binding` : null);
+  const { reload: reloadDrafts } = drafts;
+  const { reload: reloadBinding } = binding;
+  useEffect(() => {
+    if (active && spec) {
+      reloadDrafts();
+      reloadBinding();
+    }
+  }, [active, spec, reloadDrafts, reloadBinding]);
+  const verified = drafts.status === "ready" ? (drafts.data.find((d) => d.spec === spec)?.content_id ?? null) : null;
+  return { verified, bound: binding.status === "ready" };
+}
+
+/** After accepting: the sequence lives on its own page; this reading cannot be accepted twice. */
+function AcceptedStep({ spec, onOpen, onRestart }: { spec: string; onOpen: () => void; onRestart: () => void }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Sequence created</CardTitle>
+        <CardDescription className="max-w-prose">
+          <span className="font-mono">{spec}</span> was created from this reading with the scenarios you accepted.
+          Drafting, binding and runs continue on its own page.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-3">
+        <Button onClick={onOpen}>Open {spec}</Button>
+        <Button variant="ghost" onClick={onRestart}>
+          <RotateCcw aria-hidden="true" />
+          Read another document
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function WorkbenchPage({
+  onOpenSpec,
+  active = true,
+}: {
+  onOpenSpec: (spec: string) => void;
+  /** Whether this page is on screen (it stays mounted under a hidden tab). */
+  active?: boolean;
+}) {
   const read = useReadSequence();
   const state = read.state;
   // The sequence accepted from this reading: the page stays mounted while the spec page shows,
   // and coming back must not offer "Accept" as the next step again.
   const [accepted, setAccepted] = useState<{ key: string; spec: string } | null>(null);
+  // The sequence name a sample suggested for the reading it started.
+  const [suggested, setSuggested] = useState<string | null>(null);
   const readKey = state.status === "done" ? state.data.key : null;
   const spec = accepted !== null && accepted.key === readKey ? accepted.spec : null;
-  // Before a sequence exists, only reading and accepting can be done here; drafting and binding
-  // are tracked on its own page.
-  const bar = <JourneyBar read={state.status === "done"} spec={spec} verified={null} bound={false} />;
+  const facts = useAcceptedFacts(spec, active);
+  const bar = <JourneyBar read={state.status === "done"} spec={spec} verified={facts.verified} bound={facts.bound} />;
   if (state.status === "done") {
     const key = state.data.key;
     return (
       <div className="flex flex-col gap-4">
         {bar}
-        <ReviewStep
-          key={key}
-          view={state.data}
-          onAccepted={(name) => {
-            setAccepted({ key, spec: name });
-            onOpenSpec(name);
-          }}
-          onRestart={read.reset}
-        />
+        {spec !== null ? (
+          <AcceptedStep spec={spec} onOpen={() => onOpenSpec(spec)} onRestart={read.reset} />
+        ) : (
+          <ReviewStep
+            key={key}
+            view={state.data}
+            name={suggested}
+            onAccepted={(name) => {
+              setAccepted({ key, spec: name });
+              onOpenSpec(name);
+            }}
+            onRestart={read.reset}
+          />
+        )}
       </div>
     );
   }
   return (
     <div className="flex flex-col gap-4">
       {bar}
-      <SourceStep onRead={(text, attachments) => read.run({ text, attachments })} />
+      <SourceStep
+        onRead={(text, attachments, sequence) => {
+          setSuggested(sequence);
+          read.run({ text, attachments });
+        }}
+      />
       {state.status === "running" && (
         <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
           <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
