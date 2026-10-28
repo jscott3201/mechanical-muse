@@ -1,0 +1,21 @@
+---
+// Our own not-found page (Starlight's default route is disabled in astro.config.mjs).
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+
+const home = import.meta.env.BASE_URL;
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Page not found',
+    description: 'Return to the overview or search the Mechanical Muse documentation.',
+    template: 'splash',
+    editUrl: false,
+    pagefind: false,
+    hero: {
+      title: 'That page is not in these docs.',
+      tagline: 'Try search, or start again from the overview.',
+      actions: [{ text: 'Overview', link: home, icon: 'right-arrow' }],
+    },
+  }}
+/>
