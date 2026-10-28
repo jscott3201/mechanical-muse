@@ -188,3 +188,113 @@ fn a_delta_is_b_minus_a_and_deterministic() {
     let bare = ledger::compute(&kb, &[]).unwrap();
     assert!(ledger::delta(&a, &bare).end_uses.is_empty());
 }
+
+/// Samples `(t, readings)` with every KPI signal at `watts(point, k)` at t = 120 k.
+fn samples_by(n: usize, watts: impl Fn(&str, usize) -> f64) -> Vec<BTreeMap<String, f64>> {
+    (0..n)
+        .map(|k| {
+            ledger::kpi_points()
+                .into_iter()
+                .map(|p| {
+                    let w = watts(&p, k);
+                    (p, w)
+                })
+                .collect()
+        })
+        .collect()
+}
+
+#[test]
+fn a_ramp_integrates_by_the_trapezoid_rule() {
+    // Chiller power 0, 1000, 3000 W at 0, 120, 240 s; everything else off. Trapezoid:
+    // 120 * (0 + 1000) / 2 + 120 * (1000 + 3000) / 2 = 300,000 J (a left Riemann sum gives
+    // 120,000 J, a right one 480,000 J).
+    let chiller = [0.0, 1000.0, 3000.0];
+    let t = samples_by(3, |p, k| {
+        if p == "reaChiWatSys_reaPChi_y" {
+            chiller[k]
+        } else {
+            0.0
+        }
+    });
+    let s: Vec<_> = t
+        .iter()
+        .enumerate()
+        .map(|(i, r)| (i as f64 * 120.0, r))
+        .collect();
+    let l = ledger::compute(&day143_baseline(), &s).unwrap();
+    let chillers = l.end_uses.iter().find(|e| e.id == "chillers").unwrap();
+    assert!(
+        (chillers.kwh - 300_000.0 * 2.77778e-7).abs() < 1e-12,
+        "{}",
+        chillers.kwh
+    );
+    let fans = l.end_uses.iter().find(|e| e.id == "supply_fans").unwrap();
+    assert_eq!(fans.kwh, 0.0);
+}
+
+#[test]
+fn an_end_use_delta_is_b_minus_a_with_its_sign() {
+    let at = |boiler: f64, chiller: f64| {
+        samples_by(3, move |p, _| match p {
+            "reaHotWatSys_reaPBoi_y" => boiler,
+            "reaChiWatSys_reaPChi_y" => chiller,
+            _ => 100.0,
+        })
+    };
+    let (ta, tb) = (at(50_000.0, 10_000.0), at(20_000.0, 12_000.0));
+    let timed = |t: &[BTreeMap<String, f64>]| -> ledger::Ledger {
+        let s: Vec<_> = t
+            .iter()
+            .enumerate()
+            .map(|(i, r)| (i as f64 * 120.0, r))
+            .collect();
+        ledger::compute(&day143_baseline(), &s).unwrap()
+    };
+    let (a, b) = (timed(&ta), timed(&tb));
+    let d = ledger::delta(&a, &b);
+    let by = |id: &str| d.end_uses.iter().find(|e| e.id == id).unwrap().kwh;
+    let kwh = |w: f64| w * 240.0 * 2.77778e-7;
+    assert!(
+        (by("boiler") - kwh(20_000.0 - 50_000.0)).abs() < 1e-9,
+        "less gas is negative"
+    );
+    assert!(
+        (by("chillers") - kwh(2_000.0)).abs() < 1e-9,
+        "more chiller power is positive"
+    );
+    assert_eq!(by("supply_fans"), 0.0);
+    // Same KPI totals, so what the samples gained the unattributed row lost.
+    assert!((by("unattributed_gas") + by("boiler")).abs() < 1e-9);
+}
+
+/// Every committed recorded run's KPIs split into scopes that re-price exactly to BOPTEST's
+/// own cost (docs/emissions.md says so).
+#[test]
+fn every_committed_record_reconciles() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/replays");
+    let mut names: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.extension().is_some_and(|x| x == "jsonl"))
+        .collect();
+    names.sort();
+    assert_eq!(names.len(), 11);
+    for path in names {
+        let text = std::fs::read_to_string(&path).unwrap();
+        let kpis: BTreeMap<String, f64> = text
+            .lines()
+            .rev()
+            .filter_map(|l| serde_json::from_str::<serde_json::Value>(l).ok())
+            .find(|v| v["kind"] == "kpi")
+            .map(|v| serde_json::from_value(v["values"].clone()).unwrap())
+            .unwrap_or_else(|| panic!("{} has no KPIs", path.display()));
+        let l = ledger::compute(&kpis, &[]).unwrap();
+        assert!(l.reconciles, "{}: {l:?}", path.display());
+        assert!(
+            l.electricity_kwh > 0.0 && l.gas_kwh > 0.0,
+            "{}",
+            path.display()
+        );
+    }
+}
