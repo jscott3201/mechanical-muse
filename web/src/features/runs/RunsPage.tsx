@@ -25,6 +25,7 @@ import { ErrorNote } from "../ErrorNote";
 import { configFacts, describe } from "./describe";
 import { FAULT_CHOICES, type FaultKind, faultRequest } from "./faults";
 import { ReplayList } from "./ReplayList";
+import { RunMissing } from "./RunMissing";
 import { RunView } from "./RunView";
 import { formatSimTime } from "./trends";
 
@@ -421,9 +422,21 @@ export function RunsPage({
   const list = runs.status === "ready" ? [...runs.data].reverse() : [];
   const current = picked ?? list[0]?.id ?? null;
   const { reload } = runs;
+  // Runs started from this page exist even before the list is fetched again.
+  const [startedHere, setStartedHere] = useState<ReadonlySet<string>>(() => new Set());
+  // Runs live in the server's memory: a link from before a restart names a run it no longer has.
+  const missing =
+    current !== null && runs.status === "ready" && !startedHere.has(current) && !runs.data.some((r) => r.id === current)
+      ? current
+      : null;
+  useEffect(() => {
+    // The list may predate a run started elsewhere: look once more before calling it gone.
+    if (missing !== null) reload();
+  }, [missing, reload]);
   const view = useRef<HTMLElement>(null);
   const onStarted = useCallback(
     (started: RunInfo) => {
+      setStartedHere((s) => new Set(s).add(started.id));
       setPicked(started.id);
       onSelectRun?.(started.id);
       reload();
@@ -468,8 +481,11 @@ export function RunsPage({
         <ReplayList highlight={replay} onStarted={onStarted} />
       </div>
       <section ref={view} className="min-w-0 scroll-mt-20">
-        {current ? (
-          <RunView runId={current} onEnded={reload} />
+        {missing !== null ? (
+          <RunMissing runId={missing} />
+        ) : current ? (
+          // Keyed so a gap banner or a resubscribe count never carries over to another run.
+          <RunView key={current} runId={current} onEnded={reload} />
         ) : (
           <div className="grid min-h-64 place-items-center rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
             <div className="max-w-md">

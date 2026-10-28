@@ -405,3 +405,53 @@ describe("RunsPage BACnet note", () => {
     expect(screen.queryByText(/BACnet/)).toBeNull();
   });
 });
+
+describe("RunsPage run not on the server", () => {
+  it("says a linked run is gone after a restart, without a Stop button", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => (url === "/api/bacnet" ? bacnetOff() : new Response("[]", { status: 200 }))),
+    );
+    render(<RunsPage run="run-gone" />);
+    expect(await screen.findByText(/This run is not on this server \(runs are kept in memory/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Stop run/ })).toBeNull();
+    expect(screen.queryByText(/Waiting for the run to start/)).toBeNull();
+  });
+});
+
+describe("RunsPage gap banner", () => {
+  it("does not carry a gap banner over to another run", async () => {
+    const other = "run-other";
+    const info = (id: string) => ({
+      id,
+      config: { baseline: false, requests: true, start_s: 16027200, warmup_s: 86400, steps: 30, step_s: 120, case: "c" },
+      state: "running",
+      ticks: 3,
+      events: 8,
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url === "/api/bacnet"
+          ? bacnetOff()
+          : url.includes("/ledger")
+            ? noLedger()
+            : new Response(JSON.stringify(url === "/api/runs" ? [info(runId), info(other)] : []), { status: 200 }),
+      ),
+    );
+    const { rerender } = render(<RunsPage run={runId} />);
+    // Each gap re-subscribes; past the limit the banner stays up.
+    for (let i = 0; i < 4; i++) {
+      await vi.waitFor(() => expect(FakeSource.last?.readyState).toBe(1), { timeout: 5000 });
+      const source = FakeSource.last;
+      await act(async () => {
+        for (const line of gapped) source?.emit(line);
+        await new Promise((r) => setTimeout(r, 10));
+      });
+    }
+    expect(await screen.findByText(/Events are missing from this stream/)).toBeTruthy();
+    rerender(<RunsPage run={other} />);
+    await vi.waitFor(() => expect(FakeSource.last?.url).toBe(`/api/runs/${other}/events`), { timeout: 5000 });
+    expect(screen.queryByText(/Events are missing from this stream/)).toBeNull();
+  });
+});
