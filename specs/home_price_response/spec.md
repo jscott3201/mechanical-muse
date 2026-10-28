@@ -45,13 +45,13 @@ made inside the verified graph.
    is at or above the threshold, and a peak-price hour is coming when any of the next three
    hours is at or above it.
 2. **Normal.** base = the larger of (floor now + 0.2 K) and 20.5 °C. normal = the larger of base
-   and (the highest floor in the next 2 h + 0.2 K), so the slab is already warm when people come
-   home.
+   and (the highest floor from now through the next 2 h + 0.2 K), so the slab is already warm
+   when people come home.
 3. **During a peak-price hour: coast.** Setpoint = the larger of (base − 1.5 K) and (the highest
-   floor in the next 2 h + 0.1 K).
+   floor from now through the next 2 h + 0.1 K).
 4. **Before a peak-price hour: preheat.** Unless the room is already more than 0.5 K above
-   normal, setpoint = normal + 1 K, capped at the lowest ceiling in the next 3 h minus 2 K, and
-   never below normal.
+   normal, setpoint = normal + 1 K, capped at the lowest ceiling from now through the next 3 h
+   minus 2 K, and never below normal.
 5. **Otherwise** the setpoint is normal.
 
 A peak-price hour now takes precedence over one coming.
@@ -59,25 +59,28 @@ A peak-price hour now takes precedence over one coming.
 ## Validation (done before any model sees this spec)
 
 - `reference.py` is an independent model of the behavior (stdlib Python, no engine code). Its
-  self-check compares it with checkpoints worked out by hand, and it writes `vectors.json`: 17
+  self-check compares it with checkpoints worked out by hand, and it writes `vectors.json`: 22
   scenarios covering flat and nearly flat days, peak now and coming while occupied and away, a
-  peak just beyond the look-ahead, an already-warm room (and the exact edge), a ceiling that
-  drops, an arrival during and before a peak, the threshold edge and just below it, the day's
-  extreme price in the last hour, and a forecast that rolls through a peak.
+  peak just beyond the look-ahead, an already-warm room (and the exact edge), ceilings that drop
+  now, in 1 h and in 3 h, an arrival before and during a peak, a departure and a one-hour visit
+  during a peak, the threshold edge and just below it, the day's extreme price in the last hour,
+  and a forecast that rolls through a peak.
 - `graph.json` is a hand-built block graph (33 blocks; `Reals.MultiMax` and `Reals.MultiMin`
   take the max and min of the hourly values). `crates/mm-bridge/tests/specs_home_price.rs`
-  checks that it passes every scenario on the pinned engine, and that each of 18 mistakes fails
+  checks that it passes every scenario on the pinned engine, and that each of 21 mistakes fails
   at least one: a different peak share, a strict threshold, no or a zero minimum spread, a day
   max or min that misses the last hour, a four-hour look-ahead, ignoring the coming floor or
   ceiling, a different margin, away setpoint, coast drop, coast margin, preheat, ceiling gap or
-  warm band, preheating a warm room, and preheat taking precedence over coasting.
+  warm band, preheating from base or judging warmth against base instead of normal, a coming
+  floor that misses the floor now, preheating a warm room, and preheat taking precedence over
+  coasting.
 
 ## Caveats
 
 - Tuned on BOPTEST's two heating windows for this building with a perfect price forecast. On two
   windows it was not tuned on (14 days from day 40 and from day 315) the rule, run from
   `reference.py`, still beat BOPTEST's controller on cost (−6.9 %, −6.0 %) and discomfort
-  (−45 %, −72 %) and cut power in peak-price hours by 37 % and 23 % (`docs/results-log.md`).
+  (−45 %, −72 %) and cut mean power in the most expensive quarter of 15-minute prices by 37 % and 23 % (`docs/results-log.md`).
   Live runs of the verified graph through the runtime are still to do.
 - Prices in this building swing little (about 0.17 to 0.26 euro per kWh including fixed fees),
   so the per-home saving is small; the point is the power moved out of peak-price hours.

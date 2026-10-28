@@ -172,6 +172,18 @@ fn home_price_response_vectors_catch_common_mistakes() {
             Box::new(|g| rewire(g, "notWarm.y -> doPreheat.u2", "peakSoon.y -> doPreheat.u2")),
         ),
         (
+            "preheat from base instead of normal",
+            Box::new(|g| rewire(g, "normal.y -> boost.u", "base.y -> boost.u")),
+        ),
+        (
+            "warm compared with base instead of normal",
+            Box::new(|g| rewire(g, "normal.y -> warmLine.u", "base.y -> warmLine.u")),
+        ),
+        (
+            "coming floor misses the floor now",
+            Box::new(|g| rewire(g, "TLo00 -> floorSoon.u1", "TLo01 -> floorSoon.u1")),
+        ),
+        (
             "preheat wins over coasting",
             Box::new(|g| {
                 rewire(g, "peakNow.y -> choose.u2", "doPreheat.y -> choose.u2");

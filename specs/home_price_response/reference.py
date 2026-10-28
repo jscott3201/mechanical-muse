@@ -118,6 +118,23 @@ SCENARIOS = [
     ("arrival_during_peak", "Away, a peak hour now, and occupied from 1 hour ahead: coasting "
      "never goes below the coming floor plus 0.1 K, 294.25 K.",
      frame(day(peak_at=[0]), floors=(AWAY_LO, OCC_LO, OCC_LO), ceilings=(AWAY_HI,) * 4)),
+    ("arrival_before_peak", "Away now, home from 1 hour ahead, a peak hour in 2 hours: normal is "
+     "the coming floor plus 0.2 K (294.35 K), and the room at 294.5 K is not above normal plus "
+     "0.5 K, so preheat to 295.15 K (from normal, not from the 20.5 degC away base).",
+     frame(day(peak_at=[2, 3]), floors=(AWAY_LO, OCC_LO, OCC_LO),
+           ceilings=(AWAY_HI, OCC_HI, OCC_HI, OCC_HI), tzon=294.5)),
+    ("departure_during_peak", "Home now, away from 1 hour ahead, a peak hour now: the floor now "
+     "still counts, so coasting stops at 21 degC plus 0.1 K, 294.25 K.",
+     frame(day(peak_at=[0]), floors=(OCC_LO, AWAY_LO, AWAY_LO),
+           ceilings=(OCC_HI, AWAY_HI, AWAY_HI, AWAY_HI))),
+    ("short_visit_during_peak", "Away now and 2 hours ahead, home only for the hour starting in 1 "
+     "hour, a peak hour now: coast no lower than that floor plus 0.1 K, 294.25 K.",
+     frame(day(peak_at=[0]), floors=(AWAY_LO, OCC_LO, AWAY_LO), ceilings=(AWAY_HI,) * 4)),
+    ("ceiling_lower_now", "A peak hour is coming and the ceiling is 23 degC now: preheat capped "
+     "below normal, so normal, 294.35 K.",
+     frame(day(peak_at=[2]), ceilings=(296.15, OCC_HI, OCC_HI, OCC_HI))),
+    ("ceiling_lower_in_one_hour", "A peak hour is coming and the ceiling is 23 degC in 1 hour: "
+     "normal, 294.35 K.", frame(day(peak_at=[2]), ceilings=(OCC_HI, 296.15, OCC_HI, OCC_HI))),
     ("threshold_edge", "This hour's price equals the threshold exactly (0.21875 with a 0.125 to "
      "0.25 day): at the threshold counts as peak, so coast to 294.25 K.",
      frame(day(peak_at=[12], mid={0: 0.21875}))),
@@ -179,7 +196,9 @@ def self_check():
         "peak_in_four_hours": 294.35, "peak_soon_but_warm": 294.35,
         "peak_soon_warm_edge": 295.15, "ceiling_drops_soon": 294.35,
         "arrival_in_two_hours": 294.35, "arrival_during_peak": 294.25,
-        "threshold_edge": 294.25, "just_below_threshold": 294.35, "max_in_last_hour": 294.35,
+        "arrival_before_peak": 295.15, "departure_during_peak": 294.25,
+        "short_visit_during_peak": 294.25, "ceiling_lower_now": 294.35,
+        "ceiling_lower_in_one_hour": 294.35, "threshold_edge": 294.25, "just_below_threshold": 294.35, "max_in_last_hour": 294.35,
         "min_in_last_hour": 294.25,
     }
     rolling = [294.35, 295.15, 294.25, 294.35]

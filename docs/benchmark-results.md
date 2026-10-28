@@ -223,7 +223,7 @@ engine `fa5cb19`.
 Our own spec `specs/home_price_response/`: a stateless heating setpoint for BOPTEST's home heat
 pump that coasts through peak-price hours and preheats before them, from 24 hourly prices and
 the comfort limits for the next hours. It was validated before any model saw it: the hand-built
-graph (33 blocks) passes every scenario and 18 deliberate mistakes each fail one. It is the
+graph (33 blocks) passes every scenario and 21 deliberate mistakes each fail at least one. It is the
 first spec that needs `Reals.MultiMax` and `Reals.MultiMin` (added to the palette the same day).
 
 **Run setup:** `muse-spark-1.3`, high effort, up to 5 attempts, repair feedback with vectors,
@@ -238,6 +238,9 @@ first spec that needs `Reals.MultiMax` and `Reals.MultiMin` (added to the palett
 - An easy spec for the model: no timers, no stored values, and the task states each formula.
   It shows the new blocks are usable, not that the model is strong on hard sequences.
 - Tokens: 4.4k input and 10.8k to 13.6k output per run.
+- The run used the first 17 scenarios. Review then added 5 (arrival before a peak, departure
+  and a one-hour visit during a peak, ceilings dropping now and in 1 h); re-scoring the same
+  replies against all 22 (`mm-bench --rescore`, no model calls) changed no verdict.
 
 ## Control sequence: air handler chilled-water requests (run of 2026-10-26)
 
