@@ -38,6 +38,9 @@ pub struct Health {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub bacnet_device: Option<u32>,
+    /// Live runs have a plant (`MM_BOPTEST_URL` is set). When false, starting a run is refused
+    /// and only replays are available.
+    pub boptest: bool,
 }
 
 /// One input, output or parameter of a spec's task card.

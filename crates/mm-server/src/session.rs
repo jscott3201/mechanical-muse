@@ -225,8 +225,10 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
     let (mut plant, first) = match state.runs().fake_plant() {
         Some((fake, first, pace)) => (AnyPlant::Fake(fake, pace), first),
         None => {
-            let PlantSource::Boptest { url } = &state.runs().config.plant else {
-                return Err("scripted plant has no readings".into());
+            let url = match &state.runs().config.plant {
+                PlantSource::Boptest { url } => url,
+                PlantSource::Off => return Err(crate::run_routes::BOPTEST_OFF.into()),
+                PlantSource::Scripted { .. } => return Err("scripted plant has no readings".into()),
             };
             handle.publish(
                 None,
@@ -247,6 +249,13 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
                 tracing::error!(error = %e, "select failed; BOPTEST may hold an orphaned test");
                 format!("selecting the test case: {e}")
             })?;
+            // A stop asked for while selecting is honoured here, before the warm-up: a selected
+            // test that is not initializing can be stopped safely. The select itself and the
+            // initialize are never abandoned halfway (either can leave an orphaned test).
+            if *handle.stop_signal().borrow() {
+                stop_quietly(&client).await;
+                return Ok(RunState::Stopped);
+            }
             handle.publish(
                 None,
                 RunEvent::Phase {

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AttemptEntry } from "@/hooks/authorStream";
 import { useAuthorStream } from "@/hooks/useAuthorStream";
+import { BOPTEST_OFF_TEXT } from "@/hooks/useLiveRuns";
 import { useAction, useResource } from "@/hooks/useResource";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
@@ -224,6 +225,7 @@ export function AuthorPanel({
   const health = useResource<Health>("/api/health");
   const live = health.status === "ready" && health.data.live_model !== undefined;
   const recordedOk = health.status !== "ready" || health.data.recorded_model;
+  const liveRuns = health.status !== "ready" || health.data.boptest !== false;
   const [chosen, setChosen] = useState<ModelSource | null>(null);
   // Default to what the server can do: live when it has a key, else the recorded session.
   const source: ModelSource = chosen ?? (live || health.status !== "ready" ? "live" : "recorded");
@@ -334,6 +336,8 @@ export function AuthorPanel({
                 {onRunDraft && (
                   <Button
                     size="sm"
+                    disabled={!liveRuns}
+                    title={liveRuns ? undefined : BOPTEST_OFF_TEXT}
                     onClick={() => {
                       const d = stream.ended?.draft;
                       if (d) onRunDraft(spec, d.content_id);
@@ -348,6 +352,9 @@ export function AuthorPanel({
                   </a>
                 </Button>
               </div>
+            )}
+            {stream.ended.state === "verified" && onRunDraft && !liveRuns && (
+              <p className="text-sm text-muted-foreground">{BOPTEST_OFF_TEXT}</p>
             )}
             {stream.ended.message && <p className="text-sm text-muted-foreground">{stream.ended.message}</p>}
             <p className="text-xs text-muted-foreground">

@@ -1,4 +1,4 @@
-import { Cpu, LoaderCircle, Moon, Network, Server, ServerOff, Sparkles, Sun, Workflow } from "lucide-react";
+import { Building2, Cpu, LoaderCircle, Moon, Network, Server, ServerOff, Sparkles, Sun, Workflow } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,11 @@ export function AppHeader({ health, theme, onToggleTheme }: { health: Resource<H
                   tone="secondary"
                   detail={health.data.recorded_model ? "No model key on the server: authoring plays back recorded sessions, labelled as such" : "Authoring is off on this server"}
                 />
+              )}
+              {health.data.boptest ? (
+                <Chip icon={<Building2 aria-hidden="true" />} label="BOPTEST" detail="Live runs drive the BOPTEST office building" />
+              ) : (
+                <Chip icon={<Building2 aria-hidden="true" />} label="BOPTEST off" tone="secondary" detail="Start the server with MM_BOPTEST_URL for live runs; replays still work" />
               )}
               {health.data.bacnet_device !== undefined ? (
                 <Chip icon={<Network aria-hidden="true" />} label={`BACnet device ${health.data.bacnet_device}`} detail="Live runs are mirrored read-only over BACnet/IP" />

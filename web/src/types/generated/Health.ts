@@ -16,4 +16,9 @@ recorded_model: boolean,
 /**
  * The BACnet mirror's device instance, when it is running.
  */
-bacnet_device?: number, };
+bacnet_device?: number, 
+/**
+ * Live runs have a plant (`MM_BOPTEST_URL` is set). When false, starting a run is refused
+ * and only replays are available.
+ */
+boptest: boolean, };

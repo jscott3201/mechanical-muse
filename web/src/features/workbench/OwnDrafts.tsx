@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLiveRuns } from "@/hooks/useLiveRuns";
 import { useResource } from "@/hooks/useResource";
 import { cn } from "@/lib/utils";
 import type { DraftInfo } from "@/types/generated/DraftInfo";
@@ -49,6 +50,7 @@ export function OwnDrafts({
   onRun?: (contentId: string) => void;
 }) {
   const [chosen, setChosen] = useState<string | null>(null);
+  const live = useLiveRuns();
   const shown = drafts.find((d) => d.content_id === chosen) ?? drafts[0];
   if (!shown) {
     return (
@@ -101,9 +103,12 @@ export function OwnDrafts({
         </ul>
         <div className="flex flex-wrap gap-2">
           {onRun ? (
-            <Button size="sm" onClick={() => onRun(shown.content_id)}>
-              <Play aria-hidden="true" /> Run this draft on BOPTEST
-            </Button>
+            <>
+              <Button size="sm" onClick={() => onRun(shown.content_id)} disabled={!live.available}>
+                <Play aria-hidden="true" /> Run this draft on BOPTEST
+              </Button>
+              {live.reason && <p className="text-sm text-muted-foreground">{live.reason}</p>}
+            </>
           ) : (
             <p className="text-sm text-muted-foreground">To run it on BOPTEST, bind the sequence to the building first (Building tab).</p>
           )}

@@ -45,6 +45,20 @@ async fn health_reports_the_pinned_engine() {
     assert_eq!(body["status"], "ok");
     assert_eq!(body["engine_rev"], ENGINE_REV);
     assert!(body["specs"].as_u64().unwrap() >= 2);
+    // No BOPTEST named: the web app is told live runs are off.
+    assert_eq!(body["boptest"], false);
+}
+
+#[tokio::test]
+async fn without_boptest_a_run_is_refused_with_a_plain_reason() {
+    let (status, body) = call("POST", "/api/runs").await;
+    assert_eq!(status, StatusCode::CONFLICT, "{body}");
+    assert_eq!(body["code"], "boptest-off");
+    let message = body["message"].as_str().unwrap();
+    assert!(message.contains("MM_BOPTEST_URL") && message.contains("replays still work"));
+    // Nothing was registered.
+    let (_, runs) = call("GET", "/api/runs").await;
+    assert_eq!(runs, serde_json::json!([]));
 }
 
 #[test]

@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useLiveRuns } from "@/hooks/useLiveRuns";
 import { useAction, useResource } from "@/hooks/useResource";
 import { formatNumber } from "@/lib/format";
 import { format } from "@/lib/route";
@@ -205,6 +206,7 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
     };
   }, [baseline, requests, pressure, steps, day, hour, chosen, fault, faultStep, faultKind, bound]);
   const start = useAction<RunInfo>("/api/runs", body);
+  const live = useLiveRuns();
   // Each started run is reported exactly once, however often this component re-renders.
   const reported = useRef<string | null>(null);
   useEffect(() => {
@@ -367,9 +369,10 @@ function StartForm({ onStarted, initialDraft }: { onStarted: (run: RunInfo) => v
           </CollapsibleContent>
         </Collapsible>
 
-        <Button onClick={start.run} disabled={start.state.status === "running"}>
+        <Button onClick={start.run} disabled={start.state.status === "running" || !live.available}>
           <Play aria-hidden="true" /> {start.state.status === "running" ? "Starting…" : "Start"}
         </Button>
+        {live.reason && <p className="text-sm text-muted-foreground">{live.reason}</p>}
         {start.state.status === "error" && <ErrorNote error={start.state.error} />}
         {bacnet.status === "ready" && (
           <p className="text-xs text-muted-foreground">

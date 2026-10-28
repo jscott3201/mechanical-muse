@@ -166,7 +166,7 @@ function RunStream({
               )}
               {stream.phase !== "running" && !cfg?.replay && (
                 <span className="text-xs text-muted-foreground">
-                  A stop during BOPTEST's warm-up takes effect once it finishes.
+                  A stop while BOPTEST selects the test case takes effect before the warm-up; during the warm-up, once it finishes.
                 </span>
               )}
             </div>

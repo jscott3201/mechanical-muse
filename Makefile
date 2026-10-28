@@ -75,14 +75,15 @@ boptest-down:
 web:
 	cd web && npm ci --no-audit && npm run typecheck && npm test && npm run build
 
-# The API on MM_ADDR (default 127.0.0.1:8080), serving specs/.
+# The API on MM_ADDR (default 127.0.0.1:8080), serving specs/. Live runs need MM_BOPTEST_URL.
 server:
 	cargo run -p mm-server
 
 # One command, one address (http://127.0.0.1:8080): builds the web app and serves it from
 # mm-server. Without a key or BOPTEST it still verifies specs and plays back recorded sessions,
-# runs and explanations (all labelled). Set MM_BOPTEST_URL for live runs, MM_BACNET_ADDR for
-# the mirror; demo-live adds live Muse Spark from the local .env key.
+# runs and explanations (all labelled). Live runs are off unless MM_BOPTEST_URL is set (there is
+# no default; after `make boptest-up` use MM_BOPTEST_URL=http://127.0.0.1:80). MM_BACNET_ADDR
+# starts the mirror; demo-live adds live Muse Spark from the local .env key.
 web-build:
 	cd web && { [ -d node_modules ] || npm ci --ignore-scripts; } && npm run build
 
