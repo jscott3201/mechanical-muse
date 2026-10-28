@@ -40,7 +40,7 @@ function ledger(over: Partial<RunLedger>): RunLedger {
     boptest_cost_usd: 694.97,
     reconciles: true,
     measured: false,
-    missing: ["reaHotWatSys_reaPBoi_y"],
+    missing: ["floor1_reaAHU_PFanSup_y", "reaHotWatSys_reaPBoi_y"],
     end_uses: [],
     tdis_tot: 0.1065,
     ...over,

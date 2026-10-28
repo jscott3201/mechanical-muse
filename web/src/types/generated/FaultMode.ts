@@ -2,6 +2,8 @@
 
 /**
  * How a faulted reading reads: not a number (the sequences stop and the fail-safe acts),
- * stuck at a value, or off by a fixed offset (in the reading's own unit).
+ * stuck at a value, or off by a fixed offset (in the reading's own unit). A held value on a
+ * point the plant did not report invents a (labelled) reading, so stale-data detection does
+ * not fire for it; a bias on a missing reading leaves it missing.
  */
 export type FaultMode = { "kind": "nan" } | { "kind": "hold", value: number, } | { "kind": "bias", offset: number, };

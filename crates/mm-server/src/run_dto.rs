@@ -66,7 +66,9 @@ pub struct Fault {
 }
 
 /// How a faulted reading reads: not a number (the sequences stop and the fail-safe acts),
-/// stuck at a value, or off by a fixed offset (in the reading's own unit).
+/// stuck at a value, or off by a fixed offset (in the reading's own unit). A held value on a
+/// point the plant did not report invents a (labelled) reading, so stale-data detection does
+/// not fire for it; a bias on a missing reading leaves it missing.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 #[serde(tag = "kind", rename_all = "lowercase")]

@@ -133,7 +133,7 @@ function RunStream({
               : "Waiting for the run to start…"}
             {cfg?.fault && (
               <span className="block">
-                Test fault: {faultText(cfg.fault)} (the reading only; nothing extra is written to BOPTEST).
+                Test fault: {faultText(cfg.fault)} (the reading only: nothing is written for it, but the setpoints computed from it still reach BOPTEST within their clamps).
               </span>
             )}
           </CardDescription>

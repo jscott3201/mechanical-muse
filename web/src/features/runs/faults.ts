@@ -1,6 +1,10 @@
 import type { Fault } from "@/types/generated/Fault";
 
-/** The test faults the run form offers. Each changes one reading the sequences see; none writes to BOPTEST. */
+/**
+ * The test faults the run form offers. Each changes one reading the sequences see. Nothing is
+ * written to BOPTEST for that reading; the setpoints the sequences compute from it still are,
+ * within their clamps.
+ */
 export type FaultKind = Fault["mode"]["kind"];
 
 type Choice = { kind: FaultKind; label: string; detail: string; point: string; steps: number };
@@ -20,7 +24,7 @@ export const FAULT_CHOICES: readonly Choice[] = [
     point: "floor1_reaAHU_yCooVal_y",
     steps: 60,
     detail:
-      "Floor 1's cooling-valve reading is held at 100 % open for 60 steps, so its air handler keeps asking for colder water. The plant reset ignores the first two requests, so it reacts when other floors are asking too. Only the reading changes; nothing extra is written to BOPTEST.",
+      "Floor 1's cooling-valve reading is held at 100 % open for 60 steps, so its air handler keeps asking for colder water. The plant reset ignores the first two requests, so it reacts when other floors are asking too. Only the reading is faulted; the setpoints computed from it still reach BOPTEST, within their clamps.",
   },
   {
     kind: "bias",
@@ -28,7 +32,7 @@ export const FAULT_CHOICES: readonly Choice[] = [
     point: "floor1_reaAHU_TSup_y",
     steps: 60,
     detail:
-      "Floor 1's supply-air temperature reads 2 K high for 60 steps, as a drifted sensor would. Only the reading changes; nothing extra is written to BOPTEST.",
+      "Floor 1's supply-air temperature reads 2 K high for 60 steps, as a drifted sensor would. Only the reading is faulted; the setpoints computed from it still reach BOPTEST, within their clamps.",
   },
 ];
 

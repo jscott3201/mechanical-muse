@@ -85,16 +85,20 @@ baseline of the same window (BOPTEST's own controllers, nothing written) when on
 sets thermal discomfort (`tdis_tot`) beside the savings, so a saving bought with discomfort shows.
 
 A test fault (`docs/runtime-results.md`) changes one reading the sequences see: blank (NaN),
-stuck at a value, or biased by an offset. It never writes to BOPTEST. When a run with a fault has
-a twin of the same window without it, the run view prices the fault against that twin; without
-one it only labels the fault. The scope label of a fault's cost follows the convention of the
-library cards' `emissions.scope` field (1 for on-site fuel, 2 for purchased electricity), for
-example the chilled-water cards CHW-0002 and CHW-0004 and the air handler cards AHU-0018 and
-AHU-0024. We use that field as a label only, not the cards' own estimates.
+stuck at a value, or biased by an offset. Nothing is written to BOPTEST for the faulted reading
+itself; the setpoints the sequences compute from it still reach BOPTEST, within their clamps,
+which is how a fault costs energy. A held value on a point the plant did not report in a step
+invents a labelled reading for that step, so the stale-data check does not fire for it. When a
+run with a fault has a twin of the same window without it (same switches, same drafted graphs by
+content id), the run view prices the fault against that twin; without one it only labels the
+fault.
 
 Run explanations get the ledger and these comparisons as given facts, rounded, and are told to
-quote rather than compute; a reply that states a number not in its input is refused
-(`mm_agent::unsupported_numbers`).
+quote rather than compute. A reply that states a number not in its input (beyond a rounded
+quote, a duration from step counts, or a small count) is sent back once naming those numbers,
+then refused (`mm_agent::unsupported_numbers`). A replay whose events already have a recorded
+explanation (written before ledger facts existed) is served that recording, which makes no
+energy claims; it is not rewritten with the ledger.
 
 ## What this is not
 

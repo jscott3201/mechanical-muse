@@ -38,7 +38,7 @@ pub fn definitions() -> Vec<Value> {
             "description": "Both runs' ledgers and `delta` = b minus a (negative is a saving), \
                 per scope, per end use when both are measured, and in thermal and CO2 \
                 discomfort. Refused with window-mismatch unless both cover the same test case, \
-                start, step length and number of steps.",
+                start, step length, number of steps and ticks recorded (a run stopped early differs).",
             "inputSchema": {
                 "type": "object",
                 "properties": {"a": record("The reference run"), "b": record("The run compared with it")},

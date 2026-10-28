@@ -37,5 +37,16 @@ export function faultBanner(f: Fault, vsHealthy: { delta: Amounts; source: strin
   return vsHealthy ? `${what}: ${changeText(vsHealthy.delta)} vs ${vsHealthy.source}` : `${what}.`;
 }
 
+/** Why a ledger has no end uses, from the signals its record lacks. */
+export function endUsesMissing(l: { missing: string[]; subject: { ticks: number } }): string {
+  const older = ["reaHotWatSys_reaPBoi_y", "floor1_reaAHU_PFanSup_y"];
+  if (l.subject.ticks < 2) return "End uses not recorded: the run has fewer than two ticks to integrate.";
+  if (older.every((p) => l.missing.includes(p)))
+    return "End uses not recorded: this run predates the fan and boiler power readings, so only the scope totals are shown.";
+  const shown = l.missing.slice(0, 3).join(", ");
+  const more = l.missing.length > 3 ? ` and ${l.missing.length - 3} more` : "";
+  return `End uses not shown: ${shown}${more} missing or not a number in at least one tick, so only the scope totals are shown.`;
+}
+
 export const LEDGER_FOOTER =
   "Simulation. Factors and prices are BOPTEST's for this test case (electricity 0.341, gas 0.181 kgCO₂/kWh; $0.094 and $0.024 per kWh). HVAC loads as BOPTEST counts them; lighting, plug loads and Scope 3 are not included.";

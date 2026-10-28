@@ -12,7 +12,7 @@ import type { Fault } from "@/types/generated/Fault";
 import type { LedgerComparison } from "@/types/generated/LedgerComparison";
 import type { RunLedger } from "@/types/generated/RunLedger";
 
-import { LEDGER_FOOTER, faultBanner, percentOf, signed, signedUsd } from "./ledger";
+import { LEDGER_FOOTER, endUsesMissing, faultBanner, percentOf, signed, signedUsd } from "./ledger";
 
 /** The run's ledger and its comparisons, fetched once the run has reported BOPTEST's KPIs. */
 export function RunEmissions({
@@ -208,10 +208,7 @@ export function EmissionsPanel({
             </p>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            End uses not recorded: this run predates the fan and boiler power readings, so only the scope totals are
-            shown.
-          </p>
+          <p className="text-sm text-muted-foreground">{endUsesMissing(ledger)}</p>
         )}
         <p className="border-t pt-3 text-xs text-muted-foreground">{LEDGER_FOOTER}</p>
       </CardContent>

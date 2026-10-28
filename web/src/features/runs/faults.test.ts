@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { faultBanner, signed, signedUsd } from "./ledger";
+import { endUsesMissing, faultBanner, signed, signedUsd } from "./ledger";
 import { faultModeText, faultRequest, faultText } from "./faults";
+
+describe("endUsesMissing", () => {
+  it("gives the actual reason end uses are not shown", () => {
+    const old = ["floor1_reaAHU_PFanSup_y", "reaHotWatSys_reaPBoi_y", "floor2_reaAHU_PFanSup_y"];
+    expect(endUsesMissing({ missing: old, subject: { ticks: 240 } })).toMatch(/predates the fan and boiler/);
+    expect(endUsesMissing({ missing: ["floor2_reaAHU_PFreCoi_y"], subject: { ticks: 240 } })).toBe(
+      "End uses not shown: floor2_reaAHU_PFreCoi_y missing or not a number in at least one tick, so only the scope totals are shown.",
+    );
+    expect(endUsesMissing({ missing: old, subject: { ticks: 1 } })).toMatch(/fewer than two ticks/);
+  });
+});
 
 describe("faults", () => {
   it("builds the request for each kind", () => {
