@@ -1,6 +1,6 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml).
-.PHONY: live-read mcp web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live docker-build docker-demo docker-demo-live docker-demo-down modal-demo
+.PHONY: live-tools live-read mcp web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live docker-build docker-demo docker-demo-live docker-demo-down modal-demo
 
 check: fmt-check clippy test
 
@@ -137,6 +137,13 @@ live:
 	@set -a; . $(ENV_DIR)/.env; set +a; \
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
 	cargo test -p mm-agent --test author_loop -- --ignored --nocapture
+
+# Spike: Muse Spark drafts with our checks as function tools (docs/spark-tools.md).
+#   make live-tools [MM_TOOLS_SPEC=<spec folder>] [MM_TOOLS_MODE=split]
+live-tools:
+	@set -a; . $(ENV_DIR)/.env; set +a; \
+	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
+	cargo test -p mm-agent --test tools_live -- --ignored --nocapture
 
 # Muse Spark reads a sequence document and drafts against its own proposed scenarios.
 #   make live-read [MM_READ_DOC=fixtures/sequences/<file>]

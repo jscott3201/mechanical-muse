@@ -95,6 +95,7 @@ async fn run_observed(
                     let json = serde_json::to_value(&a.outcome).unwrap();
                     format!("checked {} {}", a.index, json["result"].as_str().unwrap())
                 }
+                Progress::ToolCall { call, .. } => format!("tool {}", call.name),
             };
             sink.lock().unwrap().push(line);
         },

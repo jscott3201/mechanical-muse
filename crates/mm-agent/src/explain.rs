@@ -103,6 +103,7 @@ pub fn explain_request(
         "graph": {"blocks": blocks, "connections": graph.connections},
     });
     ModelRequest {
+        tools: Vec::new(),
         model: model.to_owned(),
         instructions: INSTRUCTIONS.to_owned(),
         input: vec![json!({
@@ -238,6 +239,7 @@ fn run_schema() -> Value {
 /// The request for a run whose settings and events are `context` (built by the caller).
 pub fn explain_run_request(model: &str, context: &Value) -> ModelRequest {
     ModelRequest {
+        tools: Vec::new(),
         model: model.to_owned(),
         instructions: RUN_INSTRUCTIONS.to_owned(),
         input: vec![json!({

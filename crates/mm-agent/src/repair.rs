@@ -12,6 +12,8 @@ use serde_json::{Value, json};
 
 use crate::client::{Effort, ModelClient, ModelError, ModelRequest, OutputSchema, Usage};
 use crate::prompt::{Exemplar, TaskSpec, system_instructions, task_message};
+use crate::tool_loop::{TOOL_RULES, ToolBox, ToolCallRecord, ToolTurn, draft_with_tools};
+use crate::tools::{DraftTools, ToolLimits};
 
 /// What the model hears after a failed replay.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -70,7 +72,13 @@ pub struct Attempt {
     /// The reply text as received, when there was one.
     pub reply: Option<String>,
     pub outcome: AttemptOutcome,
+    /// Usage of every model call of this attempt (tool turns included).
     pub usage: Usage,
+    /// Model calls this attempt made (1 without tools).
+    pub calls: u32,
+    /// Spark's own checks before it answered (tools sessions only). Never verification.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub tool_turns: Vec<ToolTurn>,
 }
 
 /// A draft that passed every scenario: the receipt is the content id plus the replay result.
@@ -102,6 +110,11 @@ pub struct AuthoringTrace {
 pub enum Progress<'a> {
     /// A model call for draft `attempt` (of at most `of`) is about to start.
     Drafting { attempt: u32, of: u32 },
+    /// Spark called one of its checks while drafting `attempt` (tools sessions only).
+    ToolCall {
+        attempt: u32,
+        call: &'a ToolCallRecord,
+    },
     /// A draft was checked (or its model call failed).
     Checked(&'a Attempt),
 }
@@ -127,6 +140,52 @@ pub async fn author_observed<C: ModelClient, F: FnMut(Progress<'_>) + Send>(
     vectors: &VectorFile,
     exemplars: &[Exemplar],
     config: &AuthorConfig,
+    observe: F,
+) -> AuthoringTrace {
+    run_loop(
+        client, palette, task, vectors, exemplars, config, None, observe,
+    )
+    .await
+}
+
+/// [`author_observed`] with Spark's own checks offered as function tools while it drafts
+/// (`check_graph`, `replay_scenario`, `describe_block`). For the product's specs and workbench
+/// tasks only: the tools replay the task's scenarios, so a benchmark must never use this (its
+/// vectors stay blind). Tool results never count as verification; each final draft is checked
+/// exactly as without tools.
+#[allow(clippy::too_many_arguments)]
+pub async fn author_with_tools<C: ModelClient, F: FnMut(Progress<'_>) + Send>(
+    client: &C,
+    palette: &Palette,
+    task: &TaskSpec,
+    vectors: &VectorFile,
+    exemplars: &[Exemplar],
+    config: &AuthorConfig,
+    limits: ToolLimits,
+    observe: F,
+) -> AuthoringTrace {
+    run_loop(
+        client,
+        palette,
+        task,
+        vectors,
+        exemplars,
+        config,
+        Some(limits),
+        observe,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn run_loop<C: ModelClient, F: FnMut(Progress<'_>) + Send>(
+    client: &C,
+    palette: &Palette,
+    task: &TaskSpec,
+    vectors: &VectorFile,
+    exemplars: &[Exemplar],
+    config: &AuthorConfig,
+    tools: Option<ToolLimits>,
     mut observe: F,
 ) -> AuthoringTrace {
     let mut trace = AuthoringTrace {
@@ -147,9 +206,19 @@ pub async fn author_observed<C: ModelClient, F: FnMut(Progress<'_>) + Send>(
         return trace;
     }
     let schema = serde_json::from_str(BLOCK_GRAPH_SCHEMA).unwrap_or(Value::Null);
+    let mut toolbox = tools.map(|limits| ToolBox {
+        tools: DraftTools::new(palette, task, vectors),
+        limits,
+        calls_used: 0,
+    });
+    let mut instructions = system_instructions(palette, exemplars);
+    if toolbox.is_some() {
+        instructions.push_str(TOOL_RULES);
+    }
     let mut request = ModelRequest {
+        tools: Vec::new(),
         model: config.model.clone(),
-        instructions: system_instructions(palette, exemplars),
+        instructions,
         input: vec![user_message(&task_message(task))],
         schema: Some(OutputSchema {
             name: "block_graph".into(),
@@ -164,9 +233,32 @@ pub async fn author_observed<C: ModelClient, F: FnMut(Progress<'_>) + Send>(
             attempt: index,
             of: config.max_attempts,
         });
-        let reply = match client.complete(&request).await {
+        let drafted = match toolbox.as_mut() {
+            Some(toolbox) => {
+                draft_with_tools(client, &request, toolbox, |call| {
+                    observe(Progress::ToolCall {
+                        attempt: index,
+                        call,
+                    });
+                })
+                .await
+            }
+            None => {
+                let reply = client.complete(&request).await;
+                let usage = reply.as_ref().map(|r| r.usage).unwrap_or_default();
+                crate::tool_loop::Drafted {
+                    reply,
+                    turns: Vec::new(),
+                    calls: 1,
+                    usage,
+                }
+            }
+        };
+        let (calls, tool_turns, usage) = (drafted.calls, drafted.turns, drafted.usage);
+        let reply = match drafted.reply {
             Ok(reply) => reply,
             Err(error) => {
+                trace.usage.add(usage);
                 // A truncated reply costs an attempt and is re-asked with the same input; its
                 // partial items are not replayed (reasoning with no following message is a 400).
                 let truncated = matches!(error, ModelError::Incomplete { .. });
@@ -174,7 +266,9 @@ pub async fn author_observed<C: ModelClient, F: FnMut(Progress<'_>) + Send>(
                     index,
                     reply: None,
                     outcome: AttemptOutcome::ModelError { error },
-                    usage: Usage::default(),
+                    usage,
+                    calls,
+                    tool_turns,
                 });
                 if let Some(last) = trace.attempts.last() {
                     observe(Progress::Checked(last));
@@ -199,6 +293,8 @@ pub async fn author_observed<C: ModelClient, F: FnMut(Progress<'_>) + Send>(
             reply: Some(reply.text),
             outcome,
             usage: reply.usage,
+            calls,
+            tool_turns,
         });
         if let Some(last) = trace.attempts.last() {
             observe(Progress::Checked(last));

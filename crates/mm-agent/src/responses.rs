@@ -25,6 +25,9 @@ pub fn request_body(request: &ModelRequest) -> Value {
     if let Some(effort) = request.effort {
         body.insert("reasoning".into(), json!({ "effort": effort.as_str() }));
     }
+    if !request.tools.is_empty() {
+        body.insert("tools".into(), json!(request.tools));
+    }
     if let Some(schema) = &request.schema {
         // Flat `text.format`; the nested `response_format` shape is Chat Completions (a 400).
         body.insert(
@@ -106,7 +109,10 @@ pub fn parse_response(body: &Value) -> Result<ModelReply, ModelError> {
             _ => {}
         }
     }
-    if text.is_empty() {
+    let calls_tools = items
+        .iter()
+        .any(|item| item.get("type").and_then(Value::as_str) == Some("function_call"));
+    if text.is_empty() && !calls_tools {
         return Err(malformed("no output_text in the final message item"));
     }
     let count = |path: &str| body.pointer(path).and_then(Value::as_u64).unwrap_or(0);

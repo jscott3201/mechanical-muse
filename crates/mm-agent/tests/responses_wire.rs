@@ -13,6 +13,7 @@ use serde_json::json;
 
 fn request() -> ModelRequest {
     ModelRequest {
+        tools: Vec::new(),
         model: "muse-spark-1.3".into(),
         instructions: "rules".into(),
         input: vec![json!({"role": "user", "content": [{"type": "input_text", "text": "task"}]})],
@@ -147,4 +148,38 @@ fn commentary_messages_are_skipped() {
         {"type": "message", "content": [{"type": "output_text", "text": "{\"a\":1}"}]}
     ]});
     assert_eq!(parse_response(&body).unwrap().text, "{\"a\":1}");
+}
+
+#[test]
+fn tools_are_sent_only_when_offered_and_a_tool_turn_parses() {
+    assert!(request_body(&request()).get("tools").is_none());
+    let mut r = request();
+    r.tools = vec![json!({"type": "function", "name": "check_graph", "parameters": {}})];
+    let body = request_body(&r);
+    assert_eq!(body["tools"][0]["name"], "check_graph");
+    assert_eq!(
+        body["text"]["format"]["type"], "json_schema",
+        "both in one request"
+    );
+    // Shape observed live (ids scrubbed): reasoning, a commentary message, then calls.
+    let turn = json!({
+        "status": "completed",
+        "output": [
+            {"type": "reasoning", "summary": [], "encrypted_content": "opaque"},
+            {"type": "message", "role": "assistant", "phase": "commentary",
+             "content": [{"type": "output_text", "text": "Checking the draft."}]},
+            {"type": "function_call", "call_id": "call_1", "name": "check_graph",
+             "arguments": "{\"graph\":{}}", "status": "completed"}
+        ],
+        "usage": {"input_tokens": 10, "output_tokens": 5}
+    });
+    let reply = parse_response(&turn).unwrap();
+    assert!(reply.text.is_empty(), "commentary is not the answer");
+    let calls = mm_agent::function_calls(&reply.output_items);
+    assert_eq!(calls.len(), 1);
+    assert_eq!(calls[0].call_id, "call_1");
+    // Without calls, an empty answer is still malformed.
+    let mut no_calls = turn.clone();
+    no_calls["output"].as_array_mut().unwrap().pop();
+    assert!(parse_response(&no_calls).is_err());
 }

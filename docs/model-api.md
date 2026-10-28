@@ -76,7 +76,7 @@ Features:
   - Truncation: reasoning tokens share the output budget. If `max_output_tokens`/`max_completion_tokens` is too low you get a cut-off or empty result: Chat `finish_reason:"length"`, Responses `status:"incomplete"` (the `incomplete_details.reason` values are not listed in the docs). The video page notes an empty transcript with `finish_reason:length` when the budget is under about 4,000 [DOC]. Always check status before parsing.
   - Refusal: Chat message has a `refusal` field (string or null) and finish reasons include `content_filter`; Responses has `response.refusal.delta/.done` stream events (the non-streaming refusal content-part shape is not in the docs **[UNVERIFIED]**); Messages `stop_reason` can be `refusal`. A 400 with code `content_policy_violation` is also possible.
   - Schema errors: 400 `invalid_request_error`, `param` usually points at `text`/`response_format`.
-- Incompatibilities [DOC]: `tool_search` cannot be combined with `text.format` json_schema (400 in both hosted and client mode). Whether `text.format` can be combined with ordinary function tools in the same request is **not documented [UNVERIFIED]**.
+- Incompatibilities [DOC]: `tool_search` cannot be combined with `text.format` json_schema (400 in both hosted and client mode). Whether `text.format` can be combined with ordinary function tools in the same request is not documented; **observed 2026-10-27: it works** on `muse-spark-1.3` (section 10, "Observed in live calls").
   - Safe pattern: tool loop turns with `tools` and no `text.format`; then one final call with `text.format` and no tools (re-sending the history). Costs one extra call and probably breaks the prompt-cache prefix, since the tools array changes (inference).
 
 ---
@@ -454,7 +454,7 @@ Token check before sending: `POST /v1/responses/input_tokens` with the same `mod
 
 ### Uncertainty ledger (undocumented or contradictory; verify with a live call)
 1. Max output tokens per model (undocumented; secondary says 1,048,576; sample client config uses 131,072).
-2. Whether `text.format` json_schema works in the same request as function tools, and how it behaves with `reasoning` at high/max effort.
+2. Whether `text.format` json_schema works in the same request as function tools, and how it behaves with `reasoning` at high/max effort. (Answered for `high` on 2026-10-27: it works; see below.)
 3. Refusal and incomplete shapes for structured output on Responses (`incomplete_details.reason` values; refusal content part).
 4. Support for JSON Schema keywords beyond the documented ones (minimum/maximum, pattern, format, minItems/maxItems, type arrays, default); non-strict `oneOf`/`allOf` behavior.
 5. `strict:true` on `output_config.format` for Messages, and the Messages limits.
@@ -478,6 +478,34 @@ Token check before sending: `POST /v1/responses/input_tokens` with the same `mod
   with `output_text`, and `usage` with `output_tokens_details.reasoning_tokens`). AHU-0005 (train
   split, tier B task) passed all 10 library scenarios on the first draft: 2,912 input, 1,115
   output (833 reasoning) tokens, about 6 s. One run, not a benchmark result.
+- 2026-10-27, `muse-spark-1.3`, effort `high`, function tools beside a strict `text.format`
+  (spike, `make live-tools`, `crates/mm-agent/tests/tools_live.rs`; two runs on the chilled-water
+  plant reset spec, 17 calls in all). Uncertainty item 2 is answered:
+  - **Tools and `text.format` in one request: accepted** (HTTP 200 on every call). The three
+    function tools were strict and each `parameters` carried the block-graph schema (its `$defs`
+    moved to the parameters' root so the `$ref`s resolve); the request also kept the strict
+    `block_graph` format. No 400.
+  - **Round trip, stateless:** `store:false` plus `include:["reasoning.encrypted_content"]`, every
+    output item replayed verbatim, one `function_call_output` per call (same `call_id`, in call
+    order). Eight tool turns in a row worked, history growing to about 60k input tokens. A reply
+    that asks for tools has `reasoning`, often one `message` with `phase:"commentary"` (a short
+    preamble, under 100 characters), then one or more `function_call` items (`arguments` a JSON
+    string). Parallel calls are the default: Spark sent up to five in one turn. We never use
+    `previous_response_id`.
+  - **Dropping the tools for a last call works:** after the turn budget, the same history (calls
+    answered) with `tools` removed and the schema kept returned a normal answer, even though the
+    history holds `function_call` items. So no separate "final call without tools" is needed
+    except when a budget runs out.
+  - **Spark does call the tools.** Run 1 spent its eight turns mostly on `describe_block` (18
+    calls for classes already listed in the prompt), then one `check_graph` and one
+    `replay_scenario`, and gave no answer in budget. With one sentence added (the listed classes
+    are complete; describe only when unsure), run 2 used `describe_block` 5 times, then
+    `check_graph` (two validator findings, fixed next turn), then replayed all ten scenarios,
+    found two failing (expected 279.67, got 279.81 at 4,200 and 4,500 s), and re-checked. Out of
+    turns, the final answer parsed as a valid graph and passed 8 of 10 scenarios. About 173 s.
+  - Cost: each `check_graph` or `replay_scenario` call re-sends the whole draft as arguments
+    (about 4.6-5.6 KB), so tool turns cost output tokens; a turn with five parallel replays wrote
+    about 7-9k output tokens.
 
 ### Source index
 - https://dev.meta.ai/docs/overview, /models, /quickstart, /authentication, /sdks, /pricing-rate-limits, /error-handling

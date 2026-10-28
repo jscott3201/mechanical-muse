@@ -78,7 +78,7 @@ pub(crate) fn feedback_message(
     out
 }
 
-fn load_failed(out: &mut String, failure: &LoadFailure) {
+pub(crate) fn load_failed(out: &mut String, failure: &LoadFailure) {
     out.push_str(&format!(
         "The control engine refused it at stage {} ({}).\n",
         failure.stage, failure.code
@@ -156,7 +156,7 @@ fn describe(outcome: &ScenarioOutcome) -> String {
 
 /// Each input's value at `t` and when it last changed, so a timing miss can be traced to the
 /// edge that caused it. Inputs are in name order (the scenario map is sorted).
-fn inputs_at(scenario: &Scenario, t: f64) -> String {
+pub(crate) fn inputs_at(scenario: &Scenario, t: f64) -> String {
     let mut parts: Vec<String> = scenario
         .inputs
         .iter()
