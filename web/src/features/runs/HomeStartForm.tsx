@@ -19,11 +19,12 @@ const SPEC = "home_price_response";
 /** Two weeks of 15-minute steps, the length the home's results were measured over. */
 const TWO_WEEKS = 1344;
 
-type Window = { id: string; label: string; detail: string; day: number };
+type HomeWindow = { id: string; label: string; detail: string; day: number };
 
 /** BOPTEST's two heating windows for the home, and two the sequence was not tuned on. */
-const WINDOWS: readonly Window[] = [
-  { id: "typical", label: "Typical heating", detail: "BOPTEST's window from day 108 (April)", day: 108 },
+const TYPICAL: HomeWindow = { id: "typical", label: "Typical heating", detail: "BOPTEST's window from day 108 (April)", day: 108 };
+const WINDOWS: readonly HomeWindow[] = [
+  TYPICAL,
   { id: "peak", label: "Peak heating", detail: "BOPTEST's window from day 16 (January)", day: 16 },
   { id: "feb", label: "February", detail: "From day 40; not tuned on", day: 40 },
   { id: "nov", label: "November", detail: "From day 315; not tuned on", day: 315 },
@@ -31,7 +32,7 @@ const WINDOWS: readonly Window[] = [
 
 /** Start a run on BOPTEST's home: a heat pump house on spot prices, two weeks per window. */
 export function HomeStartForm({ onStarted }: { onStarted: (run: RunInfo) => void }) {
-  const [chosen, setChosen] = useState<Window>(WINDOWS[0] as Window);
+  const [chosen, setChosen] = useState<HomeWindow>(TYPICAL);
   const [baseline, setBaseline] = useState(false);
   const stored = useResource<DraftInfo[]>("/api/drafts");
   const drafts = stored.status === "ready" ? draftsOf(stored.data, SPEC) : [];

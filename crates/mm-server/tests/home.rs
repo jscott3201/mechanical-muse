@@ -216,3 +216,54 @@ async fn office_options_are_refused_for_the_home() {
         assert_eq!(status, StatusCode::BAD_REQUEST, "{body}: {reply}");
     }
 }
+
+/// A verified draft of the home spec runs on the home (the start check knows the building).
+#[tokio::test]
+async fn a_home_draft_runs_on_the_home() {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("home-draft-{}", std::process::id()));
+    let state = state(dir.clone(), vec![readings(0.0, 2), readings(900.0, 1)]);
+    let spec = "home_price_response";
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../specs")
+        .join(spec)
+        .join("graph.json");
+    let graph: mm_graph::BlockGraph =
+        serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    let (_, report) = state
+        .spec(spec)
+        .unwrap()
+        .replay_graph(&graph, state.palette())
+        .unwrap();
+    let id = report.content_id.clone();
+    state.authoring().drafts.insert(mm_server::drafts::Draft {
+        info: mm_server::author_dto::DraftInfo {
+            content_id: id.clone(),
+            spec: spec.into(),
+            scenarios: 1,
+            model: "muse-spark-1.3".into(),
+            source: mm_server::author_dto::ModelSource::Recorded,
+            session: "test".into(),
+            attempts_used: 1,
+            stored_seq: 0,
+        },
+        graph,
+    });
+    let (status, run) = call(
+        &state,
+        "POST",
+        "/api/runs",
+        Some(json!({"building": "home", "steps": 2, "drafts": {spec: id}})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{run}");
+    let run_id = run["id"].as_str().unwrap().to_owned();
+    assert_eq!(finish(&state, &run_id).await["state"], "completed");
+    let started = events(&dir, &run_id)
+        .into_iter()
+        .find(|e| e["kind"] == "started")
+        .unwrap();
+    assert_eq!(started["config"]["drafts"][spec], json!(id));
+    assert_eq!(started["sequences"][0]["origin"], "drafted", "{started}");
+    let _ = std::fs::remove_dir_all(dir);
+}

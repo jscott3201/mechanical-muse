@@ -33,15 +33,18 @@ enum AnyPlant {
     Fake(FakePlant, std::time::Duration),
 }
 
-/// Adds BOPTEST's forecast to `readings` (the home's sequence reads it as inputs).
-async fn with_forecast(
-    client: &BoptestClient,
-    mut readings: Measurements,
-) -> Result<Measurements, PlantError> {
+/// Adds BOPTEST's forecast to `readings` (the home's sequence reads it as inputs). The plant has
+/// already advanced, so a failed fetch does not end the run: the readings go on without the
+/// forecast, the sequence degrades for that step and its setpoint goes back to BOPTEST.
+async fn with_forecast(client: &BoptestClient, mut readings: Measurements) -> Measurements {
     let (points, horizon, interval) = home::forecast_request();
-    let forecast = client.forecast(&points, horizon, interval).await?;
-    home::add_forecast(&mut readings, &forecast);
-    Ok(readings)
+    match client.forecast(&points, horizon, interval).await {
+        Ok(forecast) => home::add_forecast(&mut readings, &forecast),
+        Err(e) => {
+            tracing::warn!(error = %e, "forecast unavailable this step; the sequence degrades")
+        }
+    }
+    readings
 }
 
 impl Plant for AnyPlant {
@@ -50,7 +53,7 @@ impl Plant for AnyPlant {
             AnyPlant::Boptest { client, forecast } => {
                 let readings = client.advance(writes).await?;
                 if *forecast {
-                    with_forecast(client, readings).await
+                    Ok(with_forecast(client, readings).await)
                 } else {
                     Ok(readings)
                 }
@@ -302,7 +305,7 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
                 let first = client.initialize(config.start_s, config.warmup_s).await?;
                 client.set_step(config.step_s).await?;
                 if home {
-                    return with_forecast(&client, first).await;
+                    return Ok(with_forecast(&client, first).await);
                 }
                 Ok::<_, PlantError>(first)
             }

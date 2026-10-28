@@ -73,7 +73,9 @@ export function PeakPowerCard({
                 <Icon aria-hidden="true" className="size-5 text-muted-foreground" />
                 {formatNumber(-cut.percent, 0)} %
               </span>
-              <span className="text-xs text-muted-foreground">{formatNumber(cut.perHomeKw, 2)} kW less per home</span>
+              <span className="text-xs text-muted-foreground">
+                {formatNumber(Math.abs(cut.perHomeKw), 2)} kW {cut.perHomeKw >= 0 ? "less" : "more"} per home
+              </span>
             </div>
           )}
         </div>

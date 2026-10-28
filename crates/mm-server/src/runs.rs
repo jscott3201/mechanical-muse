@@ -280,7 +280,7 @@ pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
         check_home(r)?;
     }
     // The home's defaults: BOPTEST's typical heat window (from day 108), a week of warm-up,
-    // one week of 15-minute steps.
+    // two weeks of 15-minute steps (the length the home's results were measured over).
     let start_s = r.start_s.unwrap_or(if home {
         108.0 * 86_400.0
     } else {
@@ -289,7 +289,7 @@ pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
     let warmup_s = r
         .warmup_s
         .unwrap_or(if home { MAX_WARMUP_S } else { 86_400.0 });
-    let steps = r.steps.unwrap_or(if home { 672 } else { 300 });
+    let steps = r.steps.unwrap_or(if home { 1344 } else { 300 });
     if !(start_s.is_finite() && (0.0..YEAR_S).contains(&start_s)) {
         return Err(StartError::Invalid(
             "start_s must be within the year".into(),
