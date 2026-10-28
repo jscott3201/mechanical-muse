@@ -7,7 +7,7 @@ export type Resource<T> =
   | { status: "error"; error: ApiFailure }
   | { status: "ready"; data: T };
 
-function asFailure(e: unknown): ApiFailure {
+export function asFailure(e: unknown): ApiFailure {
   if (e instanceof ApiFailure) return e;
   return new ApiFailure(0, "network", "cannot reach mm-server");
 }

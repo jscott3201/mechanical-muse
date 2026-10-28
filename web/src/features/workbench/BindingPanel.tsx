@@ -56,6 +56,8 @@ function BindingTable({
               <label key={f} className="flex items-center gap-1">
                 <input
                   type="checkbox"
+                  // The visible label is just the digit; a screen reader hears "Floor 2".
+                  aria-label={`Floor ${f}`}
                   checked={binding.floors.includes(f)}
                   onChange={(e) =>
                     onChange?.({

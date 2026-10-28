@@ -14,7 +14,7 @@ import { change, formatChange } from "./baseline";
 /** How a sequence's graph was made, in words (the same wording everywhere). */
 export function originLabel(s: SequenceInfo): string {
   if (s.origin !== "drafted") return "Hand-built reference";
-  return `Drafted by ${s.model ?? "the model"}${s.source === "recorded" ? " (recorded run)" : ""}`;
+  return `Drafted by ${s.model ?? "the model"}${s.source === "recorded" ? " (recorded session)" : ""}`;
 }
 
 function OriginIcon({ s }: { s: SequenceInfo }) {

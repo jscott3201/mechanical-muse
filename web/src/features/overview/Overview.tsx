@@ -16,6 +16,7 @@ import type { Health } from "@/types/generated/Health";
 import type { ReplayInfo } from "@/types/generated/ReplayInfo";
 import type { SpecSummary } from "@/types/generated/SpecSummary";
 
+import { ErrorNote } from "../ErrorNote";
 
 function Step({ n, icon, title, children, action }: { n: number; icon: ReactNode; title: string; children: ReactNode; action?: ReactNode }) {
   return (
@@ -139,9 +140,11 @@ export function Overview({ health, onGo }: { health: Health | null; onGo: (to: R
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Step n={1} icon={<FileText className="size-4" />} title="A sequence in plain words">
           <p>
-            {specCount === null ? "Loading…" : `${specCount} sequences`}, each with our own spec text and test scenarios from an
-            independent reference model{scenarios === null ? "" : ` (${scenarios} scenarios in all)`}.
+            {specCount === null ? (specs.status === "error" ? "Our sequences" : "Loading…") : `${specCount} sequences`}, each
+            with our own spec text and test scenarios from an independent reference model
+            {scenarios === null ? "" : ` (${scenarios} scenarios in all)`}.
           </p>
+          {specs.status === "error" && <ErrorNote error={specs.error} onRetry={specs.reload} />}
         </Step>
         <Step
           n={2}

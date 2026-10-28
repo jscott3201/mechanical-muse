@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAction } from "@/hooks/useResource";
 import type { RunExplanationView } from "@/types/generated/RunExplanationView";
 
-import { ErrorNote } from "../ErrorNote";
+import { ExplainErrorNote } from "../ErrorNote";
 
 /** Muse Spark's account of a run's events in an operator's words. Model-written and labelled so. */
 export function RunExplanationPanel({ runId, ended }: { runId: string; ended: boolean }) {
@@ -28,7 +28,7 @@ export function RunExplanationPanel({ runId, ended }: { runId: string; ended: bo
       </div>
     );
   }
-  if (state.status === "error") return <ErrorNote error={state.error} onRetry={explain.run} />;
+  if (state.status === "error") return <ExplainErrorNote error={state.error} onRetry={explain.run} />;
   const e = state.data;
   return (
     <section aria-label="What happened" className="flex flex-col gap-3 rounded-lg border p-4">

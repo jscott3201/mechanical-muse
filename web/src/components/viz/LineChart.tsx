@@ -207,7 +207,14 @@ export const LineChart = memo(function LineChart({
             ))}
           </span>
         )}
-        <button type="button" className="ml-auto text-xs text-muted-foreground underline-offset-2 hover:underline" onClick={() => setTable((t) => !t)}>
+        {/* One name per chart, so a page of charts does not read as a list of identical buttons. */}
+        <button
+          type="button"
+          aria-label={`Show ${title} as a table`}
+          aria-pressed={table}
+          className="ml-auto text-xs text-muted-foreground underline-offset-2 hover:underline"
+          onClick={() => setTable((t) => !t)}
+        >
           {table ? "Show chart" : "Show table"}
         </button>
       </figcaption>

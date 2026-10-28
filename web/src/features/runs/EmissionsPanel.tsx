@@ -30,7 +30,16 @@ export function RunEmissions({
   const self = hasKpis ? `run:${runId}` : null;
   const vsBase = useLedgerComparison(comparisons.baseline?.reference ?? null, self);
   const vsHealthy = useLedgerComparison(comparisons.healthy?.reference ?? null, self);
-  if (!hasKpis || ledger.status !== "ready") return null;
+  if (!hasKpis || ledger.status === "loading") return null;
+  if (ledger.status === "error")
+    return (
+      <p className="flex items-start gap-2 text-sm text-muted-foreground">
+        <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <span>
+          No emissions ledger for this run (<code className="text-xs">{ledger.error.code}</code>): {ledger.error.message}
+        </span>
+      </p>
+    );
   // A refused comparison (another window after all) just leaves the comparison out.
   const ready = (r: typeof vsBase) => (r?.status === "ready" ? r.data : null);
   return (

@@ -70,7 +70,7 @@ describe("AuthorPanel", () => {
     await waitFor(() =>
       expect((screen.getByRole("button", { name: /Live model call/ }) as HTMLButtonElement).disabled).toBe(true),
     );
-    expect(screen.getByRole("button", { name: /Recorded run/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: /Recorded session/ }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: /^Draft$/ }));
     await screen.findByRole("button", { name: /Authoring/ });
     const call = fetch.mock.calls.find(([u]) => u === "/api/specs/chw_plant_reset/author");
@@ -141,7 +141,7 @@ describe("AuthorPanel", () => {
     vi.stubGlobal("fetch", fetch);
     render(<AuthorPanel spec="chw_plant_reset" scenarios={10} />);
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Recorded run/ }).getAttribute("aria-pressed")).toBe("true"),
+      expect(screen.getByRole("button", { name: /Recorded session/ }).getAttribute("aria-pressed")).toBe("true"),
     );
     fireEvent.click(screen.getByRole("switch", { name: /Let Spark check its work/ }));
     fireEvent.click(screen.getByRole("button", { name: /^Draft$/ }));
@@ -149,6 +149,34 @@ describe("AuthorPanel", () => {
     const call = fetch.mock.calls.find(([u]) => u === "/api/specs/chw_plant_reset/author");
     const [, init] = call as unknown as [string, RequestInit];
     expect(JSON.parse(String(init.body))).toEqual({ source: "recorded", tools: true });
+  });
+
+  it("stops waiting when the session's stream closes without an end", async () => {
+    const fetch = vi.fn(async (url: string, _init?: RequestInit) =>
+      url === "/api/health"
+        ? new Response(JSON.stringify({ status: "ok", engine_rev: "fa5cb19", specs: 4, recorded_model: true, boptest: true }), { status: 200 })
+        : new Response(JSON.stringify({ id: sessionId, config, state: "running", events: 0 }), { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    render(<AuthorPanel spec="chw_plant_reset" scenarios={10} />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Recorded session/ }).getAttribute("aria-pressed")).toBe("true"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Draft$/ }));
+    await waitFor(() => expect(FakeSource.instances).toHaveLength(1), { timeout: 5000 });
+    const source = FakeSource.instances.at(-1);
+    await act(async () => {
+      source?.emit(lines[0] ?? "");
+      await new Promise((r) => setTimeout(r, 5));
+    });
+    expect(screen.getByRole("button", { name: /Authoring/ })).toBeTruthy();
+    // A restarted server forgets the session: the browser's EventSource gives up (404).
+    act(() => {
+      if (source) source.readyState = FakeSource.CLOSED;
+      source?.onerror?.();
+    });
+    expect(screen.getByRole("alert").textContent).toMatch(/stream closed before it ended/);
+    expect((screen.getByRole("button", { name: /^Draft$/ }) as HTMLButtonElement).disabled).toBe(false);
   });
 });
 

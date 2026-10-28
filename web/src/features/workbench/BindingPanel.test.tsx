@@ -46,6 +46,8 @@ describe("BindingPanel", () => {
     expect(await screen.findByText(/Proposed by Muse Spark \(recorded\)/)).toBeTruthy();
     expect(screen.getByText(/cannot be fed as `measurement`/)).toBeTruthy();
     expect(screen.getByText("Occupancy stands in for the enable.")).toBeTruthy();
+    // Each floor box says which floor it is, not just "2".
+    expect((screen.getByRole("checkbox", { name: "Floor 2" }) as HTMLInputElement).checked).toBe(true);
 
     fireEvent.change(screen.getByLabelText("How ena is fed"), { target: { value: "above" } });
     const threshold = screen.getByLabelText("Threshold for ena");

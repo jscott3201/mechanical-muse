@@ -8,7 +8,7 @@ export const NO_TOOLS_RECORDING = "No recorded session with Spark's own checks f
 export const NO_RECORDING =
   "No recorded session for this sequence: drafting it needs a model key on the server. The chilled-water plant reset has one to play back.";
 export const ONLY_TOOLS_RECORDING =
-  "This sequence's recorded session is the one where Spark checks its own work: turn that on to play it back.";
+  "This sequence's recorded session is the one where Spark checks its own work: turn that on to play the recorded session back.";
 
 /**
  * What a recorded Draft can do for this spec. Only an explicit `false` from the server blocks:

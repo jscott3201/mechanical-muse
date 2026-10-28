@@ -201,7 +201,7 @@ function AttemptRow({ attempt, spec, units }: { attempt: AttemptEntry; spec: str
         </>
       ) : (
         <p className="flex items-center gap-2 font-medium">
-          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />{" "}
+          <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />{" "}
           {attempt.checks.length > 0 ? "Muse Spark is drafting and checking its work…" : "Muse Spark is drafting…"}
         </p>
       )}
@@ -271,7 +271,10 @@ export function AuthorPanel({
     if (verifiedId) onVerified?.();
     // Once per stored draft, not on every new callback identity.
   }, [verifiedId]);
-  const running = start.state.status === "running" || (sessionId !== null && stream.ended === null);
+  // A stream that closes without its `ended` event (a server restart forgets the session and
+  // answers 404) will never finish: treat it as ended so the controls come back.
+  const lost = sessionId !== null && stream.ended === null && stream.connection === "closed";
+  const running = start.state.status === "running" || (sessionId !== null && stream.ended === null && !lost);
   const recorded = (stream.config?.source ?? source) === "recorded";
   return (
     <Card>
@@ -306,7 +309,7 @@ export function AuthorPanel({
               title="Play back an earlier live session; every check still runs now"
               className={cn(source === "recorded" && "bg-background shadow-sm")}
             >
-              <History aria-hidden="true" /> Recorded run
+              <History aria-hidden="true" /> Recorded session
             </Button>
           </div>
           <Button
@@ -314,7 +317,7 @@ export function AuthorPanel({
             disabled={running || (source === "live" && !live && health.status === "ready") || blocked.draft !== null}
             title={blocked.draft ?? undefined}
           >
-            {running ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Sparkles aria-hidden="true" />}
+            {running ? <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : <Sparkles aria-hidden="true" />}
             {running ? "Authoring…" : "Draft"}
           </Button>
           {health.status === "ready" && !live && (
@@ -359,7 +362,7 @@ export function AuthorPanel({
         )}
         {stream.config && recorded && (
           <p className="text-sm text-muted-foreground">
-            Recorded run: the model's replies come from an earlier live Muse Spark session and are
+            Recorded session: the model's replies come from an earlier live Muse Spark session and are
             played back. Every check runs now, on this server.
           </p>
         )}
@@ -415,6 +418,13 @@ export function AuthorPanel({
               {recorded && ", as recorded"}
             </p>
           </section>
+        )}
+        {lost && (
+          <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
+            <CircleX aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            The session's stream closed before it ended (the server may have restarted, which clears its
+            sessions). Nothing more will arrive; start a new draft.
+          </p>
         )}
         {stream.connection === "reconnecting" && (
           <p className="text-sm text-muted-foreground">Connection lost; reconnecting…</p>
