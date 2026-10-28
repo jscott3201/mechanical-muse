@@ -1,6 +1,6 @@
 # Demo script (three minutes)
 
-A plan for the video and the live final, written against what runs today (2026-10-27). Each
+A plan for the video and the live final, written against what runs today (2026-10-28). Each
 scene names its fallback rung; a scene that is not live says "recorded" on screen and aloud.
 Numbers are from `docs/benchmark-results.md` and `docs/runtime-results.md`; re-check them
 before recording. Spoken lines are guides, not a teleprompter.
@@ -19,24 +19,27 @@ Decide the rung per scene the day before recording. Never call rung 2 to 4 "live
 ## Scenes
 
 The story is one engineer's sequence, from a photo of the sheet to a run on the building, then a
-revision. Our own chilled-water reset carries the closed loop in the background and gets one beat.
+revision, then a second building: a heat pump house on spot prices. The participant guide asks
+for a three-minute video that shows only work built during the event, so the cut runs 2:56
+(2:42 without the optional fault scene) and opens by naming what is new.
 
 | Time | On screen | Say (guide) | Rung |
 | --- | --- | --- | --- |
-| 0:00–0:15 | Title, then the README's pipeline diagram (built in the event vs used unmodified) | "The muse proposes; the engine checks." Built this week: the authoring agent, graph emitter, engine bridge, BOPTEST runtime, BACnet mirror, MCP server, web app and benchmark harness. Used, not built here: open-control-engine, open-control-library, rusty-bacnet and BOPTEST. | — |
-| 0:15–0:30 | The sample sheet (`fixtures/sequences/ahu-sat-reset-sample.png`) | Sequences arrive as a sheet like this. A contractor programs them by hand for each building, and they are seldom tested before they run. | — |
-| 0:30–0:50 | Bring your own → "Use the sample sequence sheet" → Spark's reading: task, the eight things the sheet leaves open, proposed scenarios as timelines; accept | Muse Spark reads the photo with structured output and lists what the sheet leaves open instead of guessing. Its test scenarios are proposals; the engineer accepts them, and only then do they become the gate. | 1 (sped up, say so), else 2 |
-| 0:50–1:05 | Draft revision A: verified on the first attempt, 7 of 7 scenarios, content id. Bind: Spark's proposed points, the server's checks (limits in K, °C and °F), confirm | Every draft is replayed on a deterministic engine before anything runs. Spark also proposes which building points feed each input and which setpoint each output writes; the server checks every point and unit; the engineer confirms. | 2, or 1 |
-| 1:05–1:25 | Runs: revision A on day 143 (replay at 10×) — the setpoint flat at 55 °F, the override latched | It ran, safely, and did nothing: the sheet's humidity thresholds keep its override on in this building. The tool found that before anyone deployed it. | 3 (`day143-morning-your-sequence-rev-a`) |
-| 1:25–1:55 | "Revision B of the sample" (70 / 65 %): read, accept (named `ahu1_sat_rev_b`), draft. Attempt 1 red, 4 of 6 (it sends 65 °F inside the 10-minute start-up hold); the failing scenarios go back; attempt 2 green, 6 of 6 | The engineer edits the sheet and it goes through the same gate. The engine says exactly where the draft is wrong; Spark repairs it. Nothing unverified can reach the building. | 2 (revision B's real red-to-green), or 1 |
-| 1:55–2:15 | Run revision B (10×): the reset moves 55→65 °F; tiles beside the baseline: energy −37.3 %, cost −27.9 %, discomfort −10.7 % | On this window: energy −37 % and less discomfort against BOPTEST's own controller. On days it was not tuned on: about a quarter to a half less HVAC energy in spring and autumn, mostly reheat gas, and no gain over our own sequences in summer. Say that. | 3 (`…-rev-b`), else 1 |
-| 2:15–2:35 | Two faults: the blank-reading replay at 4× (fail-safe note: setpoints handed back), then the sensor-bias replay at 10× — its tiles now compare with the same run without the fault, and the Energy & emissions panel prices it | A blank reading is refused and control goes back to BOPTEST. A reading that drifts 4 K is worse: it is believed, the plant runs colder, and BOPTEST computes the cost, about $12 and 44 kg of CO2 in two hours, a fifth of the ten hours' saving. | 3 (`day186-midnight-fault-demo`, `day185-noon-fault-sensor-bias`), else 1 |
-| 2:35–2:50 | The README's results table (the app does not show the benchmark); one line on the MCP server; BACnet mirror as a still | On 137 open fault rules described in prose, Spark (muse-spark-1.3-contributor, 3 runs) verifies 130 to 132 after repair, never seeing the test vectors; a constant graph verifies none. Coding agents get the same checks over MCP, and live runs appear as a read-only BACnet device. | — |
-| 2:50–3:00 | Repo URL; Muse Spark via the Meta Model API | What is next, one line. | — |
+| 0:00–0:17 | Title card (Push the Frontier; Muse Spark via the Meta Model API), then the README's pipeline diagram with two labelled columns: built during the hackathon, and existing open source we call | Mechanical Muse uses Muse Spark, through the Meta Model API, to turn a written building control sequence into a verified controller. Everything shown was built during this hackathon; the engine, BOPTEST and the BACnet stack are existing open-source projects we call. | — |
+| 0:17–0:26 | The sample sheet (`fixtures/sequences/ahu-sat-reset-sample.png`) | Sequences arrive as sheets like this. Each building's are programmed by hand and rarely tested against the sheet before they run. | — |
+| 0:26–0:42 | Bring your own → "Use the sample sequence sheet" → the task, what the sheet leaves open, proposed scenarios as timelines; accept | Spark reads the photo into a precise task, lists what the sheet leaves open instead of guessing, and proposes test scenarios. The engineer accepts them; only then do they become the gate. | 2 (recorded), or 1 sped up and said so |
+| 0:42–0:55 | Draft revision A: 7 of 7 first try, content id. Building tab: Spark's proposed points, the server's checks, confirm | Each draft is replayed on the engine: seven of seven, with a content id. Spark proposes which building points to use; the server checks units and limits, and the engineer confirms. | 2, or 1 |
+| 0:55–1:07 | Revision A on day 143 (replay at 10×): setpoint flat at 55 °F, override latched | On BOPTEST's office it ran safely and did nothing: the sheet's humidity limits keep its override on. We found that in simulation, not in a building. | 3 (`day143-morning-your-sequence-rev-a`) |
+| 1:07–1:41 | Revision B: read, accept as `ahu1_sat_rev_b`, draft. Attempt 1 red, 4 of 6; attempt 2 green, 6 of 6; Explain the fix; Try to break it (4 proposals, all pass) | The engineer revises the sheet; same gate. Spark's first draft is red: it sends sixty-five degrees inside the start-up hold. The failing scenarios go back, and the second draft passes six of six. Explain the fix says what changed, in plain words. Then Spark tries to break its own verified draft with four new edge cases; the engine replays them, and all four pass. | 2 (recorded) |
+| 1:41–1:56 | Revision B (10×): the reset moves 55→65 °F; tiles beside the baseline | Revision B on the same spring morning: thirty-seven percent less energy than BOPTEST's own controller, with less discomfort. On days it wasn't tuned on, a quarter to a half less in spring and fall, nothing in summer. | 3 (`…-rev-b`), else 1 |
+| 1:56–2:22 | Runs → Home → `home-day108-sequence` (10×): peak-price power card 1.17 → 0.87 kW, fleet line, rebound note | Same gate, second building: a heat pump house on spot electricity prices. The sequence preheats before the priciest hours and coasts through them. Over two simulated weeks, power in those hours drops twenty-six percent and the bill eight percent, with less discomfort. Utilities add thousands of homes together; the fleet line is an illustration, and we show the rebound too. | 3 (`home-day108-sequence`) |
+| 2:22–2:36 (optional) | Blank-reading replay at 4× (setpoints handed back), then the sensor-bias replay at 10× priced against the same run without it | A blank sensor is refused, and control goes back to BOPTEST. A sensor drifting seven degrees Fahrenheit is worse, because it's believed: about twelve dollars and forty-four kilograms of carbon in two hours. | 3 (`day186-midnight-fault-demo`, `day185-noon-fault-sensor-bias`) |
+| 2:36–2:49 | README results table (muse-spark-1.3-contributor, 3 runs); a short Muse Code clip calling the MCP tools; BACnet mirror still | On a hundred thirty-seven fault rules, Spark verifies at least one thirty after repair, never seeing the tests. Muse Code helped build this, and coding agents get the same checks over MCP. | — |
+| 2:49–2:56 | Repo and docs URLs; Muse Spark via the Meta Model API | Muse Spark proposes, the engine checks, and only verified logic runs. Links below. | — |
 
-Cut order when over time: the BACnet still; the binding beat into the draft beat; the benchmark to
-one spoken sentence. Never cut the repair (in the revision B beat), the revision A → B contrast, or
-the provenance opening.
+Cut order when over time: the fault scene; the Try to break it sentence; the binding sentence;
+the summer clause. Never cut the opening line on what was built this week, the repair, the
+revision A → B contrast, or the Muse Code line. Never go over 3:00.
 
 ## Rehearsal timings
 
@@ -51,6 +54,11 @@ replay 8.3 s at 10×. About 30 s of waiting in all, so the three minutes are set
 - "checks", "verified against test vectors", "passes X of Y": yes. "Proven", "correct",
   "compliant", "first", "field-tested": no.
 - "Uses" or "calls" for the engine, library, rusty-bacnet and BOPTEST.
+- open-control-engine and rusty-bacnet predate the event: "existing", never "our new engine".
+- Muse Code "helped build" the repo; the README names Claude Code too.
+- Home: "simulated", "BOPTEST's own controller", the fleet line is an illustration, mention
+  the rebound (highest 15-minute draw +16.4 %).
+- US English: °F first, "fall" not "autumn".
 - KPIs: name the window ("on this 8-hour spring morning"); revision B's thresholds were chosen
   after revision A failed on that same day, so quote the held-out range beside it.
 - BACnet: no conformance claim; the vendor id is a placeholder.
@@ -79,6 +87,10 @@ replay 8.3 s at 10×. About 30 s of waiting in all, so the three minutes are set
 ## Capture checklist
 
 - Clean checkout, fixed window size, one theme, text readable at 720p.
+- Captions burned in; no music or footage without the rights.
+- Video link opens without sign-in (check in a private window); repo public; everyone who
+  worked on it listed on the submission. Submit by Nov 4, 3 PM ET (portal closes 9 PM ET), then
+  post on X.
 - Start BOPTEST on Modal about 10 minutes before (initialize takes about 3 minutes; an idle
   test stops after 15). Stop the Modal app afterwards (`modal app stop`).
 - Nothing on screen that is a key, `.env`, the Modal URL, an absolute path, a username or an
