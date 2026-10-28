@@ -130,9 +130,13 @@ pub fn palette_listing(palette: &Palette) -> String {
         } else {
             params.join(", ")
         };
+        // A width class's inputs depend on its `nin`, so show the pattern.
+        let inputs = match spec.width {
+            Some(kind) => format!("u1..u<{}>: {}", mm_graph::WIDTH_PARAM, kind.as_str()),
+            None => ports(&spec.inputs),
+        };
         out.push_str(&format!(
-            "- {class}: in({}) -> out({}); params: {params}\n",
-            ports(&spec.inputs),
+            "- {class}: in({inputs}) -> out({}); params: {params}\n",
             ports(&spec.outputs)
         ));
     }

@@ -288,7 +288,7 @@ async fn the_first_request_carries_schema_palette_and_task() {
         .lines()
         .filter(|l| l.starts_with("- ") && l.contains(": in("))
         .count();
-    assert_eq!(palette_lines, 53);
+    assert_eq!(palette_lines, 55);
     assert!(
         first
             .instructions

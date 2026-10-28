@@ -162,7 +162,7 @@ fn duplicate_names_are_flagged() {
 #[test]
 fn width_driven_class_is_not_authorable() {
     let mut g = ahu_0005();
-    g.blocks[0].class = "Logical.MultiAnd".into();
+    g.blocks[0].class = "Reals.MultiSum".into();
     let id = g.blocks[0].id.clone();
     assert!(codes(&g).contains(&(id, FindingCode::ClassNotAuthorable)));
 }
@@ -254,4 +254,47 @@ fn an_input_nothing_reads_is_flagged() {
     g.connections.retain(|e| !e.starts_with("sat ->"));
     g.connections.push("mat -> gap.u2".into());
     assert_eq!(codes(&g), vec![("sat".into(), FindingCode::UnusedInput)]);
+}
+
+fn width_graph() -> BlockGraph {
+    let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/golden/width_max_min.graph.json");
+    serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap()
+}
+
+#[test]
+fn width_graph_validates() {
+    assert_eq!(codes(&width_graph()), vec![]);
+}
+
+#[test]
+fn width_out_of_range_is_flagged() {
+    for bad in [0.0, 2.5, 33.0] {
+        let mut g = width_graph();
+        g.blocks[0].params[0].value = mm_graph::ParamValue::Number(bad);
+        let found = codes(&g);
+        assert!(
+            found.contains(&("hi.nin".to_owned(), FindingCode::InvalidWidth)),
+            "nin {bad}: {found:?}"
+        );
+    }
+}
+
+#[test]
+fn width_ports_follow_nin() {
+    // nin 2: u3 no longer exists, so the edge into it has no destination.
+    let mut g = width_graph();
+    g.blocks[0].params[0].value = mm_graph::ParamValue::Number(2.0);
+    assert!(codes(&g).contains(&("pC -> hi.u3".to_owned(), FindingCode::UnknownDestination)));
+    // nin 4: u4 exists and nothing drives it.
+    let mut g = width_graph();
+    g.blocks[1].params[0].value = mm_graph::ParamValue::Number(4.0);
+    assert!(codes(&g).contains(&("lo.u4".to_owned(), FindingCode::Undriven)));
+}
+
+#[test]
+fn width_without_nin_is_flagged() {
+    let mut g = width_graph();
+    g.blocks[0].params.clear();
+    assert!(codes(&g).contains(&("hi.nin".to_owned(), FindingCode::MissingRequiredParam)));
 }

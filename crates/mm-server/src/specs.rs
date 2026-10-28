@@ -326,7 +326,7 @@ pub fn graph_view(graph: &BlockGraph, palette: &Palette) -> Result<GraphView, St
         blocks.push(BlockView {
             id: b.id.clone(),
             class: b.class.clone(),
-            inputs: ports(&class.inputs),
+            inputs: ports(&class.input_ports(&b.params)),
             outputs: ports(&class.outputs),
             params: b
                 .params

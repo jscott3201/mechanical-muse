@@ -41,3 +41,8 @@ fn ahu_0027_stale_override() {
 fn ahu_0005_supply_below_mixed() {
     check_golden("ahu_0005");
 }
+
+#[test]
+fn width_max_min_expands_nin_ports() {
+    check_golden("width_max_min");
+}

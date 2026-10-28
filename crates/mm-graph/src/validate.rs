@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::Serialize;
 
 use crate::graph::{BlockGraph, Endpoint, ParamValue, parse_edge};
-use crate::palette::{Palette, ParamKind, PortKind};
+use crate::palette::{MAX_WIDTH, Palette, ParamKind, PortKind, WIDTH_PARAM, width_value};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -21,6 +21,7 @@ pub enum FindingCode {
     DuplicateParam,
     MissingRequiredParam,
     ParamTypeMismatch,
+    InvalidWidth,
     MalformedEdge,
     UnknownSource,
     UnknownDestination,
@@ -43,6 +44,7 @@ impl FindingCode {
             FindingCode::DuplicateParam => "duplicate-param",
             FindingCode::MissingRequiredParam => "missing-required-param",
             FindingCode::ParamTypeMismatch => "param-type-mismatch",
+            FindingCode::InvalidWidth => "invalid-width",
             FindingCode::MalformedEdge => "malformed-edge",
             FindingCode::UnknownSource => "unknown-source",
             FindingCode::UnknownDestination => "unknown-destination",
@@ -173,9 +175,21 @@ impl Validator {
                 let at = port_endpoint(&block.id, &port.name);
                 self.sources.insert(at, port.kind);
             }
-            for port in &spec.inputs {
+            for port in spec.input_ports(&block.params) {
                 let at = port_endpoint(&block.id, &port.name);
                 self.destinations.insert(at, port.kind);
+            }
+            if spec.width.is_some()
+                && let Some(nin) = block.params.iter().find(|p| p.name == WIDTH_PARAM)
+                && width_value(&nin.value).is_none()
+            {
+                self.push(
+                    FindingCode::InvalidWidth,
+                    format!("{}.{WIDTH_PARAM}", block.id),
+                    format!(
+                        "{WIDTH_PARAM} is the number of inputs (u1..u<{WIDTH_PARAM}>): a whole number from 1 to {MAX_WIDTH}"
+                    ),
+                );
             }
             let mut set = BTreeSet::new();
             for param in &block.params {

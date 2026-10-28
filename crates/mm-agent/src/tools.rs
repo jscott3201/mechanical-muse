@@ -403,7 +403,12 @@ impl<'a> DraftTools<'a> {
             summary: format!("described {}", spec.class),
             output: json!({
                 "ok": true, "class": spec.class,
-                "inputs": ports(&spec.inputs), "outputs": ports(&spec.outputs),
+                "inputs": match spec.width {
+                    Some(kind) => json!([{"name": format!("u1..u<{}>", mm_graph::WIDTH_PARAM),
+                                          "type": kind.as_str()}]),
+                    None => json!(ports(&spec.inputs)),
+                },
+                "outputs": ports(&spec.outputs),
                 "params": params, "keeps_state": spec.stateful,
             })
             .to_string(),
