@@ -1,6 +1,7 @@
 //! BOPTEST REST client (the web service from BOPTEST's docker compose). Replies are
 //! `{status, message, payload}`; an empty `advance` payload means the scenario has ended.
 
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use serde_json::{Value, json};
@@ -146,6 +147,43 @@ impl BoptestClient {
             }),
             other => other,
         }
+    }
+
+    /// Sets the electricity price scenario (`constant`, `dynamic`, `highly_dynamic`) before
+    /// [`Self::initialize`]; prices and the cost KPI follow it.
+    pub async fn set_price_scenario(&self, scenario: &str) -> Result<(), PlantError> {
+        let url = format!("{}/scenario/{}", self.base, self.testid);
+        send(
+            self.http
+                .put(url)
+                .json(&json!({"electricity_price": scenario})),
+        )
+        .await
+        .map(|_| ())
+    }
+
+    /// BOPTEST's forecast of `points` from now through `horizon_s`, every `interval_s`: one
+    /// series per point (plus `time`). Values that are not numbers are left out of a series'
+    /// end rather than guessed, so a short series shows as missing readings.
+    pub async fn forecast(
+        &self,
+        points: &[&str],
+        horizon_s: f64,
+        interval_s: f64,
+    ) -> Result<BTreeMap<String, Vec<f64>>, PlantError> {
+        let url = format!("{}/forecast/{}", self.base, self.testid);
+        let body = json!({"point_names": points, "horizon": horizon_s, "interval": interval_s});
+        let payload = send(self.http.put(url).json(&body)).await?;
+        let object = payload.as_object().ok_or_else(|| PlantError::Malformed {
+            message: "forecast payload is not an object".into(),
+        })?;
+        Ok(object
+            .iter()
+            .filter_map(|(k, v)| {
+                let series = v.as_array()?;
+                Some((k.clone(), series.iter().map_while(Value::as_f64).collect()))
+            })
+            .collect())
     }
 
     pub async fn set_step(&self, seconds: f64) -> Result<(), PlantError> {

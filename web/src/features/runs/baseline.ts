@@ -1,4 +1,5 @@
 import { formatNumber } from "@/lib/format";
+import type { PeakPower } from "@/types/generated/PeakPower";
 import type { ReplayInfo } from "@/types/generated/ReplayInfo";
 import type { RunConfig } from "@/types/generated/RunConfig";
 import type { RunInfo } from "@/types/generated/RunInfo";
@@ -12,6 +13,8 @@ export type BaselineKpis = {
   kpis: Record<string, number>;
   /** The run as the ledger routes name it: `run:<id>` or `replay:<record>`. */
   reference: string;
+  /** A home baseline's power in the window's most expensive quarter of prices. */
+  peak?: PeakPower;
 };
 
 /** Another run of the same window to compare with: how the ledger routes name it, and a caption. */
@@ -32,9 +35,14 @@ function sameRunWindow(r: RunInfo, cfg: RunConfig): boolean {
   );
 }
 
-/** Replays carry no step length; every record so far uses the runtime's 120 s step. */
 function sameReplayWindow(r: ReplayInfo, cfg: RunConfig): boolean {
-  return r.start_s === cfg.start_s && r.ticks === cfg.steps && cfg.step_s === 120 && r.kpis !== undefined;
+  return (
+    r.start_s === cfg.start_s &&
+    r.ticks === cfg.steps &&
+    r.step_s === cfg.step_s &&
+    r.case === cfg.case &&
+    r.kpis !== undefined
+  );
 }
 
 /**
@@ -45,7 +53,14 @@ function sameReplayWindow(r: ReplayInfo, cfg: RunConfig): boolean {
 export function findBaseline(cfg: RunConfig, runs: RunInfo[], replays: ReplayInfo[]): BaselineKpis | null {
   if (cfg.baseline) return null;
   const run = [...runs].reverse().find((r) => r.config.baseline && !r.config.replay && sameRunWindow(r, cfg));
-  if (run?.kpis) return { source: `baseline run ${run.id}`, recorded: false, kpis: run.kpis, reference: `run:${run.id}` };
+  if (run?.kpis)
+    return {
+      source: `baseline run ${run.id}`,
+      recorded: false,
+      kpis: run.kpis,
+      reference: `run:${run.id}`,
+      ...(run.peak ? { peak: run.peak } : {}),
+    };
   const replay = replays.find((r) => r.baseline && sameReplayWindow(r, cfg));
   if (replay?.kpis)
     return {
@@ -53,6 +68,7 @@ export function findBaseline(cfg: RunConfig, runs: RunInfo[], replays: ReplayInf
       recorded: true,
       kpis: replay.kpis,
       reference: `replay:${replay.name}`,
+      ...(replay.peak ? { peak: replay.peak } : {}),
     };
   return null;
 }

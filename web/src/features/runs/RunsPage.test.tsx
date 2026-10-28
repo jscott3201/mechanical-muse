@@ -109,7 +109,7 @@ describe("RunsPage", () => {
       ticks: 3,
       events: 8,
     };
-    const baseline = { name: "base", recorded_run: "run-b", ticks: 30, baseline: true, start_s: 16027200, drafted: false, drafts: [], pressure: false, own: [], state: "completed", kpis: { ener_tot: 0.03 } };
+    const baseline = { name: "base", recorded_run: "run-b", ticks: 30, baseline: true, start_s: 16027200, case: "multizone_office_complex_air", step_s: 120, drafted: false, drafts: [], pressure: false, own: [], state: "completed", kpis: { ener_tot: 0.03 } };
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {

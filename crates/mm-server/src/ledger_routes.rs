@@ -21,7 +21,9 @@ pub fn routes() -> Router<AppState> {
 fn failure(e: &LedgerFailure) -> Failure {
     let status = match e {
         LedgerFailure::NotStarted | LedgerFailure::NoKpis => StatusCode::CONFLICT,
-        LedgerFailure::Kpis(_) => StatusCode::UNPROCESSABLE_ENTITY,
+        LedgerFailure::Kpis(_) | LedgerFailure::OtherBuilding(_) => {
+            StatusCode::UNPROCESSABLE_ENTITY
+        }
         LedgerFailure::WindowMismatch(_) => StatusCode::BAD_REQUEST,
     };
     Failure::new(status, e.code(), e.to_string())

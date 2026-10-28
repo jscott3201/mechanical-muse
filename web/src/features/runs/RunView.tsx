@@ -15,9 +15,10 @@ import type { RunInfo } from "@/types/generated/RunInfo";
 
 import { ErrorNote } from "../ErrorNote";
 import { change, formatChange } from "./baseline";
-import { configFacts, describe } from "./describe";
+import { HOME_CASE, configFacts, describe } from "./describe";
 import { RunEmissions } from "./EmissionsPanel";
 import { failSafeNote, faultText } from "./faults";
+import { HomeCharts, PeakPowerCard } from "./HomePanels";
 import { RunExplanationPanel } from "./RunExplanationPanel";
 import { RunStatus } from "./RunStatus";
 import { KpiTiles, RunProgress, SequenceGroups } from "./RunSummary";
@@ -111,6 +112,7 @@ function RunStream({
   const healthyKpis = comparisons.healthy?.kpis ?? null;
   const failSafe = failSafeNote(stream.failSafeSpans);
   const log = useMemo(() => collapseLog(stream.log).reverse(), [stream.log]);
+  const home = cfg?.case === HOME_CASE;
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -132,7 +134,9 @@ function RunStream({
                 against BOPTEST now.
               </span>
             )}
-            {cfg
+            {cfg && home
+              ? `${cfg.baseline ? "Baseline: BOPTEST's own controller, nothing written." : "The price-response sequence sets the room setpoint from the coming prices and comfort band (BOPTEST's forecast, passed in as readings)."} A simulated house in Brussels with a heat pump and floor heating, on BOPTEST's spot prices. From ${formatSimTime(cfg.start_s)}, ${cfg.steps} steps of ${cfg.step_s / 60} min, ${formatNumber(cfg.warmup_s / 86400, 0)} days warm-up, on BOPTEST ${cfg.case}.`
+              : cfg
               ? `${cfg.baseline ? "Baseline: BOPTEST's own controllers, nothing written." : cfg.requests ? "Air handler requests feeding the plant reset." : "Plant reset with the request count fixed at 0."}${cfg.pressure ? " Duct static pressure reset on every floor, from its zones' requests." : ""}${Object.entries(cfg.bindings ?? {}).map(([spec, b]) => ` Your sequence ${spec} on floor${b.floors.length === 1 ? "" : "s"} ${b.floors.join(", ")}, through the binding you confirmed.`).join("")} From ${formatSimTime(cfg.start_s)}, ${cfg.steps} steps of ${cfg.step_s} s, ${formatNumber(cfg.warmup_s / 3600, 1)} h warm-up, on BOPTEST ${cfg.case}.`
               : "Waiting for the run to start…"}
             {cfg?.fault && (
@@ -185,9 +189,21 @@ function RunStream({
         stream.kpi && base && <KpiTiles kpi={stream.kpi} base={base.kpis} />
       )}
 
-      <RunEmissions runId={runId} hasKpis={hasKpis} fault={cfg?.fault} comparisons={comparisons} />
+      {home && stream.peak && (
+        <PeakPowerCard
+          peak={stream.peak}
+          base={cfg?.baseline ? null : (base?.peak ?? null)}
+          baseSource={base ? base.source : null}
+          baseline={cfg?.baseline ?? false}
+        />
+      )}
 
-      {stream.ticks.length > 0 && (
+      {/* The emissions ledger covers the office only. */}
+      {!home && <RunEmissions runId={runId} hasKpis={hasKpis} fault={cfg?.fault} comparisons={comparisons} />}
+
+      {home && stream.ticks.length > 0 && <HomeCharts ticks={stream.ticks} />}
+
+      {!home && stream.ticks.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-2">
           <LineChart bands={bands} title="Chilled-water supply temperature" unit="°C" series={t.supplyTemperature} formatX={formatSimTime} formatY={(v) => formatNumber(v, 2)} />
           <LineChart bands={bands} title="Loop differential pressure" unit="kPa" series={t.pressure} formatX={formatSimTime} formatY={(v) => formatNumber(v, 1)} />
@@ -253,7 +269,7 @@ function RunStream({
                   const pct = change(v, b);
                   return (
                     <TableRow key={k}>
-                      <TableCell>{KPI_LABELS[k] ?? k}</TableCell>
+                      <TableCell>{home && k === "cost_tot" ? "Operating cost (€ per m²)" : (KPI_LABELS[k] ?? k)}</TableCell>
                       {base && (
                         <TableCell className="text-right tabular-nums">{b === undefined ? "no data" : formatNumber(b, 4)}</TableCell>
                       )}
@@ -281,7 +297,7 @@ function RunStream({
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {stream.config && !stream.config.baseline && (
+          {stream.config && !stream.config.baseline && !home && (
             <RunExplanationPanel key={runId} runId={runId} ended={stream.ended !== null} />
           )}
           <ol className="flex max-h-72 flex-col gap-1 overflow-auto text-sm">

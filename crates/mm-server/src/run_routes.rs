@@ -112,6 +112,7 @@ async fn start_run(
 /// are replayed again when the run loads it.
 fn check_drafts(state: &AppState, request: &RunRequest) -> Result<(), Failure> {
     let bad = |m: String| Failure::new(StatusCode::BAD_REQUEST, "bad-request", m);
+    let home = request.building == Some(crate::run_dto::Building::Home);
     let requests = request.requests.unwrap_or(true);
     let pressure = request.pressure.unwrap_or(false);
     for (spec, id) in request.drafts.iter().flatten() {
@@ -121,10 +122,14 @@ fn check_drafts(state: &AppState, request: &RunRequest) -> Result<(), Failure> {
                 "{spec} is not bound to BOPTEST yet; confirm a binding first"
             )));
         }
-        let used = own
-            || spec == RESET_SPEC
-            || (spec == REQUESTS_SPEC && requests)
-            || ((spec == PRESSURE_SPEC || spec == ZONE_PRESSURE_SPEC) && pressure);
+        // The home runs its one sequence; the office's specs are the office's.
+        let used = if home {
+            spec == mm_runtime::home::SPEC
+        } else {
+            own || spec == RESET_SPEC
+                || (spec == REQUESTS_SPEC && requests)
+                || ((spec == PRESSURE_SPEC || spec == ZONE_PRESSURE_SPEC) && pressure)
+        };
         if !used {
             return Err(bad(format!("this run does not use {spec}")));
         }

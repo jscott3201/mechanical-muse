@@ -1,4 +1,4 @@
-import { Activity, ChevronDown, CircleCheck, CircleStop, CircleX, History, LoaderCircle, Play, Sparkles } from "lucide-react";
+import { Activity, Building2, ChevronDown, CircleCheck, CircleStop, CircleX, History, House, LoaderCircle, Play, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { formatNumber } from "@/lib/format";
 import { format } from "@/lib/route";
 import { cn } from "@/lib/utils";
 import type { BacnetInfo } from "@/types/generated/BacnetInfo";
+import type { Building } from "@/types/generated/Building";
 import type { Binding } from "@/types/generated/Binding";
 import type { DraftInfo } from "@/types/generated/DraftInfo";
 import type { RunInfo } from "@/types/generated/RunInfo";
@@ -24,6 +25,7 @@ import type { SpecSummary } from "@/types/generated/SpecSummary";
 
 import { ErrorNote } from "../ErrorNote";
 import { configFacts, describe } from "./describe";
+import { HomeStartForm } from "./HomeStartForm";
 import { FAULT_CHOICES, type FaultKind, faultRequest } from "./faults";
 import { ReplayList } from "./ReplayList";
 import { RunMissing } from "./RunMissing";
@@ -413,6 +415,8 @@ export function RunsPage({
   onSelectRun?: (id: string) => void;
 } = {}) {
   const runs = useResource<RunInfo[]>("/api/runs");
+  // Which building the start form is for: the office's demo sequences or the home.
+  const [building, setBuilding] = useState<Building>(initialDraft?.spec === "home_price_response" ? "home" : "office");
   // The page stays mounted under a hidden tab: keep the last run and draft the URL named.
   const [picked, setPicked] = useState<string | null>(run);
   if (run !== null && run !== picked) setPicked(run);
@@ -453,7 +457,19 @@ export function RunsPage({
   return (
     <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
       <div className="flex flex-col gap-4">
-        <StartForm key={draft ? `${draft.spec}:${draft.contentId}` : "none"} onStarted={onStarted} initialDraft={draft} />
+        <div className="flex gap-1" role="group" aria-label="Building">
+          {(["office", "home"] as const).map((b) => (
+            <Button key={b} variant={building === b ? "default" : "outline"} size="sm" aria-pressed={building === b} onClick={() => setBuilding(b)}>
+              {b === "office" ? <Building2 aria-hidden="true" /> : <House aria-hidden="true" />}
+              {b === "office" ? "Office" : "Home"}
+            </Button>
+          ))}
+        </div>
+        {building === "home" ? (
+          <HomeStartForm onStarted={onStarted} />
+        ) : (
+          <StartForm key={draft ? `${draft.spec}:${draft.contentId}` : "none"} onStarted={onStarted} initialDraft={draft} />
+        )}
         {runs.status === "error" && <ErrorNote error={runs.error} onRetry={reload} />}
         {list.length > 0 && (
           <nav aria-label="Runs" className="flex flex-col gap-1">

@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 use futures_util::FutureExt;
 
+use mm_runtime::home;
 use mm_runtime::preset::{self, FLOORS, REQUESTS_SPEC, RESET, RESET_SPEC};
 use mm_runtime::{
     BoptestClient, Event, FailSafe, FakePlant, Measurements, Plant, PlantError, RunningSequence,
@@ -23,14 +24,40 @@ use crate::run_dto::{Origin, Phase, RunConfig, RunEvent, RunState, SequenceInfo,
 use crate::runs::{PlantSource, RunHandle};
 
 enum AnyPlant {
-    Boptest(BoptestClient),
+    /// `forecast`: the run's sequences read BOPTEST's forecast (the home), fetched after every
+    /// advance and added to the readings.
+    Boptest {
+        client: BoptestClient,
+        forecast: bool,
+    },
     Fake(FakePlant, std::time::Duration),
+}
+
+/// Adds BOPTEST's forecast to `readings` (the home's sequence reads it as inputs). The plant has
+/// already advanced, so a failed fetch does not end the run: the readings go on without the
+/// forecast, the sequence degrades for that step and its setpoint goes back to BOPTEST.
+async fn with_forecast(client: &BoptestClient, mut readings: Measurements) -> Measurements {
+    let (points, horizon, interval) = home::forecast_request();
+    match client.forecast(&points, horizon, interval).await {
+        Ok(forecast) => home::add_forecast(&mut readings, &forecast),
+        Err(e) => {
+            tracing::warn!(error = %e, "forecast unavailable this step; the sequence degrades")
+        }
+    }
+    readings
 }
 
 impl Plant for AnyPlant {
     async fn advance(&mut self, writes: &Writes) -> Result<Measurements, PlantError> {
         match self {
-            AnyPlant::Boptest(p) => p.advance(writes).await,
+            AnyPlant::Boptest { client, forecast } => {
+                let readings = client.advance(writes).await?;
+                if *forecast {
+                    Ok(with_forecast(client, readings).await)
+                } else {
+                    Ok(readings)
+                }
+            }
             AnyPlant::Fake(p, pace) => {
                 tokio::time::sleep(*pace).await;
                 p.advance(writes).await
@@ -153,6 +180,13 @@ async fn supervisor(
             .map_err(|e| e.to_string())?;
         return Ok((sup, info));
     }
+    if config.is_home() {
+        let instances = vec![(home::NAME.to_owned(), home::bindings())];
+        let sequences = load(state, config, home::SPEC, instances, &mut info).await?;
+        let sup = Supervisor::new(sequences, home::outputs(), FailSafe::Release)
+            .map_err(|e| e.to_string())?;
+        return Ok((sup, info));
+    }
     let mut sequences = Vec::new();
     if config.requests {
         let instances = FLOORS
@@ -239,7 +273,7 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
             // A fresh deployment may still be uploading the test case: wait up to a minute.
             let client = BoptestClient::select_when_ready(
                 url,
-                preset::CASE,
+                &config.case,
                 7,
                 std::time::Duration::from_secs(10),
             )
@@ -263,14 +297,27 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
                     phase: Phase::Initializing,
                 },
             );
+            let home = config.is_home();
             let first = async {
+                if home {
+                    client.set_price_scenario(home::PRICE_SCENARIO).await?;
+                }
                 let first = client.initialize(config.start_s, config.warmup_s).await?;
                 client.set_step(config.step_s).await?;
+                if home {
+                    return Ok(with_forecast(&client, first).await);
+                }
                 Ok::<_, PlantError>(first)
             }
             .await;
             match first {
-                Ok(first) => (AnyPlant::Boptest(client), first),
+                Ok(first) => (
+                    AnyPlant::Boptest {
+                        client,
+                        forecast: home,
+                    },
+                    first,
+                ),
                 Err(e) => {
                     // After a timeout or a server error the worker may still be initializing,
                     // and stopping it then crashes v0.9.0's web service: leave it to BOPTEST's
@@ -290,7 +337,11 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
             }
         }
     };
-    let bacnet = state.bacnet().map(AsRef::as_ref);
+    // The mirror's point map is the office's; the home is not mirrored (yet).
+    let bacnet = state
+        .bacnet()
+        .map(AsRef::as_ref)
+        .filter(|_| !config.is_home());
     let outcome = AssertUnwindSafe(steps(handle, &mut sup, &mut plant, first, bacnet))
         .catch_unwind()
         .await
@@ -299,7 +350,12 @@ async fn drive(handle: &RunHandle, state: &AppState) -> Result<RunState, String>
         // Nothing produces values once the run ends, whatever its outcome.
         crate::bacnet::clear(bacnet).await;
     }
-    if let AnyPlant::Boptest(client) = &plant {
+    if config.is_home()
+        && let Some(peak) = crate::home_facts::peak_power(&handle.journal().since(None))
+    {
+        handle.publish(None, RunEvent::PeakPower { peak });
+    }
+    if let AnyPlant::Boptest { client, .. } = &plant {
         match client.kpi().await {
             Ok(values) => handle.publish(None, RunEvent::Kpi { values }),
             Err(e) => tracing::warn!(run = %handle.id, error = %e, "no KPIs"),
@@ -323,8 +379,13 @@ async fn steps(
     bacnet: Option<&crate::bacnet::BacnetMirror>,
 ) -> Result<RunState, String> {
     let stop = handle.stop_signal();
-    let mut watch = preset::watch_points();
-    watch.extend(preset::energy_points());
+    let mut watch = if handle.config.is_home() {
+        home::watch_points()
+    } else {
+        let mut w = preset::watch_points();
+        w.extend(preset::energy_points());
+        w
+    };
     if handle.config.pressure {
         watch.extend(preset::pressure_watch_points());
     }
