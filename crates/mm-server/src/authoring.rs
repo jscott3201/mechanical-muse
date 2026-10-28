@@ -17,7 +17,7 @@ use mm_agent::{
 
 use crate::author_dto::{
     AuthorConfig, AuthorEnvelope, AuthorEvent, AuthorInfo, AuthorRequest, AuthorState, DraftInfo,
-    ModelSource, TokenUsage,
+    ModelSource, RecordedSessions, TokenUsage,
 };
 use crate::author_view::{attempt_view, tokens, tool_call_view};
 use crate::drafts::{Draft, DraftStore};
@@ -238,6 +238,14 @@ impl Authoring {
         Ok(session)
     }
 
+    /// Which recorded sessions `spec` has, so a client can say so before a Draft click fails.
+    pub fn recorded(&self, spec: &str, task: Option<&mm_agent::TaskSpec>) -> RecordedSessions {
+        RecordedSessions {
+            plain: self.recording(spec, task, false).is_ok(),
+            tools: self.recording(spec, task, true).is_ok(),
+        }
+    }
+
     /// The recorded session for `spec`: `<spec>.json`, or `<spec>.tools.json` when a session
     /// with Spark's own checks is asked for. Failing that, a recording of the same kind whose
     /// task matches.
@@ -248,7 +256,7 @@ impl Authoring {
         tools: bool,
     ) -> Result<Recording, StartError> {
         let kind = if tools { " with tools" } else { "" };
-        let missing = || StartError::Invalid(format!("no recorded run{kind} for {spec}"));
+        let missing = || StartError::NoRecording(format!("no recorded run{kind} for {spec}"));
         let dir = self.config.recordings.as_ref().ok_or_else(missing)?;
         let file = if tools {
             format!("{spec}.tools.json")

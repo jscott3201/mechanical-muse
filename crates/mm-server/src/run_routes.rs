@@ -99,7 +99,7 @@ async fn start_run(
     }
     let handle = state.runs().register(config).map_err(|e| match e {
         StartError::Active(_) => Failure::new(StatusCode::CONFLICT, "run-active", e.to_string()),
-        StartError::Invalid(_) => {
+        StartError::Invalid(_) | StartError::NoRecording(_) => {
             Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string())
         }
     })?;
@@ -191,7 +191,7 @@ async fn start_replay(
         .map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string()))?;
     let handle = state.runs().register(config).map_err(|e| match e {
         StartError::Active(_) => Failure::new(StatusCode::CONFLICT, "run-active", e.to_string()),
-        StartError::Invalid(_) => {
+        StartError::Invalid(_) | StartError::NoRecording(_) => {
             Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string())
         }
     })?;

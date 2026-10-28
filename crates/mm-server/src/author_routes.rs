@@ -10,7 +10,7 @@ use axum::response::Response;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 
-use crate::author_dto::{AuthorInfo, AuthorRequest, DraftInfo};
+use crate::author_dto::{AuthorInfo, AuthorRequest, DraftInfo, RecordedSessions};
 use crate::authoring::AuthorSession;
 use crate::dto::GraphView;
 use crate::journal;
@@ -21,6 +21,7 @@ use crate::specs::graph_view;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/specs/{name}/author", post(start))
+        .route("/api/specs/{name}/recordings", get(recordings))
         .route("/api/authoring", get(list))
         .route("/api/authoring/{id}", get(info))
         .route("/api/authoring/{id}/events", get(events))
@@ -63,10 +64,35 @@ async fn start(
             StartError::Invalid(_) => {
                 Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.to_string())
             }
+            StartError::NoRecording(_) => {
+                Failure::new(StatusCode::NOT_FOUND, "no-recording", e.to_string())
+            }
         })?;
     let info = session.info();
     tokio::spawn(crate::authoring::run(session, state.clone()));
     Ok((StatusCode::CREATED, Json(info)))
+}
+
+/// Which recorded sessions the spec can play back, so the Draft button can say why it is off
+/// on a server without a model key.
+async fn recordings(
+    State(state): State<AppState>,
+    Path(name): Path<String>,
+) -> Result<Json<RecordedSessions>, Failure> {
+    let spec = state
+        .spec(&name)
+        .ok_or_else(|| Failure::unknown_spec(&name))?;
+    let authoring = state.clone();
+    tokio::task::spawn_blocking(move || authoring.authoring().recorded(&name, Some(&spec.task)))
+        .await
+        .map(Json)
+        .map_err(|e| {
+            Failure::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "recordings-crashed",
+                e.to_string(),
+            )
+        })
 }
 
 async fn list(State(state): State<AppState>) -> Json<Vec<AuthorInfo>> {

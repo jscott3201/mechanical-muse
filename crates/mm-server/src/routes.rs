@@ -262,7 +262,7 @@ impl Failure {
         }
     }
 
-    fn unknown_spec(_name: &str) -> Self {
+    pub(crate) fn unknown_spec(_name: &str) -> Self {
         Self::new(
             StatusCode::NOT_FOUND,
             "unknown-spec",

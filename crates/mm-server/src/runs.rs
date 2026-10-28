@@ -81,6 +81,9 @@ pub enum StartError {
     Active(String),
     #[error("{0}")]
     Invalid(String),
+    /// A recorded authoring session was asked for and none exists for that spec.
+    #[error("{0}")]
+    NoRecording(String),
 }
 
 pub struct RunHandle {

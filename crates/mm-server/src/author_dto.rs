@@ -164,6 +164,15 @@ pub struct AttemptView {
     pub graph: Option<GraphView>,
 }
 
+/// Which recorded sessions a spec can play back without a model key: a plain one, and one where
+/// Spark checked its own drafts with tools.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[ts(export)]
+pub struct RecordedSessions {
+    pub plain: bool,
+    pub tools: bool,
+}
+
 /// A stored draft that passed every scenario. Runs may load it only after its vectors replay
 /// green again (AGENTS.md hard rule 5).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

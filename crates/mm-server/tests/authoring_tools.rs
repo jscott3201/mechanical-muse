@@ -155,7 +155,7 @@ async fn a_tools_session_shows_sparks_checks_apart_from_the_receipt() {
         json!({"source": "recorded"}),
     )
     .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(status, StatusCode::NOT_FOUND);
 
     let (status, info) = call(
         &state,
@@ -221,7 +221,8 @@ async fn tools_need_a_key_or_a_tools_recording() {
         json!({"tools": true}),
     )
     .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+    assert_eq!(body["code"], "no-recording", "{body}");
     assert!(body.to_string().contains("with tools"), "{body}");
     let (status, _) = call(
         &state,
