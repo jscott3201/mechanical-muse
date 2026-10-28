@@ -5,6 +5,7 @@
 
 pub mod author_dto;
 mod author_routes;
+mod author_view;
 pub mod authoring;
 pub mod bacnet;
 pub mod bind;

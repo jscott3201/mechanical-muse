@@ -8,4 +8,8 @@ export type AuthorConfig = { spec: string, source: ModelSource, model: string, e
 /**
  * Always `with-vectors` here: repair messages name the failing scenarios.
  */
-feedback: string, };
+feedback: string, 
+/**
+ * Spark may call its own checks while drafting. They never count as verification.
+ */
+tools: boolean, };

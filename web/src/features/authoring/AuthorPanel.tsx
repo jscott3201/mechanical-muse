@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import type { AttemptEntry } from "@/hooks/authorStream";
 import { useAuthorStream } from "@/hooks/useAuthorStream";
 import { BOPTEST_OFF_TEXT } from "@/hooks/useLiveRuns";
@@ -21,6 +23,7 @@ import { ErrorNote } from "../ErrorNote";
 import { ExplanationPanel } from "../graph/ExplanationPanel";
 import { GraphCanvas } from "../graph/GraphCanvas";
 import { Outcome, type OutputUnits } from "../Receipt";
+import { SparkChecks } from "./SparkChecks";
 
 /**
  * Problems grouped by code: the blocks involved, one explanation, and every message behind a
@@ -168,8 +171,10 @@ function AttemptRow({ attempt, spec, units }: { attempt: AttemptEntry; spec: str
     <li className="flex flex-col gap-2 rounded-md border p-3">
       <p className="text-xs text-muted-foreground">
         Attempt {attempt.index} of {attempt.of}
+        {attempt.view && attempt.view.calls > 1 && ` · ${attempt.view.calls} model calls`}
         {attempt.view && attempt.view.usage.output > 0 && ` · ${formatNumber(attempt.view.usage.output, 0)} output tokens`}
       </p>
+      <SparkChecks checks={attempt.checks} />
       {attempt.view ? (
         <>
           <Verdict view={attempt.view} units={units} />
@@ -194,7 +199,8 @@ function AttemptRow({ attempt, spec, units }: { attempt: AttemptEntry; spec: str
         </>
       ) : (
         <p className="flex items-center gap-2 font-medium">
-          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> Muse Spark is drafting…
+          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />{" "}
+          {attempt.checks.length > 0 ? "Muse Spark is drafting and checking its work…" : "Muse Spark is drafting…"}
         </p>
       )}
     </li>
@@ -246,7 +252,8 @@ export function AuthorPanel({
   // Default to what the server can do: live when it has a key, else the recorded session.
   const source: ModelSource = chosen ?? (live || health.status !== "ready" ? "live" : "recorded");
   const setSource = setChosen;
-  const body = useMemo<AuthorRequest>(() => ({ source }), [source]);
+  const [tools, setTools] = useState(false);
+  const body = useMemo<AuthorRequest>(() => (tools ? { source, tools: true } : { source }), [source, tools]);
   const start = useAction<AuthorInfo>(`/api/specs/${encodeURIComponent(spec)}/author`, body);
   const [sessionId, setSessionId] = useState<string | null>(null);
   useEffect(() => {
@@ -304,6 +311,17 @@ export function AuthorPanel({
             <span className="text-xs text-muted-foreground">No model key on this server: recorded sessions only.</span>
           )}
         </div>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <Switch id={`author-tools-${spec}`} checked={tools} onCheckedChange={setTools} disabled={running} />
+            <Label htmlFor={`author-tools-${spec}`}>Let Spark check its work (tools)</Label>
+          </div>
+          <p className="max-w-prose text-xs text-muted-foreground">
+            Before it answers, Spark may run our checks on its own draft: structure, one scenario at a
+            time, and block lookups. Its checks are shown inline; only the receipt below each attempt
+            verifies.
+          </p>
+        </div>
         {start.state.status === "error" && <ErrorNote error={start.state.error} />}
         {stream.config && (
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -318,6 +336,7 @@ export function AuthorPanel({
             )}
             <span>
               {stream.config.model} · effort {stream.config.effort} · repair messages name failing scenarios
+              {stream.config.tools && " · Spark checks its own drafts with tools"}
             </span>
           </div>
         )}

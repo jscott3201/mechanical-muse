@@ -47,6 +47,10 @@ pub struct ModelRequest {
     /// replayed verbatim, which carries encrypted reasoning across repair turns.
     pub input: Vec<Value>,
     pub schema: Option<OutputSchema>,
+    /// Function tools in the Responses shape (`{type:"function", name, description,
+    /// parameters, strict}`). Empty means none are offered. Only the product's drafting loop
+    /// offers any; benchmark runs never do.
+    pub tools: Vec<Value>,
     pub effort: Option<Effort>,
     /// Reasoning tokens count against this budget too.
     pub max_output_tokens: u32,
@@ -67,13 +71,24 @@ impl Usage {
         self.output_tokens += other.output_tokens;
         self.reasoning_tokens += other.reasoning_tokens;
     }
+
+    /// `self` less `other`, field by field, never below zero.
+    pub fn minus(self, other: Usage) -> Usage {
+        Usage {
+            input_tokens: self.input_tokens.saturating_sub(other.input_tokens),
+            cached_tokens: self.cached_tokens.saturating_sub(other.cached_tokens),
+            output_tokens: self.output_tokens.saturating_sub(other.output_tokens),
+            reasoning_tokens: self.reasoning_tokens.saturating_sub(other.reasoning_tokens),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ModelReply {
     /// Every output item, unmodified, for replay in the next turn.
     pub output_items: Vec<Value>,
-    /// The assistant's text (the JSON document when a schema was set).
+    /// The assistant's text (the JSON document when a schema was set). Empty when the reply is
+    /// only tool calls.
     pub text: String,
     pub usage: Usage,
 }
@@ -106,4 +121,29 @@ pub trait ModelClient {
         &self,
         request: &ModelRequest,
     ) -> impl Future<Output = Result<ModelReply, ModelError>> + Send;
+}
+
+/// One function call the model asked for. `arguments` is the raw JSON string, untrusted.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FunctionCall {
+    pub call_id: String,
+    pub name: String,
+    pub arguments: String,
+}
+
+/// The `function_call` items of a reply, in output order. Items without a name or call id are
+/// skipped (they cannot be answered).
+pub fn function_calls(items: &[Value]) -> Vec<FunctionCall> {
+    items
+        .iter()
+        .filter(|item| item.get("type").and_then(Value::as_str) == Some("function_call"))
+        .filter_map(|item| {
+            let field = |key: &str| item.get(key).and_then(Value::as_str).map(str::to_owned);
+            Some(FunctionCall {
+                call_id: field("call_id")?,
+                name: field("name")?,
+                arguments: field("arguments").unwrap_or_default(),
+            })
+        })
+        .collect()
 }

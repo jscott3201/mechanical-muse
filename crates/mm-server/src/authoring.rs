@@ -11,20 +11,19 @@ use std::time::Duration;
 
 use futures_util::FutureExt;
 use mm_agent::{
-    Attempt, AttemptOutcome, Effort, ModelClient, ModelError, ModelReply, ModelRequest, Progress,
-    RecordedClient, Recording, SparkClient, Usage,
+    AttemptOutcome, Effort, ModelClient, ModelError, ModelReply, ModelRequest, Progress,
+    RecordedClient, Recording, SparkClient, ToolLimits,
 };
-use mm_graph::{BlockGraph, Palette};
 
 use crate::author_dto::{
-    AttemptResult, AttemptView, AuthorConfig, AuthorEnvelope, AuthorEvent, AuthorInfo,
-    AuthorRequest, AuthorState, DraftInfo, ModelSource, Problem, TokenUsage,
+    AuthorConfig, AuthorEnvelope, AuthorEvent, AuthorInfo, AuthorRequest, AuthorState, DraftInfo,
+    ModelSource, TokenUsage,
 };
+use crate::author_view::{attempt_view, tokens, tool_call_view};
 use crate::drafts::{Draft, DraftStore};
 use crate::journal::{Entry, Journal, lock};
 use crate::routes::AppState;
 use crate::runs::StartError;
-use crate::specs::graph_view;
 
 /// The product's model (AGENTS.md: `muse-spark-1.3` for our unpublished specs).
 pub const MODEL: &str = "muse-spark-1.3";
@@ -77,6 +76,7 @@ impl Entry for AuthorEnvelope {
         match &self.event {
             AuthorEvent::Started { .. } => "started",
             AuthorEvent::Drafting { .. } => "drafting",
+            AuthorEvent::ToolCall { .. } => "tool-call",
             AuthorEvent::Checked { .. } => "checked",
             AuthorEvent::Ended { .. } => "ended",
         }
@@ -182,7 +182,7 @@ impl Authoring {
                 "attempts must be 1 to {MAX_ATTEMPTS}"
             )));
         }
-        let (model, recording, effort_name, max_attempts) = match source {
+        let (model, recording, effort_name, max_attempts, tools) = match source {
             ModelSource::Live => {
                 if self.config.spark.is_none() {
                     return Err(StartError::Invalid(
@@ -190,18 +190,22 @@ impl Authoring {
                             .into(),
                     ));
                 }
-                (MODEL.to_owned(), None, effort_name, max_attempts)
+                let tools = request.tools.unwrap_or(false);
+                (MODEL.to_owned(), None, effort_name, max_attempts, tools)
             }
             ModelSource::Recorded => {
                 // A playback replays what the model said then: the effort it ran at is part of
                 // the recording, and there are only as many attempts as recorded replies.
-                let recording = self.recording(spec, task)?;
-                let replies = u32::try_from(recording.replies.len()).unwrap_or(u32::MAX);
+                // Tool turns are replayed as recorded, so the tools follow the recording.
+                let recording = self.recording(spec, task, request.tools.unwrap_or(false))?;
+                let replies = u32::try_from(recording.attempts()).unwrap_or(u32::MAX);
+                let tools = recording.uses_tools();
                 (
                     recording.model.clone(),
                     Some(recording),
                     "as recorded".to_owned(),
                     max_attempts.min(replies.max(1)),
+                    tools,
                 )
             }
         };
@@ -228,6 +232,7 @@ impl Authoring {
                 effort: effort_name,
                 max_attempts,
                 feedback: "with-vectors".into(),
+                tools,
             },
             effort,
             recording,
@@ -238,14 +243,24 @@ impl Authoring {
         Ok(session)
     }
 
+    /// The recorded session for `spec`: `<spec>.json`, or `<spec>.tools.json` when a session
+    /// with Spark's own checks is asked for. Failing that, a recording of the same kind whose
+    /// task matches.
     fn recording(
         &self,
         spec: &str,
         task: Option<&mm_agent::TaskSpec>,
+        tools: bool,
     ) -> Result<Recording, StartError> {
-        let missing = || StartError::Invalid(format!("no recorded run for {spec}"));
+        let kind = if tools { " with tools" } else { "" };
+        let missing = || StartError::Invalid(format!("no recorded run{kind} for {spec}"));
         let dir = self.config.recordings.as_ref().ok_or_else(missing)?;
-        let Ok(bytes) = std::fs::read(dir.join(format!("{spec}.json"))) else {
+        let file = if tools {
+            format!("{spec}.tools.json")
+        } else {
+            format!("{spec}.json")
+        };
+        let Ok(bytes) = std::fs::read(dir.join(file)) else {
             // The same task accepted under another name: a recording whose task matches.
             let key = task.map(crate::specs::task_key).ok_or_else(missing)?;
             let mut paths: Vec<_> = std::fs::read_dir(dir)
@@ -258,7 +273,8 @@ impl Authoring {
                 .into_iter()
                 .find_map(|p| {
                     let r: Recording = serde_json::from_slice(&std::fs::read(p).ok()?).ok()?;
-                    (r.task_digest.as_deref() == Some(key.as_str())).then_some(r)
+                    let same = r.task_digest.as_deref() == Some(key.as_str());
+                    (same && r.uses_tools() == tools).then_some(r)
                 })
                 .ok_or_else(missing);
         };
@@ -350,25 +366,38 @@ async fn author(session: &AuthorSession, state: &AppState) -> Result<Done, Strin
         feedback: mm_agent::Feedback::WithVectors,
     };
     let palette = state.palette();
-    // Replay runs inline on this worker thread; one session at a time and well under a second
-    // per draft, so it does not starve the runtime.
-    let trace = mm_agent::author_observed(
-        &client,
-        palette,
-        &spec.task,
-        &spec.vectors,
-        &[],
-        &config,
-        |progress| match progress {
-            Progress::Drafting { attempt, of } => {
-                session.publish(AuthorEvent::Drafting { attempt, of });
-            }
-            Progress::Checked(attempt) => session.publish(AuthorEvent::Checked {
-                attempt: attempt_view(attempt, &spec.task.name, palette),
-            }),
-        },
-    )
-    .await;
+    // Replay runs inline on this worker thread, one session at a time. A tools session adds up
+    // to 24 single-scenario replays to the receipt's; each takes milliseconds, so it does not
+    // starve the runtime.
+    let observe = |progress: Progress<'_>| match progress {
+        Progress::Drafting { attempt, of } => {
+            session.publish(AuthorEvent::Drafting { attempt, of });
+        }
+        Progress::ToolCall { attempt, call } => session.publish(AuthorEvent::ToolCall {
+            attempt,
+            call: tool_call_view(call),
+        }),
+        Progress::Checked(attempt) => session.publish(AuthorEvent::Checked {
+            attempt: attempt_view(attempt, &spec.task.name, palette),
+        }),
+    };
+    let (task, vectors) = (&spec.task, &spec.vectors);
+    let trace = if session.config.tools {
+        let limits = ToolLimits::default();
+        mm_agent::author_with_tools(
+            &client,
+            palette,
+            task,
+            vectors,
+            &[],
+            &config,
+            limits,
+            observe,
+        )
+        .await
+    } else {
+        mm_agent::author_observed(&client, palette, task, vectors, &[], &config, observe).await
+    };
     if session.recording.is_none() {
         crate::recording::save(
             authoring.config.records.as_deref(),
@@ -405,154 +434,4 @@ async fn author(session: &AuthorSession, state: &AppState) -> Result<Done, Strin
         graph: verified.graph,
     });
     Ok((AuthorState::Verified, Some(info), None, usage))
-}
-
-fn tokens(u: Usage) -> TokenUsage {
-    TokenUsage {
-        input: u.input_tokens,
-        output: u.output_tokens,
-        reasoning: u.reasoning_tokens,
-    }
-}
-
-/// The block or boundary point a problem's subject names, if it names one of `graph`'s. Engine
-/// subjects look like `urn:...#<sequence>.<block>.<port>`; validator subjects like `<block>`,
-/// `<block>.<port>` or a boundary name.
-pub(crate) fn node_of(subject: &str, graph: Option<&BlockGraph>) -> Option<String> {
-    let graph = graph?;
-    let local = subject.rsplit_once('#').map_or(subject, |(_, l)| l);
-    let local = local
-        .strip_prefix(graph.name.as_str())
-        .and_then(|rest| rest.strip_prefix('.'))
-        .unwrap_or(local);
-    let head = local.split('.').next().unwrap_or(local);
-    let known = graph.blocks.iter().any(|b| b.id == head)
-        || graph.inputs.iter().any(|p| p.name == head)
-        || graph.outputs.iter().any(|p| p.name == head);
-    known.then(|| head.to_owned())
-}
-
-fn attempt_view(attempt: &Attempt, task: &str, palette: &Palette) -> AttemptView {
-    let graph: Option<BlockGraph> = attempt
-        .reply
-        .as_deref()
-        .and_then(|text| serde_json::from_str::<BlockGraph>(text).ok())
-        .map(|mut g| {
-            // The loop names the sequence after the task; engine subjects use that name.
-            g.name = task.to_owned();
-            g
-        });
-    let problem = |code: String, subject: String, message: String| Problem {
-        node: node_of(&subject, graph.as_ref()),
-        code,
-        subject,
-        message,
-    };
-    let result = match &attempt.outcome {
-        AttemptOutcome::ModelError { error } => AttemptResult::ModelError {
-            message: error.to_string(),
-        },
-        AttemptOutcome::HarnessError { detail } => AttemptResult::HarnessError {
-            message: detail.clone(),
-        },
-        AttemptOutcome::NotAGraph { detail } => AttemptResult::NotAGraph {
-            message: detail.clone(),
-        },
-        AttemptOutcome::InterfaceMismatch { problems } => AttemptResult::InterfaceMismatch {
-            problems: problems.clone(),
-        },
-        AttemptOutcome::Invalid { findings } => AttemptResult::Invalid {
-            problems: findings
-                .iter()
-                .map(|f| {
-                    problem(
-                        f.code.as_str().to_owned(),
-                        f.subject.clone(),
-                        f.detail.clone(),
-                    )
-                })
-                .collect(),
-        },
-        AttemptOutcome::LoadFailed { failure } => AttemptResult::LoadFailed {
-            stage: failure.stage.to_owned(),
-            code: failure.code.clone(),
-            problems: failure
-                .diagnostics
-                .iter()
-                .map(|d| {
-                    problem(
-                        d.code.clone(),
-                        d.subject.clone().unwrap_or_default(),
-                        d.message.clone(),
-                    )
-                })
-                .collect(),
-            detail: failure.error.as_ref().map(|e| e.detail.clone()),
-        },
-        AttemptOutcome::ReplayFailed {
-            passed,
-            total,
-            failures,
-        } => AttemptResult::ReplayFailed {
-            passed: u32::try_from(*passed).unwrap_or(u32::MAX),
-            total: u32::try_from(*total).unwrap_or(u32::MAX),
-            failures: failures
-                .iter()
-                .cloned()
-                .map(crate::dto::scenario_report)
-                .collect(),
-        },
-        AttemptOutcome::Passed {
-            content_id,
-            scenarios,
-        } => AttemptResult::Passed {
-            content_id: content_id.clone(),
-            scenarios: u32::try_from(*scenarios).unwrap_or(u32::MAX),
-        },
-    };
-    AttemptView {
-        index: attempt.index,
-        result,
-        usage: tokens(attempt.usage),
-        // A graph with an unknown class has no typed view; the problems list still names it.
-        graph: graph.and_then(|g| graph_view(&g, palette).ok()),
-    }
-}
-
-#[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
-mod tests {
-    use super::*;
-
-    fn graph() -> BlockGraph {
-        serde_json::from_value(serde_json::json!({
-            "name": "seq",
-            "inputs": [{"name": "xin", "type": "real", "unit": "1", "description": ""}],
-            "outputs": [{"name": "xout", "type": "real", "description": ""}],
-            "blocks": [{"id": "add", "class": "Reals.Add", "params": []}],
-            "connections": ["xin -> add.u1", "add.y -> add.u2", "add.y -> xout"]
-        }))
-        .unwrap()
-    }
-
-    #[test]
-    fn subjects_map_to_the_block_or_point_they_name() {
-        let g = graph();
-        let node = |s: &str| node_of(s, Some(&g));
-        assert_eq!(
-            node("urn:mechanical-muse:seq#seq.add.u2").as_deref(),
-            Some("add")
-        );
-        assert_eq!(node("add.y").as_deref(), Some("add"));
-        assert_eq!(node("add").as_deref(), Some("add"));
-        assert_eq!(node("xin").as_deref(), Some("xin"));
-        assert_eq!(
-            node("urn:mechanical-muse:seq#seq.xout").as_deref(),
-            Some("xout")
-        );
-        // Names that are not in the graph map to nothing rather than to a guess.
-        assert_eq!(node("gain.y"), None);
-        assert_eq!(node(""), None);
-        assert_eq!(node_of("add.y", None), None);
-    }
 }

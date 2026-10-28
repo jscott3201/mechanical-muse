@@ -3,8 +3,17 @@ import type { GraphView } from "./GraphView";
 import type { Problem } from "./Problem";
 import type { ScenarioReport } from "./ScenarioReport";
 import type { TokenUsage } from "./TokenUsage";
+import type { ToolCallView } from "./ToolCallView";
 
 export type AttemptView = { index: number, usage: TokenUsage, 
+/**
+ * Model calls this attempt made (1 without tools).
+ */
+calls: number, 
+/**
+ * Spark's own checks before it answered, in order (tools sessions only).
+ */
+tool_calls: Array<ToolCallView>, 
 /**
  * The drafted graph, when the reply parsed and its blocks are in the catalog.
  */

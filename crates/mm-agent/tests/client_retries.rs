@@ -71,6 +71,7 @@ fn ok_body() -> String {
 
 fn request() -> ModelRequest {
     ModelRequest {
+        tools: Vec::new(),
         model: "muse-spark-1.3".into(),
         instructions: "rules".into(),
         input: vec![],

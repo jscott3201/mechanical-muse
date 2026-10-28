@@ -4,5 +4,6 @@ import type { AuthorConfig } from "./AuthorConfig";
 import type { AuthorState } from "./AuthorState";
 import type { DraftInfo } from "./DraftInfo";
 import type { TokenUsage } from "./TokenUsage";
+import type { ToolCallView } from "./ToolCallView";
 
-export type AuthorEvent = { "kind": "started", config: AuthorConfig, } | { "kind": "drafting", attempt: number, of: number, } | { "kind": "checked", attempt: AttemptView, } | { "kind": "ended", state: AuthorState, draft?: DraftInfo, message?: string, usage: TokenUsage, };
+export type AuthorEvent = { "kind": "started", config: AuthorConfig, } | { "kind": "drafting", attempt: number, of: number, } | { "kind": "tool-call", attempt: number, call: ToolCallView, } | { "kind": "checked", attempt: AttemptView, } | { "kind": "ended", state: AuthorState, draft?: DraftInfo, message?: string, usage: TokenUsage, };

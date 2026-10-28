@@ -387,6 +387,7 @@ fn user_content(source: &SequenceSource) -> Vec<Value> {
 /// The first request for `source`.
 pub fn read_request(model: &str, source: &SequenceSource) -> ModelRequest {
     ModelRequest {
+        tools: Vec::new(),
         model: model.to_owned(),
         instructions: INSTRUCTIONS.to_owned(),
         input: vec![json!({"role": "user", "content": user_content(source)})],

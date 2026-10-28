@@ -88,6 +88,7 @@ pub fn bind_request(model: &str, task: &TaskSpec, points: &str) -> ModelRequest 
         serde_json::to_string_pretty(&interface).unwrap_or_default()
     );
     ModelRequest {
+        tools: Vec::new(),
         model: model.to_owned(),
         instructions: INSTRUCTIONS.to_owned(),
         input: vec![json!({"role": "user", "content": [{"type": "input_text", "text": text}]})],
