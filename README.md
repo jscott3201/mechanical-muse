@@ -46,6 +46,13 @@ Building control sequences are written as prose by engineers. A controls contrac
   <img alt="Energy and emissions panel: Scope 1 796 kgCO2e (−848 kg, −51.6 % vs baseline), Scope 2 2,138 kgCO2e (−20.9 %), cost $695 (−$269), thermal discomfort lower; footer: simulation on BOPTEST's factors, HVAC loads only, no Scope 3" src="docs/img/screens/emissions-light.png">
 </picture>
 
+**What a fault costs.** A labelled test fault makes floor 1's supply-air reading drift 4 K high for two hours. The sequences believe it, the plant runs colder, and the ledger prices the difference against the same ten hours without the fault: +130 kWh, +$12, +44 kgCO2e, almost all chiller electricity.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/fault-cost-dark.png">
+  <img alt="Energy and emissions panel of the sensor-bias replay: an injected test fault banner with +130 kWh, +$12 and +44 kgCO2e against the healthy run, scope cards and the end-use table" src="docs/img/screens/fault-cost-light.png">
+</picture>
+
 ## Results so far
 
 | What | Result | Where |
@@ -53,6 +60,7 @@ Building control sequences are written as prose by engineers. A controls contrac
 | Muse Spark rebuilding 137 open fault-detection rules from scrubbed tasks, scored by replaying the library's 1,760 test vectors | First try 122 to 125 of 137 rules; after repair 130 to 132 (3 runs, `muse-spark-1.3-contributor`). Constant baselines pass 0 rules | [docs/benchmark-results.md](docs/benchmark-results.md) |
 | Chilled-water plant reset, verified, then run on BOPTEST against its baseline controller for 10 hours | HVAC energy −4.7 %, chiller energy −14.2 %, thermal discomfort +2.0 % | [docs/runtime-results.md](docs/runtime-results.md) |
 | A photo of a supply-air reset sheet: read, scenarios accepted, drafted (red, then green), bound to BOPTEST, run; then the engineer revises the sheet and runs it again | Revision A ran but its humidity override latched, so its reset never acted. Revision B, re-tested on five windows it was not tuned on: HVAC energy −23 % to −55 % in spring and autumn (less reheat gas), no gain in summer | [docs/workbench.md](docs/workbench.md) |
+| A drifted sensor (floor 1 supply-air reading 4 K high for 2 hours, a labelled test fault) against the same 10 hours without it | The plant reset drove the chilled water to its cold end: +130 kWh, +44 kgCO2e, +$12 of chiller electricity, about a fifth of the ten hours' saving | [docs/emissions.md](docs/emissions.md) |
 | Injected sensor fault (NaN supply-air temperature) during a live run | The reading shows as no data, the affected sequences go degraded, their setpoints are handed back to BOPTEST's own controllers, and the reset writes again once the sensor returns | [docs/runtime-results.md](docs/runtime-results.md) |
 
 ![Revision B across six windows: HVAC energy −54.4 % (April), −37.3 % (May, tuned on), −23.4 % (24 h, late May), −4.9 % (June), −3.3 % (July), −55.4 % (September), against −2 % to −6 % for our sequences alone](docs/img/revision-b-seasons.svg)
@@ -64,7 +72,7 @@ Every BOPTEST number is a short window, compared with BOPTEST's own baseline con
 1. `make docker-demo` (only Docker needed), or `make demo` with Rust and Node. Open http://localhost:8080.
 2. **Sequences** → *Chilled-water plant reset* → *Muse Spark* → play the recorded session. You can watch a draft fail its vectors and get repaired to a green receipt.
 3. **Bring your own** → *Use the sample sequence sheet*. Spark's reading of a photo of a sequence (recorded), its proposed scenarios and the open questions it lists.
-4. **Runs** → replay the day 143 morning run with revision B: trends, and KPIs beside the baseline over the same window. The day 186 fault demo shows the fail-safe handing control back.
+4. **Runs** → replay the day 143 morning run with revision B: trends, and KPIs beside the baseline over the same window. The day 186 fault demo shows the fail-safe handing control back, and the day 185 sensor-bias record shows what a fault costs.
 
 Without a model key or BOPTEST everything above plays back from recordings, and the UI labels each one "recorded" or "replay". Add a Meta Model API key for live authoring, and a BOPTEST URL for live runs (below).
 

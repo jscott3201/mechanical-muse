@@ -23,7 +23,7 @@ describe("faults", () => {
       steps: 60,
       mode: { kind: "hold", value: 1 },
     });
-    expect(faultRequest("bias", 0).mode).toEqual({ kind: "bias", offset: 2 });
+    expect(faultRequest("bias", 0).mode).toEqual({ kind: "bias", offset: 4 });
   });
 
   it("says what the fault did to the reading", () => {
@@ -44,8 +44,8 @@ describe("ledger text", () => {
   it("prices a fault only against the same run without it", () => {
     const f = faultRequest("hold", 30);
     expect(faultBanner(f, { delta: { kwh: 412.3, kg_co2e: 140.6, usd: 38.8 }, source: "run run-3" })).toBe(
-      "Injected test fault: floor1_reaAHU_yCooVal_y held at 1 from step 30: +412 kWh, +$39, +141 kgCO₂e vs run run-3",
+      "floor1_reaAHU_yCooVal_y held at 1 from step 30: +412 kWh, +$39, +141 kgCO₂e vs run run-3",
     );
-    expect(faultBanner(f, null)).toBe("Injected test fault: floor1_reaAHU_yCooVal_y held at 1 from step 30.");
+    expect(faultBanner(f, null)).toBe("floor1_reaAHU_yCooVal_y held at 1 from step 30.");
   });
 });
