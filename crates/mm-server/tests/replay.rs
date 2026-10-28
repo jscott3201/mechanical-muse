@@ -224,7 +224,10 @@ async fn a_stuck_live_run_does_not_block_a_replay() {
     assert_eq!(status, StatusCode::CREATED, "{run}");
     let (status, body) = call(&state, "POST", "/api/runs", Some(json!({}))).await;
     assert_eq!(status, StatusCode::CONFLICT, "{body}");
-    assert!(body["message"].as_str().unwrap().contains(&stuck.id), "{body}");
+    assert!(
+        body["message"].as_str().unwrap().contains(&stuck.id),
+        "{body}"
+    );
     let all = events(&state, run["id"].as_str().unwrap()).await;
     assert_eq!(all.last().unwrap()["kind"], "ended");
     assert_eq!(state.runs().active().unwrap().id, stuck.id);

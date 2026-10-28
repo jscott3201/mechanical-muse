@@ -128,8 +128,7 @@ async fn main() -> anyhow::Result<()> {
     // Give active runs time to finish their step and stop their BOPTEST test, so the worker is
     // not left holding an orphan. An initializing run cannot be stopped safely; say so.
     let outcome =
-        mm_server::shutdown::drain(state.runs(), std::time::Duration::from_secs(600), second)
-            .await;
+        mm_server::shutdown::drain(state.runs(), std::time::Duration::from_secs(600), second).await;
     mm_server::shutdown::report(&outcome);
     Ok(())
 }

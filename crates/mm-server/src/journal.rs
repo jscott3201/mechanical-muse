@@ -67,9 +67,7 @@ impl<T: Entry> Journal<T> {
     pub fn new(name: &str, dir: Option<&Path>) -> Self {
         let record = dir.and_then(|dir| {
             std::fs::create_dir_all(dir)
-                .and_then(|()| {
-                    std::fs::File::create_new(dir.join(format!("{name}.jsonl")))
-                })
+                .and_then(|()| std::fs::File::create_new(dir.join(format!("{name}.jsonl"))))
                 .map(std::io::BufWriter::new)
                 .map_err(|e| tracing::warn!(%name, error = %e, "no record on disk"))
                 .ok()
@@ -260,8 +258,7 @@ mod tests {
     }
 
     fn scratch(name: &str) -> std::path::PathBuf {
-        let dir = std::env::temp_dir()
-            .join(format!("journal-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("journal-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
