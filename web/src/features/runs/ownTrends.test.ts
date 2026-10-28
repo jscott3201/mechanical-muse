@@ -45,6 +45,18 @@ describe("ownTrends", () => {
     const oat = charts[2];
     expect(oat?.series).toHaveLength(1);
     expect(oat?.series[0]?.points[0]?.y).toBeCloseTo(24, 6);
-    expect(charts[1]?.unit).toBe("1");
+    // Dimensionless: no unit, so no empty brackets either.
+    expect(charts[1]?.unit).toBe("");
+  });
+
+  it("shows a record without units (revision A) in °C, not in kelvin with an empty unit", () => {
+    const legacy = { ...binding } as Partial<Binding>;
+    delete legacy.units;
+    const charts = ownTrends([tick(0)], { sat: legacy as Binding });
+    const sp = charts.find((c) => c.id === "sat-sp");
+    expect(sp?.unit).toBe("°C");
+    expect(sp?.series[0]?.points[0]?.y).toBeCloseTo(15, 6);
+    expect(charts.find((c) => c.id === "sat-oat")?.unit).toBe("°C");
+    expect(charts.find((c) => c.id === "sat-ena")?.unit).toBe("");
   });
 });

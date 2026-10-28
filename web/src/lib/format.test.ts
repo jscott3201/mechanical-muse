@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { formatNumber, formatWire, formatWithUnit } from "./format";
 
 describe("formatWithUnit", () => {
-  it("adds Celsius to temperatures but not to temperature differences", () => {
-    expect(formatWithUnit(278.71, "K")).toBe("278.71 K (5.56 °C)");
+  it("adds Celsius and Fahrenheit to temperatures but not to temperature differences", () => {
+    expect(formatWithUnit(278.71, "K")).toBe("278.71 K (5.56 °C, 42 °F)");
+    expect(formatWithUnit(285.93, "K")).toBe("285.93 K (12.78 °C, 55 °F)");
     expect(formatWithUnit(3, "K")).toBe("3 K");
     expect(formatWithUnit(0.1, "K")).toBe("0.1 K");
   });
