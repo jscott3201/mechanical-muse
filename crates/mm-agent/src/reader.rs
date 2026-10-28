@@ -6,16 +6,19 @@
 //! The checks below catch scenarios that cannot run (unknown points, missing inputs, times off
 //! the clock, wrong value types); they cannot tell whether an expected value is right.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
-use mm_bridge::{Clock, Expectation, InputSpec, Scalar, Scenario, Step, VectorFile};
+use mm_bridge::{Clock, Scalar, VectorFile};
 use mm_graph::{ParamValue, SignalType};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::client::{Effort, ModelClient, ModelError, ModelRequest, OutputSchema, Usage};
 use crate::prompt::{ParamHint, PointSpec, TaskSpec};
-use crate::task_check::{check_task, is_identifier, snake};
+use crate::scenario_reply::{
+    ReplyScenario, scalar_schema, scenario_name, scenario_schema, to_scenario,
+};
+use crate::task_check::{check_task, snake};
 
 /// A document the engineer attached.
 #[derive(Debug, Clone, PartialEq)]
@@ -84,10 +87,6 @@ If you cannot settle an output from the document, leave it out and add an open q
 7. rationale: one short line per scenario, in the same order, saying what behaviour it pins down.
 8. Plain text in every field: no markdown, no code.";
 
-fn scalar_schema() -> Value {
-    json!({"anyOf": [{"type": "number"}, {"type": "boolean"}]})
-}
-
 fn point_schema() -> Value {
     json!({
         "type": "object",
@@ -134,53 +133,7 @@ fn schema() -> Value {
                 "required": ["step_s", "horizon_s"],
                 "properties": {"step_s": {"type": "number"}, "horizon_s": {"type": "number"}}
             },
-            "scenarios": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["name", "description", "inputs", "expect"],
-                    "properties": {
-                        "name": {"type": "string"},
-                        "description": {"type": "string"},
-                        "inputs": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "required": ["point", "steps"],
-                                "properties": {
-                                    "point": {"type": "string"},
-                                    "steps": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "object",
-                                            "additionalProperties": false,
-                                            "required": ["t", "value"],
-                                            "properties": {"t": {"type": "number"}, "value": scalar_schema()}
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "expect": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "additionalProperties": false,
-                                "required": ["output", "from_s", "to_s", "equals", "tolerance"],
-                                "properties": {
-                                    "output": {"type": "string"},
-                                    "from_s": {"type": "number"},
-                                    "to_s": {"type": "number"},
-                                    "equals": scalar_schema(),
-                                    "tolerance": {"type": "number"}
-                                }
-                            }
-                        }
-                    }
-                }
-            },
+            "scenarios": {"type": "array", "items": scenario_schema()},
             "rationale": {"type": "array", "items": {"type": "string"}}
         }
     })
@@ -209,29 +162,6 @@ struct ReplyParam {
     meaning: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-struct ReplyScenario {
-    name: String,
-    description: String,
-    inputs: Vec<ReplyInput>,
-    expect: Vec<ReplyExpect>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct ReplyInput {
-    point: String,
-    steps: Vec<Step>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct ReplyExpect {
-    output: String,
-    from_s: f64,
-    to_s: f64,
-    equals: Scalar,
-    tolerance: f64,
-}
-
 /// Turns the reply into our task and vector files, then checks them. Scenarios with problems are
 /// kept (the engineer decides) but every problem is listed.
 fn check(reply: Reply) -> ReadSequence {
@@ -240,74 +170,16 @@ fn check(reply: Reply) -> ReadSequence {
         .iter()
         .map(|p| (p.name.clone(), p.ty))
         .collect();
-    let mut taken = std::collections::BTreeSet::new();
+    let mut taken = BTreeSet::new();
     let mut doubled = Vec::new();
     let scenarios = reply
         .scenarios
         .into_iter()
         .map(|s| {
-            let base = if is_identifier(&s.name) {
-                s.name
-            } else {
-                snake(&s.name)
-            };
-            // Names must be unique for the engineer to keep or drop each one.
-            let mut name = base.clone();
-            let mut n = 2;
-            while !taken.insert(name.clone()) {
-                name = format!("{base}_{n}");
-                n += 1;
-            }
-            let mut seen = std::collections::BTreeSet::new();
-            for input in &s.inputs {
-                if !seen.insert(input.point.clone()) {
-                    doubled.push(format!(
-                        "scenario `{name}` gives input `{}` twice",
-                        input.point
-                    ));
-                }
-            }
-            let inputs = s
-                .inputs
-                .into_iter()
-                .map(|input| {
-                    let mut steps = input.steps;
-                    steps.sort_by(|a, b| a.t.total_cmp(&b.t));
-                    let spec = match steps.as_slice() {
-                        [only] if only.t == 0.0 => InputSpec::Constant(only.value),
-                        _ => InputSpec::Steps(steps),
-                    };
-                    (input.point, spec)
-                })
-                .collect();
-            let expect = s
-                .expect
-                .into_iter()
-                .map(|e| {
-                    let real = types.get(&e.output) == Some(&SignalType::Real);
-                    let tolerance = real.then(|| {
-                        if e.tolerance.is_finite() && e.tolerance > 0.0 {
-                            e.tolerance
-                        } else {
-                            1e-6
-                        }
-                    });
-                    Expectation {
-                        output: e.output,
-                        from_s: e.from_s,
-                        to_s: e.to_s,
-                        equals: e.equals,
-                        tolerance,
-                    }
-                })
-                .collect();
-            Scenario {
-                name,
-                description: s.description,
-                inputs,
-                defaults: BTreeMap::new(),
-                expect,
-            }
+            let name = scenario_name(&s.name, &mut taken);
+            let (scenario, twice) = to_scenario(s, name, &types);
+            doubled.extend(twice);
+            scenario
         })
         .collect::<Vec<_>>();
     let mut rationale = reply.rationale;
@@ -460,6 +332,8 @@ pub async fn read_sequence<C: ModelClient>(
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::indexing_slicing)]
 mod tests {
+    use mm_bridge::InputSpec;
+
     use super::*;
 
     fn reply() -> Value {
