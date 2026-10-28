@@ -32,6 +32,8 @@ const replay = (over: Partial<ReplayInfo>): ReplayInfo => ({
   recorded_run: "run-1",
   ticks: 300,
   baseline: true,
+  case: "multizone_office_complex_air",
+  step_s: 120,
   start_s: 16027200,
   drafted: false,
   drafts: [],

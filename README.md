@@ -2,7 +2,7 @@
 
 **The muse proposes. The engine checks.**
 
-Mechanical Muse is an agent built on Meta's Muse Spark. It turns a written sequence of operations into running building control logic, and that logic may run only once it passes its tests. Muse Spark drafts the logic as a block graph. A deterministic control engine replays test vectors against every draft, and failures go back to Spark for repair. Only a draft with a green verification receipt runs on an emulated large office building.
+Mechanical Muse is an agent built on Meta's Muse Spark. It turns a written sequence of operations into running building control logic, and that logic may run only once it passes its tests. Muse Spark drafts the logic as a block graph. A deterministic control engine replays test vectors against every draft, and failures go back to Spark for repair. Only a draft with a green verification receipt runs on an emulated building: BOPTEST's large office, or its heat pump house on spot electricity prices.
 
 Built solo by Justin Scott for the Meta Global AI Developer Hackathon (Indie track), October 26 to November 4, 2026.
 
@@ -55,6 +55,13 @@ Building control sequences are written as prose by engineers. A controls contrac
   <img alt="Energy and emissions panel of the sensor-bias replay: an injected test fault banner with +130 kWh, +$12 and +44 kgCO2e against the healthy run, scope cards and the end-use table" src="docs/img/screens/fault-cost-light.png">
 </picture>
 
+**A home on spot prices.** The same gate, a second building: a heating sequence for BOPTEST's simulated house in Brussels (heat pump, floor heating) preheats before the most expensive hours and coasts through them, inside the comfort band. Demand response programs add many such homes up, so the headline is the power moved out of peak-price hours; the fleet line is a labelled illustration, not a forecast.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/home-run-dark.png">
+  <img alt="A replayed home run: KPI tiles against BOPTEST's own controller (energy −7.7 %, cost −8.4 %, thermal discomfort −14.8 %), and the peak-price power card: 0.87 kW against 1.17 kW in the most expensive quarter of prices, −26 %, with a fleet view labelled as an illustration" src="docs/img/screens/home-run-light.png">
+</picture>
+
 ## Results so far
 
 | What | Result | Where |
@@ -63,6 +70,7 @@ Building control sequences are written as prose by engineers. A controls contrac
 | Chilled-water plant reset, verified, then run on BOPTEST against its baseline controller for 10 hours | HVAC energy −4.7 %, chiller energy −14.2 %, thermal discomfort +2.0 % | [docs/runtime-results.md](docs/runtime-results.md) |
 | A photo of a supply-air reset sheet: read, scenarios accepted, drafted (red, then green), bound to BOPTEST, run; then the engineer revises the sheet and runs it again | Revision A ran but its humidity override latched, so its reset never acted. Revision B, re-tested on five windows it was not tuned on: HVAC energy −23 % to −55 % in spring and autumn (less reheat gas), no gain over our own sequences in summer | [docs/workbench.md](docs/workbench.md) |
 | A drifted sensor (floor 1 supply-air reading 4 K high for 2 hours, a labelled test fault) against the same 10 hours without it | The plant reset drove the chilled water to its cold end: +130 kWh, +44 kgCO2e, +$12 of chiller electricity, about a fifth of the ten hours' saving | [docs/emissions.md](docs/emissions.md) |
+| Home price response on BOPTEST's heat pump house, spot prices, two weeks per window, against its own controller | Typical heat: cost −8.4 %, thermal discomfort −14.8 %, power in the most expensive quarter of prices −26 %; peak heat: −8.3 %, −81.9 %, −37 %. Every setpoint matches the independent reference. The single highest 15-minute draw rose (+16 %, +4 %): a rebound before the expensive hours. Spark drafted the spec right first time in 3 of 3 sessions | [docs/runtime-results.md](docs/runtime-results.md) |
 | Injected sensor fault (NaN supply-air temperature) during a live run | The reading shows as no data, the affected sequences go degraded, their setpoints are handed back to BOPTEST's own controllers, and the reset writes again once the sensor returns | [docs/runtime-results.md](docs/runtime-results.md) |
 
 ![Revision B across six windows: HVAC energy −54.4 % (April), −37.3 % (May, tuned on), −23.4 % (24 h, late May), −4.9 % (June), −3.3 % (July), −55.4 % (September), against −2 % to −6 % for our sequences alone](docs/img/revision-b-seasons.svg)
@@ -122,9 +130,9 @@ Everything in this repository was written during the event, starting October 26,
 | Engine bridge: load receipts, frame stepping, vector replay | `crates/mm-bridge` | Working offline: replays all 1,760 library scenarios on the pinned engine |
 | Block-graph schema and CXF emitter | `crates/mm-graph` | Working offline: validator and emitter round-trip all 137 library rules |
 | Muse Spark authoring agent: prompt, Responses client, draft-verify-repair loop | `crates/mm-agent` | Working live against Muse Spark (`docs/model-api.md` section 10); reports progress for live views; plays back recorded runs. With vector feedback, Spark drafts a passing chilled-water plant reset in 2 of 3 benchmark runs, and in 3 of 3 live sessions after the repair message learned to name loops (`docs/benchmark-results.md`) |
-| Control sequence specs: our own text, independent reference models, test vectors, hand-built graphs | `specs/` | Four specs, each gated by a test that its reference graph passes every vector and that common mistakes fail: chilled-water plant reset and air handler chilled-water requests (running on BOPTEST); duct static pressure reset and zone static pressure requests (validated and wired into the runtime: the `pressure` run option) |
+| Control sequence specs: our own text, independent reference models, test vectors, hand-built graphs | `specs/` | Five specs, each gated by a test that its reference graph passes every vector and that common mistakes fail: chilled-water plant reset and air handler chilled-water requests (running on BOPTEST); duct static pressure reset and zone static pressure requests (validated and wired into the runtime: the `pressure` run option); home price response (BOPTEST's heat pump house: the `building: home` run option) |
 | Library benchmark harness: scrubbed tasks, baselines, run records | `crates/mm-bench` | Working: all 137 library rules, 3 runs each on the current engine and prompt, plus vector-feedback runs on the chilled-water plant reset; results and failure analysis in `docs/benchmark-results.md` |
-| BOPTEST runtime host: supervisory loop, BOPTEST client, fail-safe | `crates/mm-runtime` | Runs the verified AHU requests and CHW plant reset against BOPTEST live; 10-hour comparison with the baseline in `docs/runtime-results.md` |
+| BOPTEST runtime host: supervisory loop, BOPTEST client, fail-safe | `crates/mm-runtime` | Runs the verified AHU requests and CHW plant reset against BOPTEST live; 10-hour comparison with the baseline in `docs/runtime-results.md`. Also runs the home price response on the heat pump house, passing BOPTEST's forecast in as readings |
 | HTTP API: specs, typed block graphs, verification receipts | `crates/mm-server` | Working: spec, graph and verify endpoints; authoring sessions (Muse Spark, or a labelled recorded run) streamed as server-sent events, with verified drafts stored with their receipts; BOPTEST run sessions that can run a drafted sequence after replaying its vectors again, or inject a labelled test fault (a blank, stuck or biased reading); a Scope 1 and 2 energy, emissions and cost ledger per run from BOPTEST's KPIs and recorded power readings, and comparisons of runs of the same window ([docs/emissions.md](docs/emissions.md)); labelled replays of recorded runs; run records; generated TypeScript types |
 | MCP server for coding agents: specs, palette, validator, CXF emitter, vector replay as tools | `crates/mm-mcp` | Working offline over stdio, on the official MCP Rust SDK (`rmcp`): Muse Code or any MCP client drafts a block graph and our tools check it (passes X of Y scenarios, with the same repair text our agent gets); no model calls of its own ([docs/mcp.md](docs/mcp.md)) |
 | BACnet device mirror | `crates/mm-bacnet` | Working: live runs served read-only as one BACnet/IP device (55 objects: BOPTEST readings, sequence outputs, setpoints sent); remote writes refused; tested over UDP ([docs/bacnet-mirror.md](docs/bacnet-mirror.md)) |
@@ -149,7 +157,7 @@ These are public, open-source projects used unmodified, each pinned to one commi
 | [open-control-engine](https://github.com/jscott3201/open-control-engine) | Justin Scott | MIT OR Apache-2.0 | `fa5cb19` (`development`, 2026-10-27) | Executing and verifying CDL control sequences |
 | [open-control-library](https://github.com/jscott3201/open-control-library) | Justin Scott | MIT OR Apache-2.0 | `124427b` | Fault rules and test vectors for the benchmark; six rules (card, CXF and vectors) and four point dictionaries copied unmodified into `fixtures/open-control-library/` as test data |
 | [rusty-bacnet](https://github.com/jscott3201/rusty-bacnet) | Justin Scott | MIT | `1caf4db` (v0.14.0) | BACnet/IP server, objects, types and transport for the read-only mirror; its client in tests |
-| [BOPTEST](https://github.com/ibpsa/project1-boptest) | IBPSA Project 1 | BSD-3-Clause style | `9b1610b` (v0.9.0) | Large office building emulator and KPIs |
+| [BOPTEST](https://github.com/ibpsa/project1-boptest) | IBPSA Project 1 | BSD-3-Clause style | `9b1610b` (v0.9.0) | Building emulator and KPIs: the large office (`multizone_office_complex_air`) and the heat pump house (`bestest_hydronic_heat_pump`), both test cases used unmodified |
 | [MinIO](https://github.com/minio/minio) and [mc](https://github.com/minio/mc) | MinIO, Inc. | AGPL-3.0 | `f19c534` and `1e78af4` (the releases BOPTEST v0.9.0 names) | BOPTEST's object store, built from source by `deploy/minio` and `deploy/modal` because those releases are no longer published as images; not redistributed |
 | [shadcn/ui](https://github.com/shadcn-ui/ui) components | shadcn | MIT | CLI 4.21.4, style radix-nova | UI primitives copied into `web/src/components/ui` by the shadcn CLI, used unmodified except that they import our own `cn` helper |
 | [React Flow](https://github.com/xyflow/xyflow) (`@xyflow/react`) | xyflow | MIT | 12.12.0 | Draws block graphs (pan, zoom, typed port handles); the layered layout is our own (`web/src/features/graph/layout.ts`) |
@@ -160,7 +168,7 @@ These are public, open-source projects used unmodified, each pinned to one commi
 
 Ordinary crates.io libraries (such as serde, reqwest, tokio and thiserror) and npm packages (such as React, Vite, Tailwind CSS and Radix UI) are used unmodified under their own licenses; `Cargo.lock`, `web/package-lock.json` and `website/package-lock.json` pin every version. The Geist font (`@fontsource-variable/geist`) is under the SIL Open Font License 1.1.
 
-The four control sequence specs in `specs/` are written in our own words. The [Modelica Buildings Library](https://github.com/lbl-srg/modelica-buildings) (BSD-3-Clause) served as a behavioural reference for how such sequences act; nothing from it is copied into this repository, and no endorsement by its authors is implied.
+The five control sequence specs in `specs/` are written in our own words (the home price response is our own design, not based on a library sequence). The [Modelica Buildings Library](https://github.com/lbl-srg/modelica-buildings) (BSD-3-Clause) served as a behavioural reference for how such sequences act; nothing from it is copied into this repository, and no endorsement by its authors is implied.
 
 ## License
 

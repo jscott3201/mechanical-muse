@@ -6,6 +6,7 @@
 import { formatNumber } from "@/lib/format";
 import type { Envelope } from "@/types/generated/Envelope";
 import type { Phase } from "@/types/generated/Phase";
+import type { PeakPower } from "@/types/generated/PeakPower";
 import type { RunConfig } from "@/types/generated/RunConfig";
 import type { RunState } from "@/types/generated/RunState";
 import type { SequenceInfo } from "@/types/generated/SequenceInfo";
@@ -37,6 +38,8 @@ export interface RunStreamState {
   sequences: SequenceInfo[];
   ticks: TickPoint[];
   kpi: Record<string, number> | null;
+  /** A home run's power in its most expensive quarter of prices (ours), at the end. */
+  peak: PeakPower | null;
   ended: { state: RunState; message: string | null } | null;
   log: LogEntry[];
   lastSeq: number | null;
@@ -62,6 +65,7 @@ export const initialRunStream: RunStreamState = {
   sequences: [],
   ticks: [],
   kpi: null,
+  peak: null,
   ended: null,
   log: [],
   lastSeq: null,
@@ -201,6 +205,9 @@ export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamSta
       }
       case "kpi":
         next = { ...base, kpi: pruneUndefined(env.values) };
+        break;
+      case "peak-power":
+        next = { ...base, peak: env.peak };
         break;
       case "ended":
         next = {

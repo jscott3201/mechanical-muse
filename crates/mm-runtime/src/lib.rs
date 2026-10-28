@@ -8,6 +8,7 @@
 #![forbid(unsafe_code)]
 
 mod boptest;
+pub mod home;
 pub mod ledger;
 mod plant;
 pub mod preset;

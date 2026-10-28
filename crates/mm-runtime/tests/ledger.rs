@@ -279,9 +279,22 @@ fn every_committed_record_reconciles() {
         .filter(|p| p.extension().is_some_and(|x| x == "jsonl"))
         .collect();
     names.sort();
-    assert_eq!(names.len(), 13);
-    for path in names {
-        let text = std::fs::read_to_string(&path).unwrap();
+    // The ledger's factors and prices are the office's; the home's records are not its subject.
+    let office: Vec<(std::path::PathBuf, String)> = names
+        .into_iter()
+        .map(|p| {
+            let text = std::fs::read_to_string(&p).unwrap();
+            (p, text)
+        })
+        .filter(|(_, text)| {
+            text.lines()
+                .filter_map(|l| serde_json::from_str::<serde_json::Value>(l).ok())
+                .find(|v| v["kind"] == "started")
+                .is_some_and(|v| v["config"]["case"] == mm_runtime::preset::CASE)
+        })
+        .collect();
+    assert_eq!(office.len(), 13);
+    for (path, text) in office {
         let kpis: BTreeMap<String, f64> = text
             .lines()
             .rev()

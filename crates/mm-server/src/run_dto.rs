@@ -14,6 +14,10 @@ use ts_rs::TS;
 #[ts(export)]
 #[serde(deny_unknown_fields)]
 pub struct RunRequest {
+    /// Which building: the office (default) or the home.
+    #[serde(default)]
+    #[ts(optional)]
+    pub building: Option<Building>,
     /// Run BOPTEST's own controllers only, writing nothing (for comparison).
     #[serde(default)]
     #[ts(optional)]
@@ -47,6 +51,18 @@ pub struct RunRequest {
     #[serde(default)]
     #[ts(optional)]
     pub fault: Option<Fault>,
+}
+
+/// The BOPTEST building a run drives: the office (`multizone_office_complex_air`, our chilled-water
+/// and air-handler sequences) or the home (`bestest_hydronic_heat_pump`, the price-response
+/// setpoint on spot prices).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "kebab-case")]
+pub enum Building {
+    #[default]
+    Office,
+    Home,
 }
 
 /// A sensor reading changed before the sequences see it, for `steps` steps from step
@@ -143,6 +159,13 @@ pub struct RunConfig {
     pub replay: Option<ReplaySource>,
 }
 
+impl RunConfig {
+    /// The home building (BOPTEST's heat pump house) rather than the office.
+    pub fn is_home(&self) -> bool {
+        self.case == mm_runtime::home::CASE
+    }
+}
+
 /// The record a replayed run plays back. Its events are the recorded ones, re-sent in order
 /// at a fixed pace; nothing runs against a plant.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -187,6 +210,10 @@ pub struct RunInfo {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub kpis: Option<BTreeMap<String, f64>>,
+    /// A home run's power in its most expensive quarter of prices, at the end.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub peak: Option<crate::home_facts::PeakPower>,
 }
 
 /// Where a running sequence's graph came from.
@@ -271,6 +298,11 @@ pub enum RunEvent {
     Kpi {
         values: BTreeMap<String, f64>,
     },
+    /// The home's power in the run's most expensive quarter of prices (ours, from recorded
+    /// readings; home runs only).
+    PeakPower {
+        peak: crate::home_facts::PeakPower,
+    },
     /// The last event of every run.
     Ended {
         state: RunState,
@@ -334,6 +366,13 @@ pub struct ReplayInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub fault: Option<Fault>,
+    /// BOPTEST test case and step length of the recorded run.
+    pub case: String,
+    pub step_s: f64,
+    /// A home run's power in its most expensive quarter of prices, if the record has it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub peak: Option<crate::home_facts::PeakPower>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, TS)]

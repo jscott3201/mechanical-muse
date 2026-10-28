@@ -6,9 +6,14 @@ import { faultModeText } from "./faults";
 import { formatSimTime } from "./trends";
 
 const PLANT = "chw_plant_reset";
+const HOME_SPEC = "home_price_response";
+/** BOPTEST's home test case (a heat pump house on spot prices). */
+export const HOME_CASE = "bestest_hydronic_heat_pump";
 
 /** What a run or recorded run ran, in the terms the labels need. */
 export type RunFacts = {
+  /** BOPTEST's home (heat pump house) rather than the office. */
+  home: boolean;
   baseline: boolean;
   pressure: boolean;
   /** Engineers' own sequences, each run from a verified Spark draft. */
@@ -20,7 +25,7 @@ export type RunFacts = {
 };
 
 export function replayFacts(r: ReplayInfo): RunFacts {
-  return { baseline: r.baseline, pressure: r.pressure, own: r.own, drafts: r.drafts ?? [], fault: r.fault ?? null };
+  return { home: r.case === HOME_CASE, baseline: r.baseline, pressure: r.pressure, own: r.own, drafts: r.drafts ?? [], fault: r.fault ?? null };
 }
 
 /** Old records may lack `drafts`, `bindings` or `pressure`; treat them as empty. */
@@ -28,6 +33,7 @@ export function configFacts(c: RunConfig): RunFacts {
   const drafts: Partial<Record<string, string>> = c.drafts ?? {};
   const bindings: Partial<Record<string, unknown>> = c.bindings ?? {};
   return {
+    home: c.case === HOME_CASE,
     baseline: c.baseline,
     pressure: c.pressure ?? false,
     own: Object.keys(bindings).sort(),
@@ -44,6 +50,10 @@ export function describe(f: RunFacts): string {
 }
 
 function describeGraphs(f: RunFacts): string {
+  if (f.home) {
+    if (f.baseline) return "Home: BOPTEST baseline, nothing written";
+    return f.drafts.includes(HOME_SPEC) ? "Home price response (Spark draft)" : "Home price response (hand-built)";
+  }
   if (f.baseline) return "BOPTEST baseline, nothing written";
   const pressure = f.pressure ? " and static pressure" : "";
   const ours = f.drafts.filter((s) => !f.own.includes(s));
