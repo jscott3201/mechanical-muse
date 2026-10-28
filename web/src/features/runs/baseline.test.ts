@@ -4,7 +4,7 @@ import type { ReplayInfo } from "@/types/generated/ReplayInfo";
 import type { RunConfig } from "@/types/generated/RunConfig";
 import type { RunInfo } from "@/types/generated/RunInfo";
 
-import { change, findBaseline, findHealthy } from "./baseline";
+import { change, findBaseline, findHealthy, formatChange } from "./baseline";
 
 const cfg: RunConfig = {
   baseline: false,
@@ -117,5 +117,12 @@ describe("change", () => {
     expect(change(0.3101, 0.3255)).toBeCloseTo(-4.73, 2);
     expect(change(1, 0)).toBeNull();
     expect(change(undefined, 1)).toBeNull();
+  });
+
+  it("writes a change that rounds to zero as 0 %, without a sign", () => {
+    expect(formatChange(-4.73)).toBe("−4.7 %");
+    expect(formatChange(1.26)).toBe("+1.3 %");
+    expect(formatChange(-0.03)).toBe("0 %");
+    expect(formatChange(0)).toBe("0 %");
   });
 });

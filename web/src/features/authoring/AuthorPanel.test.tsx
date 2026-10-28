@@ -54,7 +54,7 @@ describe("AuthorPanel", () => {
   it("asks for the chosen source and shows a recorded session red, amber, green", async () => {
     const fetch = vi.fn(async (url: string, _init?: RequestInit) =>
       url === "/api/health"
-        ? new Response(JSON.stringify({ status: "ok", engine_rev: "fa5cb19", specs: 4, recorded_model: true }), { status: 200 })
+        ? new Response(JSON.stringify({ status: "ok", engine_rev: "fa5cb19", specs: 4, recorded_model: true, boptest: true }), { status: 200 })
         : new Response(JSON.stringify({ id: sessionId, config, state: "running", events: 0 }), { status: 201 }),
     );
     vi.stubGlobal("fetch", fetch);

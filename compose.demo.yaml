@@ -10,7 +10,8 @@
 #   - Live Muse Spark: add compose.demo.live.yaml, which reads MODEL_API_KEY from an env file you
 #     supply (default ./.env). The key stays in the container's environment, never in the image.
 #   - Live BOPTEST: start BOPTEST first (`make boptest-up`, port 80 on this machine, or
-#     `make boptest-modal`), then set MM_BOPTEST_URL if it is not on this machine's port 80.
+#     `make boptest-modal`), then set MM_BOPTEST_URL: http://host.docker.internal:80 for this
+#     machine's port 80, or the tunnel URL Modal prints.
 #
 # This file is separate from compose.yaml (BOPTEST for development), which it does not change.
 name: mechanical-muse
@@ -22,10 +23,10 @@ services:
     ports:
       - "127.0.0.1:${MM_PORT:-8080}:8080"
     environment:
-      # Where a live run finds BOPTEST. The default reaches a BOPTEST on this machine's port 80
-      # (make boptest-up); without one, live runs report that BOPTEST is unreachable and
-      # everything recorded still works.
-      MM_BOPTEST_URL: ${MM_BOPTEST_URL:-http://host.docker.internal:80}
+      # Where a live run finds BOPTEST. Unset (the default), live runs are off and the web app
+      # says so; everything recorded still works. For a BOPTEST on this machine's port 80
+      # (make boptest-up) set MM_BOPTEST_URL=http://host.docker.internal:80.
+      MM_BOPTEST_URL: ${MM_BOPTEST_URL:-}
       RUST_LOG: ${RUST_LOG:-info}
     extra_hosts:
       # Docker Desktop defines host.docker.internal; this makes it work on Linux too.

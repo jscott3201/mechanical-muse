@@ -46,7 +46,7 @@ const receipt: Receipt = {
     },
   ],
 };
-const health: Health = { status: "ok", engine_rev: "4063202b9a9e50c7", specs: 1, recorded_model: true };
+const health: Health = { status: "ok", engine_rev: "4063202b9a9e50c7", specs: 1, recorded_model: true, boptest: true };
 
 const routes: Record<string, unknown> = {
   "GET /api/health": health,

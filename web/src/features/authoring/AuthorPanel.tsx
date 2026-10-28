@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AttemptEntry } from "@/hooks/authorStream";
 import { useAuthorStream } from "@/hooks/useAuthorStream";
+import { BOPTEST_OFF_TEXT } from "@/hooks/useLiveRuns";
 import { useAction, useResource } from "@/hooks/useResource";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/lib/format";
@@ -19,7 +20,7 @@ import type { Problem } from "@/types/generated/Problem";
 import { ErrorNote } from "../ErrorNote";
 import { ExplanationPanel } from "../graph/ExplanationPanel";
 import { GraphCanvas } from "../graph/GraphCanvas";
-import { Outcome } from "../Receipt";
+import { Outcome, type OutputUnits } from "../Receipt";
 
 /**
  * Problems grouped by code: the blocks involved, one explanation, and every message behind a
@@ -71,7 +72,7 @@ function ProblemList({ problems }: { problems: Problem[] }) {
 }
 
 /** What one checked draft got, with an icon and words (never color alone). */
-function Verdict({ view }: { view: AttemptView }) {
+function Verdict({ view, units }: { view: AttemptView; units?: OutputUnits | undefined }) {
   switch (view.result) {
     case "passed":
       return (
@@ -91,7 +92,7 @@ function Verdict({ view }: { view: AttemptView }) {
           <ul className="flex flex-col gap-1 text-sm">
             {view.failures.map((s) => (
               <li key={s.name}>
-                <span className="font-mono text-xs">{s.name}</span>: <Outcome s={s} />
+                <span className="font-mono text-xs">{s.name}</span>: <Outcome s={s} units={units} />
               </li>
             ))}
           </ul>
@@ -157,7 +158,7 @@ function flaggedNodes(view: AttemptView): string[] {
   return [...new Set(problems.map((p) => p.node).filter((n): n is string => Boolean(n)))];
 }
 
-function AttemptRow({ attempt, spec }: { attempt: AttemptEntry; spec: string }) {
+function AttemptRow({ attempt, spec, units }: { attempt: AttemptEntry; spec: string; units?: OutputUnits | undefined }) {
   const [open, setOpen] = useState(false);
   const [focus, setFocus] = useState<string[]>([]);
   const graph = attempt.view?.graph;
@@ -171,7 +172,7 @@ function AttemptRow({ attempt, spec }: { attempt: AttemptEntry; spec: string }) 
       </p>
       {attempt.view ? (
         <>
-          <Verdict view={attempt.view} />
+          <Verdict view={attempt.view} units={units} />
           {graph && (
             <div className="flex flex-col gap-2">
               <div>
@@ -207,15 +208,31 @@ const ENDED_TEXT = {
   running: "",
 } as const;
 
+/** The server's attempt budget for a live session (`MAX_ATTEMPTS` in mm-server's authoring). */
+const LIVE_ATTEMPTS = 5;
+
+/**
+ * The attempt budget in words. Once a session starts its config says; before that, a live call
+ * gets the server's budget and a playback has only as many attempts as were recorded.
+ */
+function attemptsText(max: number | null, source: ModelSource): string {
+  if (max === null && source === "recorded") return "for as many attempts as the recorded session made";
+  const n = max ?? LIVE_ATTEMPTS;
+  return `up to ${n} attempt${n === 1 ? "" : "s"}`;
+}
+
 /** Start an authoring session for `spec` and follow it attempt by attempt. */
 export function AuthorPanel({
   spec,
   scenarios,
   onRunDraft,
   onVerified,
+  units,
 }: {
   spec: string;
   scenarios: number;
+  /** The spec's output units, so failed expectations show °C and °F beside kelvin. */
+  units?: OutputUnits;
   /** Opens the run form with this verified draft chosen. */
   onRunDraft?: (spec: string, contentId: string) => void;
   /** Called once when a session stores a verified draft. */
@@ -224,6 +241,7 @@ export function AuthorPanel({
   const health = useResource<Health>("/api/health");
   const live = health.status === "ready" && health.data.live_model !== undefined;
   const recordedOk = health.status !== "ready" || health.data.recorded_model;
+  const liveRuns = health.status !== "ready" || health.data.boptest !== false;
   const [chosen, setChosen] = useState<ModelSource | null>(null);
   // Default to what the server can do: live when it has a key, else the recorded session.
   const source: ModelSource = chosen ?? (live || health.status !== "ready" ? "live" : "recorded");
@@ -249,7 +267,7 @@ export function AuthorPanel({
         <CardDescription className="max-w-prose">
           Muse Spark reads this task and writes a block graph. Each draft is checked: interface,
           validator, engine load, then all {scenarios} scenarios. What fails goes back to the model,
-          up to {stream.config?.max_attempts ?? 5} attempt{(stream.config?.max_attempts ?? 5) === 1 ? "" : "s"}. A passing draft is stored with its receipt.
+          {attemptsText(stream.config?.max_attempts ?? null, source)}. A passing draft is stored with its receipt.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -312,7 +330,7 @@ export function AuthorPanel({
         {/* Always present, so screen readers hear each attempt as it arrives. */}
         <ol aria-label="Attempts" aria-live="polite" className="flex flex-col gap-2 empty:hidden">
           {stream.attempts.map((a) => (
-            <AttemptRow key={a.index} attempt={a} spec={spec} />
+            <AttemptRow key={a.index} attempt={a} spec={spec} units={units} />
           ))}
         </ol>
         {stream.ended && (
@@ -334,6 +352,8 @@ export function AuthorPanel({
                 {onRunDraft && (
                   <Button
                     size="sm"
+                    disabled={!liveRuns}
+                    title={liveRuns ? undefined : BOPTEST_OFF_TEXT}
                     onClick={() => {
                       const d = stream.ended?.draft;
                       if (d) onRunDraft(spec, d.content_id);
@@ -348,6 +368,9 @@ export function AuthorPanel({
                   </a>
                 </Button>
               </div>
+            )}
+            {stream.ended.state === "verified" && onRunDraft && !liveRuns && (
+              <p className="text-sm text-muted-foreground">{BOPTEST_OFF_TEXT}</p>
             )}
             {stream.ended.message && <p className="text-sm text-muted-foreground">{stream.ended.message}</p>}
             <p className="text-xs text-muted-foreground">

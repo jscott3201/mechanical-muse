@@ -135,6 +135,7 @@ export function SpecDetail({
   const { summary, about, description, params, scenarios, reference } = spec.data;
   const ownDrafts = drafts.status === "ready" ? drafts.data.filter((d) => d.spec === name) : [];
   const bound = binding.status === "ready";
+  const units = Object.fromEntries(summary.outputs.map((p) => [p.name, p.unit]));
   // An engineer's own sequence has no hand-built graph: Muse Spark's drafts are the point.
   const fallback: Section = reference ? "interface" : "spark";
   const section: Section = chosen === null || (reference && chosen === "building") ? fallback : chosen;
@@ -177,7 +178,7 @@ export function SpecDetail({
         {(verify.state.status === "error" || (verify.state.status === "done" && verify.state.data.spec === name)) && (
           <CardContent>
             {verify.state.status === "error" && <ErrorNote error={verify.state.error} />}
-            {verify.state.status === "done" && verify.state.data.spec === name && <Receipt receipt={verify.state.data} />}
+            {verify.state.status === "done" && verify.state.data.spec === name && <Receipt receipt={verify.state.data} units={units} />}
           </CardContent>
         )}
       </Card>
@@ -236,6 +237,7 @@ export function SpecDetail({
           <AuthorPanel
             spec={name}
             scenarios={scenarios.length}
+            units={units}
             onRunDraft={reference || bound ? onRunDraft : undefined}
             onVerified={drafts.reload}
           />

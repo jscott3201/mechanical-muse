@@ -50,6 +50,16 @@ pub enum PlantSource {
         readings: Vec<Measurements>,
         pace: std::time::Duration,
     },
+    /// No plant: live runs are refused, replays still work. The server's default when
+    /// `MM_BOPTEST_URL` is unset, so a Start click never reaches whatever listens on port 80.
+    Off,
+}
+
+impl PlantSource {
+    /// True when a live run has a plant to drive.
+    pub fn is_live(&self) -> bool {
+        !matches!(self, PlantSource::Off)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -220,7 +230,7 @@ impl Runs {
                 let first = script.remove(0);
                 Some((FakePlant::new(script), first, *pace))
             }
-            PlantSource::Boptest { .. } => None,
+            PlantSource::Boptest { .. } | PlantSource::Off => None,
         }
     }
 }

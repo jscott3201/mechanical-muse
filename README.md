@@ -70,8 +70,8 @@ Every BOPTEST number is a short window, compared with BOPTEST's own baseline con
 ## Try it in two minutes
 
 1. `make docker-demo` (only Docker needed), or `make demo` with Rust and Node. Open http://localhost:8080.
-2. **Sequences** → *Chilled-water plant reset* → *Muse Spark* → play the recorded session. You can watch a draft fail its vectors and get repaired to a green receipt.
-3. **Bring your own** → *Use the sample sequence sheet*. Spark's reading of a photo of a sequence (recorded), its proposed scenarios and the open questions it lists.
+2. **Sequences** → *Chilled-water plant reset* → *Muse Spark* → choose *Recorded run*, then *Draft*. You can watch a draft fail its vectors and get repaired to a green receipt.
+3. **Bring your own** → *Use the sample sequence sheet*, then *Read with Muse Spark*. Spark's reading of a photo of a sequence (recorded), its proposed scenarios and the open questions it lists.
 4. **Runs** → replay the day 143 morning run with revision B: trends, and KPIs beside the baseline over the same window. The day 186 fault demo shows the fail-safe handing control back, and the day 185 sensor-bias record shows what a fault costs.
 
 Without a model key or BOPTEST everything above plays back from recordings, and the UI labels each one "recorded" or "replay". Add a Meta Model API key for live authoring, and a BOPTEST URL for live runs (below).
@@ -82,7 +82,8 @@ Quickest: `make demo`, then open http://127.0.0.1:8080. It builds the web app an
 the API on one address. With no model key and no BOPTEST it still verifies every spec, plays back
 a recorded Muse Spark session, recorded BOPTEST runs and recorded explanations, all labelled as
 recorded. `make demo-live` adds live Muse Spark from a key in `.env`; set `MM_BOPTEST_URL` for
-live runs and `MM_BACNET_ADDR` for the BACnet mirror.
+live runs (without it, live runs are off and the header says "BOPTEST off"; replays still work)
+and `MM_BACNET_ADDR` for the BACnet mirror. Replays can be sped up 4× or 10× from the replay list.
 
 ### Run it without toolchains
 
@@ -100,7 +101,8 @@ You need Rust (see `rust-toolchain.toml`), Node (`web/.nvmrc`) and a BOPTEST v0.
 1. BOPTEST, either locally with Docker (`export BOPTEST_DIR=<checkout>; make boptest-up`, slow on
    Apple silicon) or on Modal with native x86 (`make boptest-modal`, see
    [docs/boptest-on-modal.md](docs/boptest-on-modal.md)).
-2. The server: `make server` (set `MM_BOPTEST_URL` for Modal). For live Muse Spark authoring, put
+2. The server: `MM_BOPTEST_URL=http://127.0.0.1:80 make server` for a local BOPTEST, or the
+   tunnel URL for Modal (there is no default: without it, live runs are off). For live Muse Spark authoring, put
    a Meta Model API key in `.env` as `MODEL_API_KEY` and run `make server-live`.
 3. The web app: `cd web && npm ci && npm run dev`, then open the printed address.
 4. Optional: mirror live runs read-only over BACnet/IP with `MM_BACNET_ADDR=0.0.0.0:47808` on the
@@ -133,7 +135,7 @@ Every model call the application makes goes to Muse Spark through the Meta Model
 
 ## Related work
 
-LLM-drafts, tools-verify loops already exist for industrial control code: LLM4PLC (ICSE-SEIP 2024) uses grammar checks, compilation and model checking; SemaPLC (2026) replays scenarios on a PLC runtime. Wan et al. (2025) generated CDL modules with a language model and checked their behavior by human review. Mechanical Muse applies the loop to building sequences in CDL/CXF. Its gate is a deterministic engine replaying test vectors, it publishes a benchmark scored that way, and verified sequences then run closed-loop on a building emulator. To our knowledge, Mechanical Muse is the first open benchmark that scores LLM-authored CDL by replaying test vectors through a deterministic engine, then runs verified sequences closed-loop on a building emulator.
+LLM-drafts, tools-verify loops already exist for industrial control code: LLM4PLC (ICSE-SEIP 2024) uses grammar checks, compilation and model checking; SemaPLC (2026) replays scenarios on a PLC runtime. Wan et al. (2025) generated CDL modules with a language model and checked their behavior by human review. Mechanical Muse applies the loop to building sequences in CDL/CXF. Its gate is a deterministic engine replaying test vectors, it publishes a benchmark scored that way, and verified sequences then run closed-loop on a building emulator. Mechanical Muse measures, in the open and with a deterministic engine, how often an LLM's building control sequence matches its written spec on replayed test vectors, then runs the verified sequences closed-loop on a building emulator.
 
 ## Pre-existing dependencies (not built during the hackathon)
 

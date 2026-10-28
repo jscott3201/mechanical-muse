@@ -3,6 +3,7 @@
  * (phases, the start receipt, KPIs, the end, any supervisor event) goes to a log that is never
  * trimmed, so a degraded or failed step is never dropped from view.
  */
+import { formatNumber } from "@/lib/format";
 import type { Envelope } from "@/types/generated/Envelope";
 import type { Phase } from "@/types/generated/Phase";
 import type { RunConfig } from "@/types/generated/RunConfig";
@@ -42,6 +43,13 @@ export interface RunStreamState {
   gap: boolean;
   /** Why the latest step wrote no new setpoints (fail-safe active), or null when it did. */
   degraded: string | null;
+  /** Ticks seen so far (the step index of the next tick); never trimmed with the buffer. */
+  steps: number;
+  /**
+   * Runs of steps (0-based, inclusive) where the fail-safe was active, so a short degraded spell
+   * stays visible after it ends.
+   */
+  failSafeSpans: { from: number; to: number }[];
 }
 
 export const MAX_TICKS = 6000;
@@ -58,13 +66,15 @@ export const initialRunStream: RunStreamState = {
   lastSeq: null,
   gap: false,
   degraded: null,
+  steps: 0,
+  failSafeSpans: [],
 };
 
 function describe(e: SupervisorEvent): LogEntry["text"] {
   const where = [e.sequence, e.point].filter(Boolean).join(" ");
   switch (e.kind) {
     case "clamped":
-      return `${where}: clamped ${e.value ?? "?"} to ${e.sent ?? "?"}`;
+      return `${where}: clamped ${e.value === undefined ? "?" : formatNumber(e.value, 3)} to ${e.sent === undefined ? "?" : formatNumber(e.sent, 3)}`;
     case "degraded":
       return `${where}: no new setpoints (${e.reason ?? "unknown reason"})`;
     case "held":
@@ -74,10 +84,54 @@ function describe(e: SupervisorEvent): LogEntry["text"] {
     case "stale":
       return "readings did not move forward in time; nothing ran";
     case "injected":
-      return `${where}: test fault injected (reading replaced with NaN)`;
+      return `${where}: test fault injected (${injectedWhat(e.reason)})`;
     default:
       return `${where}: ${e.kind}`;
   }
+}
+
+/** A log line shown once for a run of identical routine lines. */
+export interface LogGroup extends LogEntry {
+  count: number;
+  /** Simulation time of the last line in the group. */
+  lastT: number | null;
+}
+
+/**
+ * The log for display: identical routine (info) lines, such as the same clamp on every step,
+ * are shown once with a count, at their latest occurrence. A warning or error is never merged
+ * and ends every open group, so the order of anything that matters is kept.
+ */
+export function collapseLog(log: readonly LogEntry[]): LogGroup[] {
+  const groups: { g: LogGroup; at: number }[] = [];
+  let open = new Map<string, { g: LogGroup; at: number }>();
+  log.forEach((e, i) => {
+    if (e.severity !== "info") {
+      open = new Map();
+      groups.push({ g: { ...e, count: 1, lastT: e.t }, at: i });
+      return;
+    }
+    const same = open.get(e.text);
+    if (same) {
+      same.g.count += 1;
+      same.g.lastT = e.t;
+      same.at = i;
+      return;
+    }
+    const fresh = { g: { ...e, count: 1, lastT: e.t }, at: i };
+    open.set(e.text, fresh);
+    groups.push(fresh);
+  });
+  return groups.sort((a, b) => a.at - b.at).map((x) => x.g);
+}
+
+/**
+ * What an injected fault did to the reading. The server's reason is mode-aware ("test fault:
+ * reading biased by +4"); records from before fault modes carry the NaN wording or none.
+ */
+function injectedWhat(reason: string | undefined): string {
+  const what = reason?.replace(/^test fault:\s*/, "").trim();
+  return what ? what : "reading replaced with NaN";
 }
 
 function severity(e: SupervisorEvent): LogEntry["severity"] {
@@ -139,6 +193,8 @@ export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamSta
           ticks,
           log: events.length ? [...base.log, ...events] : base.log,
           degraded: failSafe ? describe(failSafe) : null,
+          steps: base.steps + 1,
+          failSafeSpans: failSafe ? extendSpans(base.failSafeSpans, base.steps) : base.failSafeSpans,
         };
         break;
       }
@@ -172,6 +228,12 @@ export function reduceRun(state: RunStreamState, envs: Envelope[]): RunStreamSta
     ticks.splice(0, ticks.length - MAX_TICKS);
   }
   return next;
+}
+
+function extendSpans(spans: RunStreamState["failSafeSpans"], step: number): RunStreamState["failSafeSpans"] {
+  const last = spans[spans.length - 1];
+  if (last && last.to === step - 1) return [...spans.slice(0, -1), { from: last.from, to: step }];
+  return [...spans, { from: step, to: step }];
 }
 
 /**

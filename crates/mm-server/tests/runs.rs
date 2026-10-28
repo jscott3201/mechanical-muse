@@ -135,6 +135,13 @@ async fn events_unbounded(
 }
 
 #[tokio::test]
+async fn health_says_live_runs_are_available_with_a_plant() {
+    let (status, body) = call(&state(None), "GET", "/api/health", None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["boptest"], true);
+}
+
+#[tokio::test]
 async fn a_run_streams_verified_ticks_and_ends() {
     let dir =
         PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(format!("runs-{}", std::process::id()));

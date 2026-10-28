@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { Envelope } from "@/types/generated/Envelope";
 import type { SupervisorEvent } from "@/types/generated/SupervisorEvent";
 
-import { initialRunStream, MAX_TICKS, reduceRun } from "./runStream";
+import { collapseLog, initialRunStream, MAX_TICKS, reduceRun } from "./runStream";
 
 /** Events recorded from a live run (trimmed: seq 0-7, then the KPI and end, 35-36). */
 const recorded: Envelope[] = readFileSync(
@@ -110,5 +110,95 @@ describe("injected faults", () => {
     const s = reduceRun(initialRunStream, [tick]);
     expect(s.log.map((l) => l.text)).toContain("floor1_reaAHU_TSup_y: test fault injected (reading replaced with NaN)");
     expect(s.degraded).toContain("ahu1");
+  });
+
+  it("describes a bias fault as a bias, not as NaN", () => {
+    // The event shape of fixtures/replays/day185-noon-fault-sensor-bias.jsonl.
+    const tick = {
+      run_id: "run-1793150217-3",
+      seq: 36,
+      sim_time_s: 16030920,
+      kind: "tick" as const,
+      outputs: {},
+      writes: {},
+      readings: {},
+      events: [
+        {
+          kind: "injected",
+          point: "floor1_reaAHU_TSup_y",
+          value: 290.58717267587093,
+          reason: "test fault: reading biased by +4",
+        },
+      ],
+    };
+    const s = reduceRun({ ...initialRunStream, lastSeq: 35 }, [tick]);
+    const texts = s.log.map((l) => l.text);
+    expect(texts).toContain("floor1_reaAHU_TSup_y: test fault injected (reading biased by +4)");
+    expect(texts.join(" ")).not.toContain("NaN");
+  });
+
+  it("falls back to the NaN wording for records without a reason", () => {
+    const tick = {
+      run_id: "r",
+      seq: 0,
+      sim_time_s: 100,
+      kind: "tick" as const,
+      outputs: {},
+      writes: {},
+      readings: {},
+      events: [{ kind: "injected", point: "p" }],
+    };
+    const s = reduceRun(initialRunStream, [tick]);
+    expect(s.log.map((l) => l.text)).toContain("p: test fault injected (reading replaced with NaN)");
+  });
+});
+
+describe("collapseLog", () => {
+  const info = (seq: number, text: string) => ({ seq, t: seq * 120, text, severity: "info" as const });
+  it("shows a clamp repeated on every step once, with its count and last time", () => {
+    const log = [0, 1, 2].flatMap((k) => [info(2 * k, "f1: clamped 285.928 to 285.93"), info(2 * k + 1, "f2: clamped 285.928 to 285.93")]);
+    const out = collapseLog(log);
+    expect(out.map((g) => [g.text, g.count, g.lastT])).toEqual([
+      ["f1: clamped 285.928 to 285.93", 3, 480],
+      ["f2: clamped 285.928 to 285.93", 3, 600],
+    ]);
+  });
+  it("never merges across a warning, and never merges warnings", () => {
+    const warn = { seq: 2, t: 240, text: "w", severity: "warning" as const };
+    const out = collapseLog([info(0, "c"), info(1, "c"), warn, { ...warn, seq: 3 }, info(4, "c")]);
+    expect(out.map((g) => [g.text, g.count])).toEqual([
+      ["c", 2],
+      ["w", 1],
+      ["w", 1],
+      ["c", 1],
+    ]);
+  });
+});
+
+describe("fail-safe spans", () => {
+  const tick = (seq: number, events: SupervisorEvent[]): Envelope => ({
+    run_id: "r",
+    seq,
+    sim_time_s: 100 + seq,
+    kind: "tick",
+    outputs: {},
+    writes: {},
+    readings: {},
+    events,
+  });
+  it("keeps the steps the fail-safe was active after it ends", () => {
+    const degraded: SupervisorEvent = { kind: "degraded", sequence: "ahu1", reason: "not finite" };
+    const envs = [0, 1, 2, 3, 4, 5, 6].map((i) => tick(i, i === 2 || i === 3 || i === 5 ? [degraded] : []));
+    const s = reduceRun(initialRunStream, envs);
+    expect(s.degraded).toBeNull();
+    expect(s.steps).toBe(7);
+    expect(s.failSafeSpans).toEqual([
+      { from: 2, to: 3 },
+      { from: 5, to: 5 },
+    ]);
+  });
+  it("does not count a clamp as fail-safe", () => {
+    const s = reduceRun(initialRunStream, [tick(0, [{ kind: "clamped", point: "p", value: 1, sent: 0 }])]);
+    expect(s.failSafeSpans).toEqual([]);
   });
 });

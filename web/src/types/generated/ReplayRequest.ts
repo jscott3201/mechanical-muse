@@ -4,4 +4,9 @@ export type ReplayRequest = {
 /**
  * A name from `GET /api/replays`.
  */
-record: string, };
+record: string, 
+/**
+ * How many times faster than the server's replay pace to send ticks, 1 to
+ * [`MAX_REPLAY_SPEED`] (default 1). The events are the same at every speed.
+ */
+speed?: number, };

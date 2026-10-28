@@ -170,6 +170,42 @@ describe("RunsPage", () => {
   });
 });
 
+describe("RunsPage without BOPTEST", () => {
+  it("disables Start with a plain reason and keeps replays", async () => {
+    const replay = { name: "demo", recorded_run: "run-r", ticks: 300, baseline: false, start_s: 16027200, drafted: false, drafts: [], pressure: false, own: [], state: "completed" };
+    const fetch = vi.fn(async (url: string) => {
+      if (url === "/api/bacnet") return bacnetOff();
+      if (url === "/api/health")
+        return new Response(JSON.stringify({ status: "ok", engine_rev: "x", specs: 4, recorded_model: true, boptest: false }), { status: 200 });
+      return new Response(JSON.stringify(url === "/api/replays" ? [replay] : []), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetch);
+    render(<RunsPage />);
+    expect(await screen.findByText(/No BOPTEST configured on this server/)).toBeTruthy();
+    expect((screen.getByRole("button", { name: /^Start$/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect(await screen.findByRole("button", { name: "Replay demo" })).toBeTruthy();
+  });
+
+  it("asks for the replay speed chosen", async () => {
+    const replay = { name: "demo", recorded_run: "run-r", ticks: 300, baseline: false, start_s: 16027200, drafted: false, drafts: [], pressure: false, own: [], state: "completed" };
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/bacnet") return bacnetOff();
+      if (init?.method === "POST")
+        return new Response(JSON.stringify({ code: "bad-request", message: "not now" }), { status: 400 });
+      return new Response(JSON.stringify(url === "/api/replays" ? [replay] : []), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetch);
+    render(<RunsPage />);
+    const button = await screen.findByRole("button", { name: "Replay demo" });
+    act(() => screen.getByRole("button", { name: "10×" }).click());
+    act(() => button.click());
+    await vi.waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true), { timeout: 5000 });
+    const post = fetch.mock.calls.find(([, i]) => i?.method === "POST");
+    expect(post?.[0]).toBe("/api/runs/replay");
+    expect(JSON.parse(String(post?.[1]?.body))).toEqual({ record: "demo", speed: 10 });
+  });
+});
+
 describe("RunsPage test faults", () => {
   it("sends the kind of fault chosen: a stuck valve reading", async () => {
     const fetch = vi.fn(async (url: string, init?: RequestInit) => {

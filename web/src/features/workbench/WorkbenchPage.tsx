@@ -434,13 +434,28 @@ function ReviewStep({
 export function WorkbenchPage({ onOpenSpec }: { onOpenSpec: (spec: string) => void }) {
   const read = useReadSequence();
   const state = read.state;
-  // Before a sequence exists, only reading and accepting can be done here.
-  const bar = <JourneyBar read={state.status === "done"} spec={null} verified={null} bound={false} />;
+  // The sequence accepted from this reading: the page stays mounted while the spec page shows,
+  // and coming back must not offer "Accept" as the next step again.
+  const [accepted, setAccepted] = useState<{ key: string; spec: string } | null>(null);
+  const readKey = state.status === "done" ? state.data.key : null;
+  const spec = accepted !== null && accepted.key === readKey ? accepted.spec : null;
+  // Before a sequence exists, only reading and accepting can be done here; drafting and binding
+  // are tracked on its own page.
+  const bar = <JourneyBar read={state.status === "done"} spec={spec} verified={null} bound={false} />;
   if (state.status === "done") {
+    const key = state.data.key;
     return (
       <div className="flex flex-col gap-4">
         {bar}
-        <ReviewStep key={state.data.key} view={state.data} onAccepted={onOpenSpec} onRestart={read.reset} />
+        <ReviewStep
+          key={key}
+          view={state.data}
+          onAccepted={(name) => {
+            setAccepted({ key, spec: name });
+            onOpenSpec(name);
+          }}
+          onRestart={read.reset}
+        />
       </div>
     );
   }

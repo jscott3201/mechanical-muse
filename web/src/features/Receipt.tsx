@@ -2,22 +2,29 @@ import { CircleCheck, CircleX } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatNumber, formatWire } from "@/lib/format";
+import { formatNumber, formatWire, formatWithUnit } from "@/lib/format";
 import type { Receipt as ReceiptDto } from "@/types/generated/Receipt";
 import type { ScenarioReport } from "@/types/generated/ScenarioReport";
 
+/** Units of a spec's outputs by name, so a failed expectation can say "K (°C, °F)". */
+export type OutputUnits = Readonly<Record<string, string>>;
+
 /** One scenario's result in words. */
-export function Outcome({ s }: { s: ScenarioReport }) {
+export function Outcome({ s, units }: { s: ScenarioReport; units?: OutputUnits | undefined }) {
   switch (s.result) {
     case "pass":
       return <span className="text-muted-foreground">all expectations held</span>;
-    case "fail":
+    case "fail": {
+      const unit = units?.[s.output];
+      const show = (v: Parameters<typeof formatWire>[0]) =>
+        typeof v === "number" && unit ? formatWithUnit(v, unit) : formatWire(v);
       return (
         <span>
-          {s.output} at {formatNumber(s.t, 1)} s: expected {formatWire(s.expected)}, got{" "}
-          {formatWire(s.actual)} (window {formatNumber(s.from_s, 1)}–{formatNumber(s.to_s, 1)} s)
+          {s.output} at {formatNumber(s.t, 1)} s: expected {show(s.expected)}, got{" "}
+          {show(s.actual)} (window {formatNumber(s.from_s, 1)}–{formatNumber(s.to_s, 1)} s)
         </span>
       );
+    }
     case "error":
       return (
         <span>
@@ -29,7 +36,7 @@ export function Outcome({ s }: { s: ScenarioReport }) {
 }
 
 /** A verification receipt: content id, pass count, and every scenario's result. */
-export function Receipt({ receipt }: { receipt: ReceiptDto }) {
+export function Receipt({ receipt, units }: { receipt: ReceiptDto; units?: OutputUnits | undefined }) {
   const passed = receipt.scenarios.filter((s) => s.result === "pass").length;
   return (
     <section aria-label="Verification receipt" className="flex flex-col gap-3">
@@ -68,7 +75,7 @@ export function Receipt({ receipt }: { receipt: ReceiptDto }) {
                     ) : (
                       <CircleX aria-label={s.result} className="size-4 shrink-0 text-destructive" />
                     )}
-                    <Outcome s={s} />
+                    <Outcome s={s} units={units} />
                   </span>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{s.ticks}</TableCell>

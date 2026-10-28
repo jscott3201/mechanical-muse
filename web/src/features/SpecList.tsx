@@ -6,7 +6,7 @@ import type { SpecSummary } from "@/types/generated/SpecSummary";
 
 import { ErrorNote } from "./ErrorNote";
 
-function Entry({ s, selected }: { s: SpecSummary; selected: boolean }) {
+function Entry({ s, selected, own = false }: { s: SpecSummary; selected: boolean; own?: boolean }) {
   return (
     <a
       href={format({ page: "sequences", spec: s.name })}
@@ -17,6 +17,8 @@ function Entry({ s, selected }: { s: SpecSummary; selected: boolean }) {
       )}
     >
       <span className="block">{s.title}</span>
+      {/* Revisions of one sequence share a title: the name tells them apart. */}
+      {own && <span className="block font-mono text-xs break-all text-muted-foreground">{s.name}</span>}
       <span className="text-xs text-muted-foreground">
         {s.inputs.length} in · {s.outputs.length} out · {s.scenarios} scenarios
       </span>
@@ -40,7 +42,7 @@ export function SpecList({ selected }: { selected: string | null }) {
         <>
           <p className="mt-3 px-3 text-xs font-medium text-muted-foreground">Your sequences</p>
           {yours.map((s) => (
-            <Entry key={s.name} s={s} selected={s.name === selected} />
+            <Entry key={s.name} s={s} selected={s.name === selected} own />
           ))}
         </>
       )}

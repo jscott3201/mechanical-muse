@@ -73,7 +73,7 @@ service-request-denied and nothing changed.
 ## Run it
 
 ```sh
-MM_BACNET_ADDR=0.0.0.0:47808 make server      # or make server-live
+MM_BOPTEST_URL=http://127.0.0.1:80 MM_BACNET_ADDR=0.0.0.0:47808 make server   # or make server-live
 ```
 
 `GET /api/bacnet` lists the device and its objects (404 when the mirror is off); the web app's

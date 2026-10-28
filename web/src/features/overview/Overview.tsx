@@ -139,8 +139,8 @@ export function Overview({ health, onGo }: { health: Health | null; onGo: (to: R
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Step n={1} icon={<FileText className="size-4" />} title="A sequence in plain words">
           <p>
-            {specCount === null ? "Loading…" : `${specCount} sequences`}, each with our own spec text and{" "}
-            {scenarios === null ? "" : `${scenarios} `}test scenarios from an independent reference model.
+            {specCount === null ? "Loading…" : `${specCount} sequences`}, each with our own spec text and test scenarios from an
+            independent reference model{scenarios === null ? "" : ` (${scenarios} scenarios in all)`}.
           </p>
         </Step>
         <Step
@@ -176,8 +176,8 @@ export function Overview({ health, onGo }: { health: Health | null; onGo: (to: R
       {replays.status === "ready" && <Results replays={replays.data} />}
 
       <p className="text-xs text-muted-foreground">
-        Built during the event: the authoring agent, block-graph emitter, engine bridge, runtime, BACnet mirror, web app and
-        benchmark harness. Used, not built here: open-control-engine, open-control-library, rusty-bacnet and BOPTEST.
+        Built during the event: the authoring agent, block-graph emitter, engine bridge, runtime, BACnet mirror, MCP server for coding agents, web app
+        and benchmark harness. Used, not built here: open-control-engine, open-control-library, rusty-bacnet and BOPTEST.
       </p>
     </div>
   );

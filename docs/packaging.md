@@ -47,14 +47,16 @@ argument, never in the image, never sent to the browser. `docker inspect` and
 
 Live BOPTEST runs need a BOPTEST v0.9.0 the container can reach:
 
-- On this machine: `export BOPTEST_DIR=<checkout>; make boptest-up` (see the README). The demo
-  container reaches it at `http://host.docker.internal:80`, its default.
+- On this machine: `export BOPTEST_DIR=<checkout>; make boptest-up` (see the README), then
+  `MM_BOPTEST_URL=http://host.docker.internal:80 docker compose -f compose.demo.yaml up`.
 - On Modal (native x86, much faster on Apple silicon): `make boptest-modal`
   ([boptest-on-modal.md](boptest-on-modal.md)), then
   `MM_BOPTEST_URL=<printed url> docker compose -f compose.demo.yaml up`.
 
-Without a reachable BOPTEST, starting a live run reports that BOPTEST is unreachable; everything
-recorded keeps working.
+Without `MM_BOPTEST_URL` the server has no live plant: `/api/health` reports `"boptest": false`,
+the header shows "BOPTEST off", Start is disabled with that reason, and `POST /api/runs` is
+refused (`boptest-off`). Replays and everything recorded keep working. With `MM_BOPTEST_URL` set
+but nothing reachable there, starting a live run fails with BOPTEST unreachable.
 
 The read-only BACnet mirror is not enabled in the container: BACnet/IP relies on UDP broadcast,
 which Docker's default network does not carry to your LAN. Run `mm-server` natively for it
@@ -103,9 +105,11 @@ read-only except a temporary `runs/`. `.dockerignore` keeps `.env` files, `runs/
   window, and slow steps. Use `make boptest-modal` for live runs, or stay in recorded mode.
 - **Port 8080 in use.** `MM_PORT=9090 docker compose -f compose.demo.yaml up`, then open
   http://localhost:9090.
-- **Health.** `curl -fsS http://localhost:8080/api/health` returns the engine rev, the spec count
-  and whether a live model is loaded; `docker compose -f compose.demo.yaml ps` shows the health
-  check state.
+- **Health.** `curl -fsS http://localhost:8080/api/health` returns the engine rev, the spec count,
+  whether a live model is loaded and whether live BOPTEST runs are on (`boptest`);
+  `docker compose -f compose.demo.yaml ps` shows the health check state.
+- **Start is disabled: "No BOPTEST configured".** The server was started without
+  `MM_BOPTEST_URL`; set it (see above) for live runs. Replays work without it.
 - **Live run says BOPTEST is unreachable.** Check `MM_BOPTEST_URL`. From inside the container,
   `localhost` is the container itself; use `host.docker.internal` for this machine.
 - **The live overlay fails with "env file not found".** Create the env file, or set `MM_ENV_FILE`.

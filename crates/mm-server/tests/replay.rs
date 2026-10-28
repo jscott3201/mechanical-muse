@@ -205,7 +205,15 @@ async fn bad_replay_requests_are_refused() {
         (json!({"record": "../short"}), StatusCode::NOT_FOUND),
         (json!({"record": "broken"}), StatusCode::NOT_FOUND),
         (
-            json!({"record": "short", "speed": 2}),
+            json!({"record": "short", "pace": 2}),
+            StatusCode::BAD_REQUEST,
+        ),
+        (
+            json!({"record": "short", "speed": 0}),
+            StatusCode::BAD_REQUEST,
+        ),
+        (
+            json!({"record": "short", "speed": 11}),
             StatusCode::BAD_REQUEST,
         ),
         (json!({}), StatusCode::BAD_REQUEST),
@@ -220,6 +228,27 @@ async fn bad_replay_requests_are_refused() {
     let (status, err) = call(&none, "GET", "/api/replays", None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(err["code"], "no-replays");
+}
+
+/// A faster replay only shortens the wait between ticks: the same events arrive. At the
+/// server's 2 s pace, 3 ticks take about 6 s at 1×; at 10× they take well under 4 s.
+#[tokio::test]
+async fn a_replay_can_be_sped_up_without_changing_its_events() {
+    let state = state(Some(replays()), Duration::from_secs(2));
+    let (status, run) = call(
+        &state,
+        "POST",
+        "/api/runs/replay",
+        Some(json!({"record": "short", "speed": 10})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{run}");
+    let id = run["id"].as_str().unwrap().to_owned();
+    let all = tokio::time::timeout(Duration::from_secs(4), events(&state, &id))
+        .await
+        .expect("a 10× replay of 3 ticks ends within 4 s");
+    assert_eq!(all.iter().filter(|e| e["kind"] == "tick").count(), 3);
+    assert_eq!(all.last().unwrap()["kind"], "ended");
 }
 
 #[tokio::test]

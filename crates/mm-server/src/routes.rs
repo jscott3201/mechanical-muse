@@ -49,15 +49,13 @@ struct Inner {
 }
 
 impl AppState {
-    /// Runs go to BOPTEST on `http://127.0.0.1:80` and keep no records on disk.
+    /// No live plant (starting a run is refused) and no records on disk.
     pub fn new(specs: SpecStore, palette: Palette) -> Self {
         Self::with_runs(
             specs,
             palette,
             RunsConfig {
-                plant: PlantSource::Boptest {
-                    url: "http://127.0.0.1:80".into(),
-                },
+                plant: PlantSource::Off,
                 records: None,
                 replays: None,
                 replay_pace: std::time::Duration::ZERO,
@@ -315,6 +313,7 @@ async fn health(State(state): State<AppState>) -> Json<Health> {
             .then(|| crate::authoring::MODEL.to_owned()),
         recorded_model: state.authoring().config.recordings.is_some(),
         bacnet_device: state.bacnet().map(|b| b.info.device_instance),
+        boptest: state.runs().config.plant.is_live(),
     })
 }
 

@@ -29,6 +29,24 @@ interface Props {
 
 const PAD = { top: 12, right: 76, bottom: 24, left: 48 };
 
+/** Smallest gap between end-of-line labels, in px. */
+const LABEL_GAP = 11;
+
+/**
+ * Label positions for wanted y values sorted top to bottom: each at least LABEL_GAP below the
+ * one above, within [top, bottom]. Labels pushed past the bottom are moved up again, so a
+ * crowd of lines near the floor never stacks its labels on one spot.
+ */
+export function placeEndLabels(wanted: number[], top: number, bottom: number): number[] {
+  const ys: number[] = [];
+  for (const w of wanted) ys.push(Math.max(w, (ys.at(-1) ?? -Infinity) + LABEL_GAP, top));
+  for (let i = ys.length - 1; i >= 0; i--) {
+    const below = i === ys.length - 1 ? bottom + LABEL_GAP : (ys[i + 1] as number);
+    ys[i] = Math.min(ys[i] as number, below - LABEL_GAP);
+  }
+  return ys;
+}
+
 function niceTicks(lo: number, hi: number, count = 4): number[] {
   if (!(hi > lo)) return [lo];
   const raw = (hi - lo) / count;
@@ -86,6 +104,14 @@ export const LineChart = memo(function LineChart({
       ylo = 0;
       yhi = 1;
     }
+    // A nearly flat series would otherwise get ticks a millionth apart, unreadable and clipped:
+    // give the axis at least 1 % of the values' size (or 1 around zero).
+    const minSpan = Math.max(Math.abs(ylo), Math.abs(yhi)) * 0.01 || 1;
+    if (!domain && yhi - ylo < minSpan) {
+      const mid = (ylo + yhi) / 2;
+      ylo = mid - minSpan / 2;
+      yhi = mid + minSpan / 2;
+    }
     const span = yhi - ylo || Math.abs(yhi) * 0.1 || 1;
     // A fixed domain is drawn edge to edge; a data-driven one gets a little headroom.
     const pad = domain ? 0 : span * 0.08;
@@ -103,7 +129,9 @@ export const LineChart = memo(function LineChart({
   const yTicks = niceTicks(y0, y1);
   const formatted = yTicks.map((t) => formatY(t));
   const tickStep = yTicks.length > 1 ? Math.abs((yTicks[1] as number) - (yTicks[0] as number)) : 1;
-  const decimals = Math.min(6, Math.max(0, -Math.floor(Math.log10(tickStep || 1)) + 1));
+  // The fewest decimals that write every tick exactly (0.25 steps need 2, 0.1 steps need 1).
+  let decimals = 0;
+  while (decimals < 6 && yTicks.some((t) => Math.abs(Number(t.toFixed(decimals)) - t) > tickStep * 1e-3)) decimals++;
   const tickLabel = (t: number) =>
     new Set(formatted).size < formatted.length ? t.toFixed(decimals) : formatY(t);
   const plotW = Math.max(width - PAD.left - PAD.right, 10);
@@ -163,7 +191,8 @@ export const LineChart = memo(function LineChart({
     <figure className="flex min-w-0 flex-col gap-1" aria-labelledby={titleId}>
       <figcaption className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
         <span id={titleId} className="font-medium">
-          {title} <span className="text-muted-foreground">({unit})</span>
+          {title}
+          {unit && <span className="text-muted-foreground"> ({unit})</span>}
         </span>
         {series.length > 1 && (
           <span className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -244,18 +273,14 @@ export const LineChart = memo(function LineChart({
                 <circle key={`${s.id}-${p.x}`} cx={sx(p.x)} cy={sy(p.y as number)} r="3" fill={s.color} />
               )),
             )}
-            {(() => {
-              let prev = -Infinity;
-              return endLabels.map((l) => {
-                const y = Math.min(Math.max(sy(l.y), prev + 11, PAD.top + 4), PAD.top + plotH);
-                prev = y;
-                return (
-                  <text key={l.s.id} x={sx(l.x) + 6} y={y} dy="0.32em" className="fill-foreground text-[10px]">
-                    {l.s.label}
-                  </text>
-                );
-              });
-            })()}
+            {placeEndLabels(endLabels.map((l) => sy(l.y)), PAD.top + 4, PAD.top + plotH).map((y, i) => {
+              const l = endLabels[i];
+              return l ? (
+                <text key={l.s.id} x={sx(l.x) + 6} y={y} dy="0.32em" className="fill-foreground text-[10px]">
+                  {l.s.label}
+                </text>
+              ) : null;
+            })}
             {hoverX !== null && hoverX !== undefined && (
               <g>
                 <line x1={sx(hoverX)} x2={sx(hoverX)} y1={PAD.top} y2={PAD.top + plotH} className="stroke-muted-foreground" strokeWidth="1" />

@@ -7,15 +7,20 @@ export function formatNumber(value: number, digits = 4): string {
   return text === "-0" ? "0" : text;
 }
 
-/** A value with its unit, adding °C beside kelvin and kPa beside pascals. */
+/** A temperature in kelvin as Fahrenheit, for the engineers and sheets that think in °F. */
+export function kelvinToFahrenheit(k: number): number {
+  return (k - 273.15) * 1.8 + 32;
+}
+
+/** A value with its unit, adding °C and °F beside kelvin and kPa beside pascals. */
 export function formatWithUnit(value: number, unit: string): string {
   if (!Number.isFinite(value)) return "no data";
   switch (unit) {
     case "K":
       // Kelvin carries both temperatures and temperature differences (an error of 3 K). Only
-      // values in the range of real temperatures get a Celsius reading beside them.
+      // values in the range of real temperatures get Celsius and Fahrenheit beside them.
       return value > 150
-        ? `${formatNumber(value, 2)} K (${formatNumber(value - 273.15, 2)} °C)`
+        ? `${formatNumber(value, 2)} K (${formatNumber(value - 273.15, 2)} °C, ${formatNumber(kelvinToFahrenheit(value), 1)} °F)`
         : `${formatNumber(value, 3)} K`;
     case "Pa":
       return Math.abs(value) >= 1000

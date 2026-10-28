@@ -125,6 +125,18 @@ export interface OwnChart {
 const onFloor = (template: string, f: number) => template.replaceAll("{floor}", String(f));
 
 /**
+ * BOPTEST names temperature points with a capital T after the prefix (`TSupAirSet_u`,
+ * `reaAHU_TSup_y`, `reaWeaTDryBul_y`), all in kelvin. Used only for records from before bindings
+ * carried units, so their setpoint charts are not shown in kelvin with an empty unit.
+ */
+const KELVIN_NAME = /(^|_)(rea[A-Za-z]*?)?T[A-Z][A-Za-z]*(_[uy])?$/;
+
+/** The unit to show: kelvin becomes °C, a dimensionless "1" shows none. */
+function displayUnit(unit: string): string {
+  return unit === "K" ? "°C" : unit === "1" ? "" : unit;
+}
+
+/**
  * Charts for engineers' own sequences, from their confirmed bindings: each written output as
  * the setpoint sent (dashed) beside the measurement that shows its result, per floor; each
  * measured input as read. Points the binding lists in kelvin show in °C; others as recorded.
@@ -132,14 +144,16 @@ const onFloor = (template: string, f: number) => template.replaceAll("{floor}", 
 export function ownTrends(ticks: TickPoint[], bindings: Record<string, Binding>): OwnChart[] {
   const charts: OwnChart[] = [];
   for (const [spec, b] of Object.entries(bindings)) {
-    const unitOf = (template: string) => b.units?.[template] ?? "";
+    // A record without units (older bindings) leaves the field out despite its type.
+    const units: Binding["units"] | undefined = b.units as Binding["units"] | undefined;
+    const unitOf = (template: string) => units?.[template] ?? (units === undefined && KELVIN_NAME.test(template) ? "K" : "");
     for (const o of b.outputs.filter((o) => o.point !== "")) {
       const k = unitOf(`${o.point}_u`) === "K";
       const show = (v: number | null) => (v === null ? null : k ? v - 273.15 : v);
       charts.push({
         id: `${spec}-${o.output}`,
         title: `${o.output} (${spec})`,
-        unit: k ? "°C" : unitOf(`${o.point}_u`),
+        unit: displayUnit(unitOf(`${o.point}_u`)),
         series: b.floors.flatMap((f, i) => [
           series(`set${f}`, `floor ${f} sent`, `var(--viz-${i + 1})`, ticks, (t) => show(num(t.writes[`${onFloor(o.point, f)}_u`])), true),
           ...(o.measured
@@ -154,7 +168,7 @@ export function ownTrends(ticks: TickPoint[], bindings: Record<string, Binding>)
       charts.push({
         id: `${spec}-${input.input}`,
         title: `${input.input} (${spec}, read from ${input.point})`,
-        unit: k ? "°C" : unitOf(input.point),
+        unit: displayUnit(unitOf(input.point)),
         series: floors.map((f, i) =>
           series(`in${f}`, floors.length > 1 ? `floor ${f}` : "read", `var(--viz-${i + 1})`, ticks, (t) => {
             const v = num(t.readings[onFloor(input.point, f)]);

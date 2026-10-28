@@ -342,4 +342,12 @@ pub struct ReplayInfo {
 pub struct ReplayRequest {
     /// A name from `GET /api/replays`.
     pub record: String,
+    /// How many times faster than the server's replay pace to send ticks, 1 to
+    /// [`MAX_REPLAY_SPEED`] (default 1). The events are the same at every speed.
+    #[serde(default)]
+    #[ts(optional)]
+    pub speed: Option<u32>,
 }
+
+/// Fastest replay a client may ask for, as a multiple of the server's pace.
+pub const MAX_REPLAY_SPEED: u32 = 10;

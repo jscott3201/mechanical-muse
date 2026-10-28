@@ -16,8 +16,12 @@ use mm_runtime::preset::{REQUESTS_SPEC, RESET_SPEC};
 
 use crate::journal;
 use crate::routes::{AppState, Failure};
-use crate::run_dto::{ReplayInfo, ReplayRequest, RunInfo, RunRequest};
+use crate::run_dto::{MAX_REPLAY_SPEED, ReplayInfo, ReplayRequest, RunInfo, RunRequest};
 use crate::runs::{RunHandle, StartError};
+
+/// Why a live run is refused on a server with no plant; the web app shows it as is.
+pub const BOPTEST_OFF: &str =
+    "no BOPTEST configured on this server; set MM_BOPTEST_URL (replays still work)";
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -44,6 +48,13 @@ async fn start_run(
     State(state): State<AppState>,
     request: Result<Json<RunRequest>, JsonRejection>,
 ) -> Result<(StatusCode, Json<RunInfo>), Failure> {
+    if !state.runs().config.plant.is_live() {
+        return Err(Failure::new(
+            StatusCode::CONFLICT,
+            "boptest-off",
+            BOPTEST_OFF,
+        ));
+    }
     let Json(request) =
         request.map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.body_text()))?;
     check_drafts(&state, &request)?;
@@ -152,6 +163,14 @@ async fn start_replay(
 ) -> Result<(StatusCode, Json<RunInfo>), Failure> {
     let Json(request) =
         request.map_err(|e| Failure::new(StatusCode::BAD_REQUEST, "bad-request", e.body_text()))?;
+    let speed = request.speed.unwrap_or(1);
+    if !(1..=MAX_REPLAY_SPEED).contains(&speed) {
+        return Err(Failure::new(
+            StatusCode::BAD_REQUEST,
+            "bad-request",
+            format!("speed must be 1 to {MAX_REPLAY_SPEED}"),
+        ));
+    }
     let dir = state.runs().config.replays.clone().ok_or_else(no_replays)?;
     let name = request.record.clone();
     let events = tokio::task::spawn_blocking(move || crate::replay::read(&dir, &name))
@@ -173,7 +192,8 @@ async fn start_replay(
         }
     })?;
     let info = handle.info();
-    let pace = state.runs().config.replay_pace;
+    // Only the wall time between ticks changes; the events sent are the same at any speed.
+    let pace = state.runs().config.replay_pace / speed;
     tokio::spawn(crate::replay::run(handle, events, pace));
     Ok((StatusCode::CREATED, Json(info)))
 }

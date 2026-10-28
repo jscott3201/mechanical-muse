@@ -1,5 +1,6 @@
 //! `mm-server`: serves the API on `MM_ADDR` (default `127.0.0.1:8080`) from the specs in
-//! `MM_SPECS_DIR` (default `specs`). Runs drive BOPTEST at `MM_BOPTEST_URL` (default
+//! `MM_SPECS_DIR` (default `specs`). Live runs drive BOPTEST at `MM_BOPTEST_URL` (no default:
+//! unset, live runs are refused and only replays are offered; `make boptest-up` serves
 //! `http://127.0.0.1:80`) and write JSON-lines records to `MM_RUNS_DIR` (default `runs`, which
 //! is gitignored). Stops cleanly on Ctrl-C.
 //!
@@ -39,8 +40,13 @@ async fn main() -> anyhow::Result<()> {
         .with_context(|| format!("binding {addr}"))?;
     let records = PathBuf::from(std::env::var("MM_RUNS_DIR").unwrap_or_else(|_| "runs".into()));
     let runs = RunsConfig {
-        plant: PlantSource::Boptest {
-            url: std::env::var("MM_BOPTEST_URL").unwrap_or_else(|_| "http://127.0.0.1:80".into()),
+        // No default: without a BOPTEST named, live runs are refused rather than sent to
+        // whatever happens to listen on port 80. Replays work either way.
+        plant: match std::env::var("MM_BOPTEST_URL") {
+            Ok(url) if !url.trim().is_empty() => PlantSource::Boptest {
+                url: url.trim().to_owned(),
+            },
+            _ => PlantSource::Off,
         },
         records: Some(records.clone()),
         replays: Some(PathBuf::from(
@@ -60,6 +66,9 @@ async fn main() -> anyhow::Result<()> {
         _ => None,
     };
     tracing::info!(live_model = spark.is_some(), "authoring");
+    if !runs.plant.is_live() {
+        tracing::info!("no MM_BOPTEST_URL: live runs are off, replays are available");
+    }
     let authoring = AuthoringConfig {
         spark,
         recordings: Some(PathBuf::from(
