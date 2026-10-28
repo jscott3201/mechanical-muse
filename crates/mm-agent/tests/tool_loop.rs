@@ -270,7 +270,7 @@ async fn a_spent_turn_budget_asks_for_the_answer_without_tools() {
     let model = ScriptedModel::new(vec![describe(), describe(), answer(&right)]);
     let limits = ToolLimits {
         max_turns: 2,
-        max_calls: 40,
+        ..ToolLimits::default()
     };
     let trace = author_with_tools(
         &model,
@@ -311,6 +311,7 @@ async fn the_session_call_budget_holds_across_attempts() {
     let limits = ToolLimits {
         max_turns: 8,
         max_calls: 2,
+        max_lookups: 10,
     };
     let trace = author_with_tools(
         &model,
@@ -344,6 +345,42 @@ async fn the_session_call_budget_holds_across_attempts() {
         AttemptOutcome::ReplayFailed { .. }
     ));
     assert!(trace.verified.is_some());
+}
+
+#[tokio::test]
+async fn lookups_past_their_budget_are_refused_without_spending_calls() {
+    let (task, vectors, right) = spec();
+    let palette = Palette::pinned().unwrap();
+    let many = calls(&[
+        ("a", "describe_block", r#"{"class":"Reals.Add"}"#.into()),
+        ("b", "describe_block", r#"{"class":"Reals.Min"}"#.into()),
+        ("c", "describe_block", r#"{"class":"Reals.Max"}"#.into()),
+    ]);
+    let model = ScriptedModel::new(vec![many, answer(&right)]);
+    let limits = ToolLimits {
+        max_lookups: 2,
+        ..ToolLimits::default()
+    };
+    let mut seen = Vec::new();
+    let trace = author_with_tools(
+        &model,
+        &palette,
+        &task,
+        &vectors,
+        &[],
+        &config(),
+        limits,
+        |p| {
+            if let Progress::ToolCall { call, .. } = p {
+                seen.push(call.ok);
+            }
+        },
+    )
+    .await;
+    assert_eq!(seen, [true, true, false]);
+    assert!(trace.verified.is_some());
+    // The model was still offered tools on its next turn: no call was spent.
+    assert_eq!(model.requests()[1].tools.len(), 3);
 }
 
 #[tokio::test]

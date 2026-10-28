@@ -9,7 +9,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::client::{ModelClient, ModelError, ModelReply, ModelRequest, Usage, function_calls};
-use crate::tools::{DraftTools, ToolLimits, summarize_arguments};
+use crate::tools::{DESCRIBE_BLOCK, DraftTools, ToolLimits, ToolResult, summarize_arguments};
 
 /// Appended to the system instructions when the tools are offered.
 pub(crate) const TOOL_RULES: &str = "\n\nTools: the block classes above are complete; call \
@@ -43,6 +43,7 @@ pub(crate) struct ToolBox<'a> {
     pub tools: DraftTools<'a>,
     pub limits: ToolLimits,
     pub calls_used: u32,
+    pub lookups_used: u32,
 }
 
 /// What one attempt's model work produced.
@@ -114,9 +115,24 @@ where
         };
         for call in asked {
             let within = toolbox.calls_used < toolbox.limits.max_calls;
+            let lookup = call.name == DESCRIBE_BLOCK;
             let output = if within {
-                toolbox.calls_used += 1;
-                let result = toolbox.tools.call(&call.name, &call.arguments);
+                // A lookup past its budget is refused without spending a call.
+                let result = if lookup && toolbox.lookups_used >= toolbox.limits.max_lookups {
+                    ToolResult {
+                        ok: false,
+                        summary: "lookup refused: the block list in the instructions is complete"
+                            .into(),
+                        output: json!({"ok": false, "error": "budget",
+                            "detail": "No more describe_block calls. The block classes in the \
+                                instructions list every port and parameter."})
+                        .to_string(),
+                    }
+                } else {
+                    toolbox.calls_used += 1;
+                    toolbox.lookups_used += u32::from(lookup);
+                    toolbox.tools.call(&call.name, &call.arguments)
+                };
                 let record = ToolCallRecord {
                     args_summary: summarize_arguments(&call.name, &call.arguments),
                     name: call.name,

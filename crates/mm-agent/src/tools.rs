@@ -28,18 +28,22 @@ pub const MAX_OUTPUT_BYTES: usize = 6_000;
 const MAX_PROBLEMS: usize = 12;
 
 /// Budgets for the tool loop. Each attempt may use at most `max_turns` model calls that ask
-/// for tools; the whole session at most `max_calls` tool calls.
+/// for tools; the whole session at most `max_calls` tool calls, of which at most `max_lookups`
+/// `describe_block` (the prompt already lists every class; live, Spark looked up almost every
+/// class it used and spent its budget before replaying anything).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub struct ToolLimits {
     pub max_turns: u32,
     pub max_calls: u32,
+    pub max_lookups: u32,
 }
 
 impl Default for ToolLimits {
     fn default() -> Self {
         Self {
             max_turns: 8,
-            max_calls: 40,
+            max_calls: 24,
+            max_lookups: 4,
         }
     }
 }

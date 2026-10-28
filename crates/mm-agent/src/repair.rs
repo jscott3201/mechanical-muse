@@ -210,6 +210,7 @@ async fn run_loop<C: ModelClient, F: FnMut(Progress<'_>) + Send>(
         tools: DraftTools::new(palette, task, vectors),
         limits,
         calls_used: 0,
+        lookups_used: 0,
     });
     let mut instructions = system_instructions(palette, exemplars);
     if toolbox.is_some() {
