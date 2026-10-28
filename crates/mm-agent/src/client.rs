@@ -1,5 +1,6 @@
-//! The model-facing seam. Spark, Wonder and a Glimmer endpoint each implement `ModelClient`;
-//! wire types stay inside each implementation, and tests use scripted fakes.
+//! The model-facing seam. The live Muse Spark client (`SparkClient`) and recorded playback
+//! (`RecordedClient`) implement `ModelClient`, and tests use scripted fakes; wire types stay
+//! inside each implementation. Other Meta endpoints would plug in here the same way.
 
 use std::future::Future;
 

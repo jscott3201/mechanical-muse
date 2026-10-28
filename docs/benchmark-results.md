@@ -13,7 +13,7 @@ The same run as the section below, repeated on the current product: engine `fa5c
 `fnv1a64:df6004cacf3aa986`, was `fnv1a64:4916127a304439fb`). Everything else is unchanged:
 `muse-spark-1.3-contributor` (the library is public), medium effort, up to 3 attempts,
 validator-only repair feedback (blind: no vector results reach the model), zero-shot, tier A,
-library `124427b`. Record: `runs/all137-tiera-r3-fa5cb19.json`.
+library `124427b`. Record: `runs/all137-tiera-r3-fa5cb19.json` (local, not committed).
 
 | Group | Rule-runs | First try | After repair |
 | --- | --- | --- | --- |
@@ -60,7 +60,7 @@ constant-true passes 0 rules and 30 scenarios.
 
 Engine `4063202`, the system prompt before the loop rule (prompt hash
 `fnv1a64:4916127a304439fb`); otherwise the same settings as above. Record:
-`runs/all137-tiera-r3.json`.
+`runs/all137-tiera-r3.json` (local, not committed).
 
 With no examples in the prompt, the train/test split matters only for twins, so the whole library
 is a fair stress test of shapes the small test set lacks (statistical rules, 10+ blocks).

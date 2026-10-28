@@ -3,8 +3,8 @@
 How this repo is set up for the two coding harnesses we switch between during the build.
 Agent-facing rules live in `AGENTS.md`; this page is for the human driving the sessions. Any tool
 may build the repo (the organizers confirmed this on 2026-10-26), but every model call the
-application makes goes to Meta's models: Muse Spark through the Model API, Glimmer on Modal
-(`AGENTS.md` hard rule 8). Judges score the product's use of Meta's models.
+application makes goes to Meta's models: today that is Muse Spark through the Model API (Muse
+Glimmer on Modal is planned, not built; `AGENTS.md` hard rule 8). Judges score the product's use of Meta's models.
 
 ## What both harnesses share
 

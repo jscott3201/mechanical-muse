@@ -59,7 +59,7 @@ Building control sequences are written as prose by engineers. A controls contrac
 | --- | --- | --- |
 | Muse Spark rebuilding 137 open fault-detection rules from scrubbed tasks, scored by replaying the library's 1,760 test vectors | First try 122 to 125 of 137 rules; after repair 130 to 132 (3 runs, `muse-spark-1.3-contributor`). Constant baselines pass 0 rules | [docs/benchmark-results.md](docs/benchmark-results.md) |
 | Chilled-water plant reset, verified, then run on BOPTEST against its baseline controller for 10 hours | HVAC energy −4.7 %, chiller energy −14.2 %, thermal discomfort +2.0 % | [docs/runtime-results.md](docs/runtime-results.md) |
-| A photo of a supply-air reset sheet: read, scenarios accepted, drafted (red, then green), bound to BOPTEST, run; then the engineer revises the sheet and runs it again | Revision A ran but its humidity override latched, so its reset never acted. Revision B, re-tested on five windows it was not tuned on: HVAC energy −23 % to −55 % in spring and autumn (less reheat gas), no gain in summer | [docs/workbench.md](docs/workbench.md) |
+| A photo of a supply-air reset sheet: read, scenarios accepted, drafted (red, then green), bound to BOPTEST, run; then the engineer revises the sheet and runs it again | Revision A ran but its humidity override latched, so its reset never acted. Revision B, re-tested on five windows it was not tuned on: HVAC energy −23 % to −55 % in spring and autumn (less reheat gas), no gain over our own sequences in summer | [docs/workbench.md](docs/workbench.md) |
 | A drifted sensor (floor 1 supply-air reading 4 K high for 2 hours, a labelled test fault) against the same 10 hours without it | The plant reset drove the chilled water to its cold end: +130 kWh, +44 kgCO2e, +$12 of chiller electricity, about a fifth of the ten hours' saving | [docs/emissions.md](docs/emissions.md) |
 | Injected sensor fault (NaN supply-air temperature) during a live run | The reading shows as no data, the affected sequences go degraded, their setpoints are handed back to BOPTEST's own controllers, and the reset writes again once the sensor returns | [docs/runtime-results.md](docs/runtime-results.md) |
 
@@ -90,8 +90,8 @@ and `MM_BACNET_ADDR` for the BACnet mirror. Replays can be sped up 4× or 10× f
 With only Docker: `docker compose -f compose.demo.yaml up --build` (or `make docker-demo`), then
 open http://localhost:8080. Same recorded mode as `make demo`, no key and no BOPTEST needed; the
 first build takes several minutes. Add `-f compose.demo.live.yaml` for live Muse Spark from your
-own `MODEL_API_KEY` in `.env`. On Modal: `modal serve deploy/modal/mm_demo.py`. Details, live
-mode and troubleshooting: [docs/packaging.md](docs/packaging.md).
+own `MODEL_API_KEY` in `.env`. There is no hosted public instance; the app runs on your machine.
+Details, live mode and troubleshooting: [docs/packaging.md](docs/packaging.md).
 
 ### Full setup
 
@@ -99,10 +99,10 @@ You need Rust (see `rust-toolchain.toml`), Node (`web/.nvmrc`) and a BOPTEST v0.
 (`git clone --branch v0.9.0 --depth 1 https://github.com/ibpsa/project1-boptest`).
 
 1. BOPTEST, either locally with Docker (`export BOPTEST_DIR=<checkout>; make boptest-up`, slow on
-   Apple silicon) or on Modal with native x86 (`make boptest-modal`, see
-   [docs/boptest-on-modal.md](docs/boptest-on-modal.md)).
+   Apple silicon), or on native x86 on Modal with your own account (`make boptest-modal`; this is
+   how we test live runs, see [docs/boptest-on-modal.md](docs/boptest-on-modal.md)).
 2. The server: `MM_BOPTEST_URL=http://127.0.0.1:80 make server` for a local BOPTEST, or the
-   tunnel URL for Modal (there is no default: without it, live runs are off). For live Muse Spark authoring, put
+   tunnel URL `make boptest-modal` prints (there is no default: without it, live runs are off). For live Muse Spark authoring, put
    a Meta Model API key in `.env` as `MODEL_API_KEY` and run `make server-live`.
 3. The web app: `cd web && npm ci && npm run dev`, then open the printed address.
 4. Optional: mirror live runs read-only over BACnet/IP with `MM_BACNET_ADDR=0.0.0.0:47808` on the
@@ -121,21 +121,21 @@ Everything in this repository was written during the event, starting October 26,
 | Block-graph schema and CXF emitter | `crates/mm-graph` | Working offline: validator and emitter round-trip all 137 library rules |
 | Muse Spark authoring agent: prompt, Responses client, draft-verify-repair loop | `crates/mm-agent` | Working live against Muse Spark (`docs/model-api.md` section 10); reports progress for live views; plays back recorded runs. With vector feedback, Spark drafts a passing chilled-water plant reset in 2 of 3 benchmark runs, and in 3 of 3 live sessions after the repair message learned to name loops (`docs/benchmark-results.md`) |
 | Control sequence specs: our own text, independent reference models, test vectors, hand-built graphs | `specs/` | Four specs, each gated by a test that its reference graph passes every vector and that common mistakes fail: chilled-water plant reset and air handler chilled-water requests (running on BOPTEST); duct static pressure reset and zone static pressure requests (validated and wired into the runtime: the `pressure` run option) |
-| Library benchmark harness: scrubbed tasks, baselines, run records | `crates/mm-bench` | First results in `docs/benchmark-results.md` |
+| Library benchmark harness: scrubbed tasks, baselines, run records | `crates/mm-bench` | Working: all 137 library rules, 3 runs each on the current engine and prompt, plus vector-feedback runs on the chilled-water plant reset; results and failure analysis in `docs/benchmark-results.md` |
 | BOPTEST runtime host: supervisory loop, BOPTEST client, fail-safe | `crates/mm-runtime` | Runs the verified AHU requests and CHW plant reset against BOPTEST live; 10-hour comparison with the baseline in `docs/runtime-results.md` |
 | HTTP API: specs, typed block graphs, verification receipts | `crates/mm-server` | Working: spec, graph and verify endpoints; authoring sessions (Muse Spark, or a labelled recorded run) streamed as server-sent events, with verified drafts stored with their receipts; BOPTEST run sessions that can run a drafted sequence after replaying its vectors again, or inject a labelled test fault (a blank, stuck or biased reading); a Scope 1 and 2 energy, emissions and cost ledger per run from BOPTEST's KPIs and recorded power readings, and comparisons of runs of the same window ([docs/emissions.md](docs/emissions.md)); labelled replays of recorded runs; run records; generated TypeScript types |
 | MCP server for coding agents: specs, palette, validator, CXF emitter, vector replay as tools | `crates/mm-mcp` | Working offline over stdio, on the official MCP Rust SDK (`rmcp`): Muse Code or any MCP client drafts a block graph and our tools check it (passes X of Y scenarios, with the same repair text our agent gets); no model calls of its own ([docs/mcp.md](docs/mcp.md)) |
 | BACnet device mirror | `crates/mm-bacnet` | Working: live runs served read-only as one BACnet/IP device (55 objects: BOPTEST readings, sequence outputs, setpoints sent); remote writes refused; tested over UDP ([docs/bacnet-mirror.md](docs/bacnet-mirror.md)) |
 | Web app | `web/` | Working: specs and verification receipts; Muse Spark authoring followed attempt by attempt (engine refusals, failing scenarios, the green receipt; recorded runs labelled); start BOPTEST runs on reference or drafted graphs and follow them live (status, receipts, trends, KPIs beside a baseline run of the same window, Scope 1 and 2 energy and emissions with end uses and a test fault's cost against the same run without it, event log); block graph view of reference and drafted graphs, with the blocks a problem names outlined; plain-language explanations written by Muse Spark (labelled; recorded copies for use without a key) of a graph, reference or drafted, whose parts outline their blocks, and of a run's events (faults, handbacks) in an operator's words; replays of recorded runs; bring your own sequence: Muse Spark reads pasted text, a PDF or a photo of a sequence of operations, lists what it leaves open and proposes test scenarios, the engineer reviews and accepts them, then Spark drafts against them, a verified draft downloads as CXF, and once Spark's proposed binding to BOPTEST's points is checked and confirmed it runs on the emulated building beside our own sequences ([docs/workbench.md](docs/workbench.md)) |
-| Design notes and API references | `docs/` | Started |
-| Coding-agent setup: agent context, project skills, verification hook | `AGENTS.md`, `.agents/skills/`, `.muse/`, `.mcp.json`, `scripts/` | Started |
+| Design notes, API references and results | `docs/` | Working: engine, model API and schema references, benchmark, runtime, emissions and workbench results, a results log of every run, packaging, CI and the demo script |
+| Coding-agent setup: agent context, project skills, verification hook | `AGENTS.md`, `.agents/skills/`, `.muse/`, `.mcp.json`, `scripts/` | Working: one shared `AGENTS.md` for Muse Code and Claude Code, `mm-*` project skills, and a Stop hook that runs fmt, clippy, tests and the web checks before a turn ends ([docs/coding-agents.md](docs/coding-agents.md)) |
 
 Every model call the application makes goes to Muse Spark through the Meta Model API: drafting, repair, reading a sequence, proposing a point binding, explanations and the benchmark. The repository is set up for Meta's Muse Code and for Claude Code as coding tools (one shared `AGENTS.md`, project skills and a verification hook), and coding agents can use the MCP server above.
 
 
 ## Related work
 
-LLM-drafts, tools-verify loops already exist for industrial control code: LLM4PLC (ICSE-SEIP 2024) uses grammar checks, compilation and model checking; SemaPLC (2026) replays scenarios on a PLC runtime. Wan et al. (2025) generated CDL modules with a language model and checked their behavior by human review. Mechanical Muse applies the loop to building sequences in CDL/CXF. Its gate is a deterministic engine replaying test vectors, it publishes a benchmark scored that way, and verified sequences then run closed-loop on a building emulator. Mechanical Muse measures, in the open and with a deterministic engine, how often an LLM's building control sequence matches its written spec on replayed test vectors, then runs the verified sequences closed-loop on a building emulator.
+LLM-drafts, tools-verify loops already exist for industrial control code: LLM4PLC (ICSE-SEIP 2024) uses grammar checks, compilation and model checking; SemaPLC (2026) replays scenarios on a PLC runtime. Wan et al. (2025) generated CDL modules with a language model and checked their behavior by human review. Mechanical Muse applies the loop to building sequences in CDL/CXF. Its gate is a deterministic engine replaying test vectors, it publishes a benchmark scored that way, and verified sequences then run closed-loop on a building emulator.
 
 ## Pre-existing dependencies (not built during the hackathon)
 
@@ -151,9 +151,12 @@ These are public, open-source projects used unmodified, each pinned to one commi
 | [shadcn/ui](https://github.com/shadcn-ui/ui) components | shadcn | MIT | CLI 4.21.4, style radix-nova | UI primitives copied into `web/src/components/ui` by the shadcn CLI, used unmodified except that they import our own `cn` helper |
 | [React Flow](https://github.com/xyflow/xyflow) (`@xyflow/react`) | xyflow | MIT | 12.12.0 | Draws block graphs (pan, zoom, typed port handles); the layered layout is our own (`web/src/features/graph/layout.ts`) |
 | [rmcp](https://github.com/modelcontextprotocol/rust-sdk) (official MCP Rust SDK) | Model Context Protocol project | Apache-2.0 | 3.5.1 (crates.io, pinned `=3.5.1`; features `server`, `transport-io`) | The MCP protocol side of `crates/mm-mcp` (JSON-RPC over stdio, version negotiation, handshake, discovery); the tools behind it are our own. Brings in [schemars](https://github.com/GREsau/schemars) 1.2.3 (MIT) and a few other ordinary crates (chrono, uuid, tokio-util), all in `Cargo.lock` |
+| [Modal](https://modal.com) (`modal` Python SDK and CLI) | Modal Labs | Apache-2.0 (client); hosted service | Not pinned (the developer's installed CLI) | A test host: BOPTEST on native x86 for our own live runs (`deploy/modal/mm_boptest.py`, [docs/boptest-on-modal.md](docs/boptest-on-modal.md)) and an x86 build check of the app image (`deploy/modal/mm_demo.py`); not a hosted demo, and nothing in the app depends on it |
 | Node.js, Rust and Debian official container images | OpenJS Foundation, Rust project, Debian (Docker Official Images) | MIT, MIT OR Apache-2.0, DFSG licenses | `node:26.12.1-trixie-slim`, `rust:1.97.1-slim-trixie`, `debian:trixie-slim`, each pinned by digest in `Dockerfile` | Build and runtime base images for the packaged app (`Dockerfile`, [docs/packaging.md](docs/packaging.md)); unmodified |
 
 Ordinary crates.io libraries (such as serde, reqwest, tokio and thiserror) and npm packages (such as React, Vite, Tailwind CSS and Radix UI) are used unmodified under their own licenses; `Cargo.lock` and `web/package-lock.json` pin every version. The Geist font (`@fontsource-variable/geist`) is under the SIL Open Font License 1.1.
+
+The four control sequence specs in `specs/` are written in our own words. The [Modelica Buildings Library](https://github.com/lbl-srg/modelica-buildings) (BSD-3-Clause) served as a behavioural reference for how such sequences act; nothing from it is copied into this repository, and no endorsement by its authors is implied.
 
 ## License
 

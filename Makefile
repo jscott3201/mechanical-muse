@@ -112,7 +112,8 @@ docker-demo-live:
 docker-demo-down:
 	$(DEMO_COMPOSE) down
 
-# The same image on Modal as a temporary web endpoint (`modal deploy` keeps it up).
+# Testing aid: the same image on Modal's x86 builders at a temporary URL while it runs. Not a
+# hosted demo; reviewers run the app locally (make demo or make docker-demo).
 modal-demo:
 	modal serve deploy/modal/mm_demo.py
 
