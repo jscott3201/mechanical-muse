@@ -285,6 +285,11 @@ pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
             "start_s must be at least warmup_s (the warm-up runs before the start)".into(),
         ));
     }
+    if !(1..=MAX_STEPS).contains(&steps) {
+        return Err(StartError::Invalid(format!(
+            "steps must be 1 to {MAX_STEPS}"
+        )));
+    }
     if let Some(f) = &r.fault {
         if r.baseline.unwrap_or(false) {
             return Err(StartError::Invalid(
@@ -319,11 +324,6 @@ pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
                 "a held value or bias must be a finite number".into(),
             ));
         }
-    }
-    if !(1..=MAX_STEPS).contains(&steps) {
-        return Err(StartError::Invalid(format!(
-            "steps must be 1 to {MAX_STEPS}"
-        )));
     }
     let baseline = r.baseline.unwrap_or(false);
     if baseline && r.drafts.as_ref().is_some_and(|d| !d.is_empty()) {
