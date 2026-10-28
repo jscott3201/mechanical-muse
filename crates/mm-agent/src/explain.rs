@@ -206,7 +206,8 @@ explanation of what happened, why, and what the safeguard did. Group repeated ev
 3. Explain only what the events show. Do not guess causes the events do not give. Energy, emissions, cost and \
 comfort results only from the `ledger` facts, when they are given: quote those numbers as written (rounding is fine) \
 and never compute new ones (no sums, differences or percentages of your own); a reply with a number that is not in \
-the input is rejected. Say they are simulation results. Without `ledger` facts, claim no energy or comfort results.
+the input is rejected. Give times as the events give them (day D HH:MM) and durations as steps, or as minutes or \
+hours of those steps. Say they are simulation results. Without `ledger` facts, claim no energy or comfort results.
 4. Plain sentences, no code, no markdown. Use the operator's words (supply air temperature, chilled water) rather than \
 point identifiers, but you may name an identifier once in brackets.";
 
@@ -274,31 +275,51 @@ pub fn check_run_explanation(text: &str) -> Result<RunExplanation, ModelError> {
     })
 }
 
-/// Asks `client` to explain a run from its `context`.
+/// Numbers the explanation states that `context` does not give.
+fn invented(e: &RunExplanation, context: &Value) -> Vec<String> {
+    let mut texts = vec![e.summary.as_str()];
+    for i in &e.items {
+        texts.extend([i.when.as_str(), i.title.as_str(), i.text.as_str()]);
+    }
+    crate::numbers::unsupported_numbers(&texts, context)
+}
+
+/// Asks `client` to explain a run from its `context`. The model quotes numbers, it does not
+/// compute them: a reply with a number the input does not give is sent back once, naming those
+/// numbers, and refused if the second reply still has one.
 pub async fn explain_run<C: ModelClient>(
     client: &C,
     model: &str,
     context: &Value,
 ) -> Result<(RunExplanation, Usage), ModelError> {
-    let reply = client
-        .complete(&explain_run_request(model, context))
-        .await?;
+    let mut request = explain_run_request(model, context);
+    let reply = client.complete(&request).await?;
+    let mut usage = reply.usage;
     let explanation = check_run_explanation(&reply.text)?;
-    // The model quotes numbers, it does not compute them: one that is not in the input is refused.
-    let mut texts = vec![explanation.summary.as_str()];
-    for i in &explanation.items {
-        texts.extend([i.when.as_str(), i.title.as_str(), i.text.as_str()]);
+    let bad = invented(&explanation, context);
+    if bad.is_empty() {
+        return Ok((explanation, usage));
     }
-    let invented = crate::numbers::unsupported_numbers(&texts, &context.to_string());
-    if !invented.is_empty() {
+    request.input.extend(reply.output_items);
+    request.input.push(json!({"role": "user", "content": [{"type": "input_text", "text": format!(
+        "These numbers in your reply are not in the input: {}. Rewrite the explanation using only \
+         numbers the input gives (rounding is fine), with times as the events give them; do not \
+         compute sums, differences or percentages.",
+        bad.join(", ")
+    )}]}));
+    let reply = client.complete(&request).await?;
+    usage.add(reply.usage);
+    let explanation = check_run_explanation(&reply.text)?;
+    let bad = invented(&explanation, context);
+    if !bad.is_empty() {
         return Err(ModelError::Malformed {
             message: format!(
                 "the explanation states numbers that are not in the run's facts: {}",
-                invented.join(", ")
+                bad.join(", ")
             ),
         });
     }
-    Ok((explanation, reply.usage))
+    Ok((explanation, usage))
 }
 
 #[cfg(test)]

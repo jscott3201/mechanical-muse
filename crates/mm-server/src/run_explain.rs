@@ -327,7 +327,7 @@ mod tests {
             for i in &e.items {
                 texts.extend([i.when.as_str(), i.title.as_str(), i.text.as_str()]);
             }
-            let bad = mm_agent::unsupported_numbers(&texts, &context.to_string());
+            let bad = mm_agent::unsupported_numbers(&texts, &context);
             assert!(bad.is_empty(), "{name}: {bad:?}");
             checked += 1;
         }
