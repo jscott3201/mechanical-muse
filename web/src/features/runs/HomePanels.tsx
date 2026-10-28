@@ -82,6 +82,8 @@ export function PeakPowerCard({
             <span className="font-medium">Fleet view (an illustration):</span> {FLEET_HOMES.toLocaleString("en-US")} homes like this one,
             each cutting {formatNumber(cut.perHomeKw, 2)} kW, would draw about {formatNumber(cut.fleetMw, 1)} MW less in these hours. A
             plain multiplication of one simulated house in Brussels: real fleets differ in homes, weather and who takes part.
+            Moving heat can also raise the single highest 15-minute draw (BOPTEST's peak electric demand KPI below), and homes
+            answering the same prices would add those rebounds up too.
           </p>
         )}
         {!baseline && !base && (

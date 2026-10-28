@@ -56,7 +56,7 @@ export function homeTrends(ticks: TickPoint[]): HomeTrends {
       series("ceiling", "comfort ceiling", "var(--viz-3)", ticks, (t) => celsius(t.readings[HOME_POINTS.ceiling]), true),
     ],
     price: [series("price", "price now", "var(--viz-1)", ticks, (t) => num(t.readings[HOME_POINTS.price]))],
-    power: [series("power", "heat pump, fan and pump", "var(--viz-2)", ticks, powerKw)],
+    power: [series("power", "house total", "var(--viz-2)", ticks, powerKw)],
   };
 }
 
