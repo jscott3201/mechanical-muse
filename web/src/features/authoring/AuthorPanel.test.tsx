@@ -64,7 +64,7 @@ describe("AuthorPanel", () => {
     await waitFor(() =>
       expect((screen.getByRole("button", { name: /Live model call/ }) as HTMLButtonElement).disabled).toBe(true),
     );
-    expect(screen.getByRole("button", { name: /Recorded run/ }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: /Recorded session/ }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: /^Draft$/ }));
     await screen.findByRole("button", { name: /Authoring/ });
     const call = fetch.mock.calls.find(([u]) => u === "/api/specs/chw_plant_reset/author");
@@ -128,7 +128,7 @@ describe("AuthorPanel", () => {
     vi.stubGlobal("fetch", fetch);
     render(<AuthorPanel spec="chw_plant_reset" scenarios={10} />);
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Recorded run/ }).getAttribute("aria-pressed")).toBe("true"),
+      expect(screen.getByRole("button", { name: /Recorded session/ }).getAttribute("aria-pressed")).toBe("true"),
     );
     fireEvent.click(screen.getByRole("switch", { name: /Let Spark check its work/ }));
     fireEvent.click(screen.getByRole("button", { name: /^Draft$/ }));
@@ -147,7 +147,7 @@ describe("AuthorPanel", () => {
     vi.stubGlobal("fetch", fetch);
     render(<AuthorPanel spec="chw_plant_reset" scenarios={10} />);
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Recorded run/ }).getAttribute("aria-pressed")).toBe("true"),
+      expect(screen.getByRole("button", { name: /Recorded session/ }).getAttribute("aria-pressed")).toBe("true"),
     );
     fireEvent.click(screen.getByRole("button", { name: /^Draft$/ }));
     await waitFor(() => expect(FakeSource.instances).toHaveLength(1), { timeout: 5000 });

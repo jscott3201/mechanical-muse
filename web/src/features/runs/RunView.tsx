@@ -25,7 +25,7 @@ import { formatSimTime, ownTrends, trends } from "./trends";
 
 const KPI_LABELS: Record<string, string> = {
   ener_tot: "Energy use (kWh/m²)",
-  cost_tot: "Operating cost (per m²)",
+  cost_tot: "Operating cost ($ per m²)",
   emis_tot: "Emissions (kgCO₂/m²)",
   pele_tot: "Peak electric demand (kW/m²)",
   pgas_tot: "Peak gas demand (kW/m²)",

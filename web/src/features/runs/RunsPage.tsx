@@ -112,12 +112,10 @@ function GraphChoice({
           >
             {d.source === "recorded" ? <History aria-hidden="true" /> : <Sparkles aria-hidden="true" />}
             <span className="flex flex-col items-start text-left">
-              <span>
-                Drafted …{d.content_id.slice(-6)}
-                {d.source === "recorded" ? " (recorded)" : ""}
-              </span>
+              <span>Drafted …{d.content_id.slice(-6)}</span>
               <span className="text-[11px] font-normal text-muted-foreground">
-                {d.model} · {d.source} · {d.attempts_used} attempt{d.attempts_used === 1 ? "" : "s"}
+                {d.model} · {d.source === "recorded" ? "recorded session" : "live"} · {d.attempts_used} attempt
+                {d.attempts_used === 1 ? "" : "s"}
               </span>
             </span>
           </Button>

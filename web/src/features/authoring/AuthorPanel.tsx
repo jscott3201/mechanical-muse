@@ -303,7 +303,7 @@ export function AuthorPanel({
               title="Play back an earlier live session; every check still runs now"
               className={cn(source === "recorded" && "bg-background shadow-sm")}
             >
-              <History aria-hidden="true" /> Recorded run
+              <History aria-hidden="true" /> Recorded session
             </Button>
           </div>
           <Button onClick={start.run} disabled={running || (source === "live" && !live && health.status === "ready")}>
@@ -345,7 +345,7 @@ export function AuthorPanel({
         )}
         {stream.config && recorded && (
           <p className="text-sm text-muted-foreground">
-            Recorded run: the model's replies come from an earlier live Muse Spark session and are
+            Recorded session: the model's replies come from an earlier live Muse Spark session and are
             played back. Every check runs now, on this server.
           </p>
         )}

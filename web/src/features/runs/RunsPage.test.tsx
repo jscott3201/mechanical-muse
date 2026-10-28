@@ -281,7 +281,9 @@ describe("RunsPage with drafts", () => {
     vi.stubGlobal("fetch", fetch);
     render(<RunsPage />);
     const choice = await screen.findByRole("button", { name: /Drafted …51caee/ });
-    expect(choice.textContent).toContain("(recorded)");
+    // Said once, in the detail line.
+    expect(choice.textContent?.match(/recorded/g)).toHaveLength(1);
+    expect(choice.textContent).toContain("recorded session");
     act(() => choice.click());
     act(() => screen.getByRole("button", { name: /Start/ }).click());
     await vi.waitFor(() => expect(fetch.mock.calls.some(([, i]) => i?.method === "POST")).toBe(true), { timeout: 5000 });
@@ -297,7 +299,7 @@ describe("RunsPage with drafts", () => {
       FakeSource.last?.emit(JSON.stringify({ run_id: "run-9", seq: 0, kind: "started", config: started.config, sequences }));
       await new Promise((r) => setTimeout(r, 5));
     });
-    expect(screen.getByText(/Drafted by muse-spark-1.3 \(recorded run\)/)).toBeTruthy();
+    expect(screen.getByText(/Drafted by muse-spark-1.3 \(recorded session\)/)).toBeTruthy();
     expect(screen.getByText("Hand-built reference")).toBeTruthy();
   });
 });
