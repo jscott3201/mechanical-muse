@@ -182,6 +182,8 @@ pub enum LedgerFailure {
     Kpis(#[from] ledger::LedgerError),
     #[error("{0}")]
     WindowMismatch(String),
+    #[error("the ledger covers the office only, not {0}")]
+    OtherBuilding(String),
 }
 
 impl LedgerFailure {
@@ -192,6 +194,7 @@ impl LedgerFailure {
             LedgerFailure::NoKpis => "no-kpis",
             LedgerFailure::Kpis(_) => "bad-kpis",
             LedgerFailure::WindowMismatch(_) => "window-mismatch",
+            LedgerFailure::OtherBuilding(_) => "other-building",
         }
     }
 }
@@ -222,6 +225,10 @@ pub fn from_events(reference: &str, events: &[Envelope]) -> Result<RunLedger, Le
             _ => None,
         })
         .ok_or(LedgerFailure::NotStarted)?;
+    // The factors, prices and end uses here are the office's.
+    if config.case != mm_runtime::preset::CASE {
+        return Err(LedgerFailure::OtherBuilding(config.case.clone()));
+    }
     let kpis = events
         .iter()
         .rev()

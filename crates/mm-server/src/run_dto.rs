@@ -14,6 +14,10 @@ use ts_rs::TS;
 #[ts(export)]
 #[serde(deny_unknown_fields)]
 pub struct RunRequest {
+    /// Which building: the office (default) or the home.
+    #[serde(default)]
+    #[ts(optional)]
+    pub building: Option<Building>,
     /// Run BOPTEST's own controllers only, writing nothing (for comparison).
     #[serde(default)]
     #[ts(optional)]
@@ -47,6 +51,18 @@ pub struct RunRequest {
     #[serde(default)]
     #[ts(optional)]
     pub fault: Option<Fault>,
+}
+
+/// The BOPTEST building a run drives: the office (`multizone_office_complex_air`, our chilled-water
+/// and air-handler sequences) or the home (`bestest_hydronic_heat_pump`, the price-response
+/// setpoint on spot prices).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+#[serde(rename_all = "kebab-case")]
+pub enum Building {
+    #[default]
+    Office,
+    Home,
 }
 
 /// A sensor reading changed before the sequences see it, for `steps` steps from step
@@ -141,6 +157,13 @@ pub struct RunConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub replay: Option<ReplaySource>,
+}
+
+impl RunConfig {
+    /// The home building (BOPTEST's heat pump house) rather than the office.
+    pub fn is_home(&self) -> bool {
+        self.case == mm_runtime::home::CASE
+    }
 }
 
 /// The record a replayed run plays back. Its events are the recorded ones, re-sent in order

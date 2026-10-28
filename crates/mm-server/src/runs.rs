@@ -13,7 +13,7 @@ use mm_runtime::{FakePlant, Measurements};
 use tokio::sync::watch;
 
 use crate::journal::{Entry, Journal, lock};
-use crate::run_dto::{Envelope, RunConfig, RunEvent, RunInfo, RunRequest, RunState};
+use crate::run_dto::{Building, Envelope, RunConfig, RunEvent, RunInfo, RunRequest, RunState};
 
 /// Largest run a client may ask for (about a week of 120 s steps).
 pub const MAX_STEPS: u32 = 5_040;
@@ -269,9 +269,21 @@ fn is_active(run: &RunHandle) -> bool {
 }
 
 pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
-    let start_s = r.start_s.unwrap_or(185.0 * 86_400.0 + 12.0 * 3_600.0);
-    let warmup_s = r.warmup_s.unwrap_or(86_400.0);
-    let steps = r.steps.unwrap_or(300);
+    let home = r.building.unwrap_or_default() == Building::Home;
+    if home {
+        check_home(r)?;
+    }
+    // The home's defaults: BOPTEST's typical heat window (from day 108), a week of warm-up,
+    // one week of 15-minute steps.
+    let start_s = r.start_s.unwrap_or(if home {
+        108.0 * 86_400.0
+    } else {
+        185.0 * 86_400.0 + 12.0 * 3_600.0
+    });
+    let warmup_s = r
+        .warmup_s
+        .unwrap_or(if home { MAX_WARMUP_S } else { 86_400.0 });
+    let steps = r.steps.unwrap_or(if home { 672 } else { 300 });
     if !(start_s.is_finite() && (0.0..YEAR_S).contains(&start_s)) {
         return Err(StartError::Invalid(
             "start_s must be within the year".into(),
@@ -333,19 +345,51 @@ pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
     }
     Ok(RunConfig {
         baseline,
-        // A baseline runs no sequence, so it uses no requests either.
-        requests: !baseline && r.requests.unwrap_or(true),
-        pressure: !baseline && r.pressure.unwrap_or(false),
+        // A baseline runs no sequence, so it uses no requests either; the home has none.
+        requests: !home && !baseline && r.requests.unwrap_or(true),
+        pressure: !home && !baseline && r.pressure.unwrap_or(false),
         start_s,
         warmup_s,
         steps,
-        step_s: mm_runtime::preset::STEP_S,
-        case: mm_runtime::preset::CASE.into(),
+        step_s: if home {
+            mm_runtime::home::STEP_S
+        } else {
+            mm_runtime::preset::STEP_S
+        },
+        case: if home {
+            mm_runtime::home::CASE
+        } else {
+            mm_runtime::preset::CASE
+        }
+        .into(),
         drafts: r.drafts.clone().unwrap_or_default(),
         fault: r.fault.clone(),
         bindings: BTreeMap::new(),
         replay: None,
     })
+}
+
+/// The home runs one sequence on its own building: the office's options do not apply.
+fn check_home(r: &RunRequest) -> Result<(), StartError> {
+    if r.requests == Some(true) || r.pressure == Some(true) {
+        return Err(StartError::Invalid(
+            "the home has no air handlers: requests and pressure are office options".into(),
+        ));
+    }
+    if r.fault.is_some() {
+        return Err(StartError::Invalid(
+            "test faults are defined for the office's air handler readings only".into(),
+        ));
+    }
+    if let Some(drafts) = &r.drafts
+        && let Some(other) = drafts.keys().find(|k| *k != mm_runtime::home::SPEC)
+    {
+        return Err(StartError::Invalid(format!(
+            "the home runs {} only, not {other}",
+            mm_runtime::home::SPEC
+        )));
+    }
+    Ok(())
 }
 
 /// The readings the demo sequences use, which a test fault may replace.
