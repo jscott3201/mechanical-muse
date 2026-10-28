@@ -302,3 +302,34 @@ async fn an_edited_expected_value_is_what_the_draft_must_meet() {
     assert_ne!(info["state"], "verified", "{info}");
     let _ = std::fs::remove_dir_all(&records);
 }
+
+/// The limit is stated in characters, so it must count characters: text in a language with
+/// accents is not cut at half the length.
+#[tokio::test]
+async fn the_text_limit_counts_characters_not_bytes() {
+    let records = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("workbench-limit-{}", std::process::id()));
+    let state = server(&records);
+    let (status, err) = call(
+        &state,
+        "POST",
+        "/api/workbench/read",
+        Some(json!({"text": "a".repeat(40_001), "attachments": []})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(
+        err["message"].as_str().unwrap().contains("at most"),
+        "{err}"
+    );
+    // 30 000 characters, 60 000 bytes: within the limit.
+    let (_, body) = call(
+        &state,
+        "POST",
+        "/api/workbench/read",
+        Some(json!({"text": "\u{e9}".repeat(30_000), "attachments": []})),
+    )
+    .await;
+    assert!(!body.to_string().contains("at most"), "{body}");
+    let _ = std::fs::remove_dir_all(records);
+}
