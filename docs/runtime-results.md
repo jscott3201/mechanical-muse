@@ -6,6 +6,37 @@ below are copied from them. Each run's energy, emissions and cost by scope (and 
 runs that recorded every power reading) come from its KPIs and readings as described in
 [emissions.md](emissions.md).
 
+## 2026-10-28: the home, price response on spot prices
+
+**Setup.** BOPTEST v0.9.0 `bestest_hydronic_heat_pump` (a simulated house in Brussels with an
+air-to-water heat pump and floor heating) on Modal, the highly dynamic (spot) price scenario,
+two weeks of 15-minute steps after a week of warm-up, through `mm-server` (`building: home`).
+The sequence is the hand-built reference graph of `specs/home_price_response/`, verified again
+before it loaded. Each step the runtime asks BOPTEST for its forecast and passes the hourly
+prices and the comfort limits for the next hours in as plain readings; every decision is made in
+the graph. Compared with BOPTEST's own controller (a PI loop on the heat pump just above the
+comfort floor) over the same window.
+
+| Window | Cost | Energy | Thermal discomfort | Mean power, most expensive quarter of 15-min prices |
+| --- | --- | --- | --- | --- |
+| Typical heat (from day 108) | −8.4 % | −7.7 % | −14.8 % | 1.17 → 0.87 kW (−26 %) |
+| Peak heat (from day 16) | −8.3 % | −7.5 % | −81.9 % | 1.63 → 1.03 kW (−37 %) |
+
+- The graph matched its reference: all 1,344 setpoints in each window are identical to what
+  `reference.py` computes for the same readings (the probe of the same day), and BOPTEST's KPIs
+  are the same to every printed digit. No fail-safe event, no clamp.
+- The peak-price figure is ours, from the recorded readings (heat pump, fan and floor pump), not
+  a BOPTEST KPI. Baseline and sequence share the window's prices, so they share the quarter.
+- The web app's fleet view multiplies the per-home cut by 10,000 homes (about 3 and 6 MW). That
+  is an illustration of why programs add homes up, not a forecast for any real fleet.
+
+**What it does not show.** A perfect forecast (BOPTEST's default); one building, one climate,
+heating only; prices that swing little (about €0.17 to €0.26 per kWh with fixed fees), so the
+per-home saving is small. Energy also falls, so part of the cost cut is plain saving rather
+than shifting. The office emissions ledger and the BACnet mirror do not cover the home yet.
+Two windows the rule was not tuned on (from days 40 and 315) were run only through
+`reference.py`, not yet through the runtime (`docs/results-log.md`).
+
 ## 2026-10-27 (night): duct static pressure reset on every floor
 
 **Setup.** The same window and settings as the runs below (day 185 from 12:00, 300 steps of
