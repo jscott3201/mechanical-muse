@@ -71,6 +71,7 @@ impl Stored for ExplanationView {
 pub struct Explanations {
     pub(crate) graphs: Mutex<BTreeMap<String, ExplanationView>>,
     pub(crate) runs: Mutex<BTreeMap<String, crate::run_explain::RunExplanationView>>,
+    pub(crate) fixes: Mutex<BTreeMap<String, crate::fix_explain::FixExplanationView>>,
     /// Where live explanations are written (`<records>/explanations`).
     pub store: Option<PathBuf>,
     /// Committed explanations, served as recorded.
