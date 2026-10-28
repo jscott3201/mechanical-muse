@@ -2,6 +2,8 @@ import { useCallback, useRef, useState } from "react";
 
 import { ApiFailure, request } from "@/lib/api";
 import type { AcceptView } from "@/types/generated/AcceptView";
+import type { AttackRequest } from "@/types/generated/AttackRequest";
+import type { AttackView } from "@/types/generated/AttackView";
 import type { BindingView } from "@/types/generated/BindingView";
 import type { ConfirmRequest } from "@/types/generated/ConfirmRequest";
 import type { ReadRequest } from "@/types/generated/ReadRequest";
@@ -52,6 +54,14 @@ export function useAcceptSequence() {
 /** Muse Spark proposes how a sequence connects to BOPTEST (`/api/workbench/{name}/binding/propose`). */
 export function useProposeBinding(spec: string) {
   return useCall<undefined, BindingView>(`/api/workbench/${encodeURIComponent(spec)}/binding/propose`);
+}
+
+/**
+ * Muse Spark proposes scenarios to break a sequence, replayed against one verified draft
+ * (`/api/workbench/{name}/attack`).
+ */
+export function useAttack(spec: string) {
+  return useCall<AttackRequest, AttackView>(`/api/workbench/${encodeURIComponent(spec)}/attack`);
 }
 
 /** The engineer confirms a binding (`/api/workbench/{name}/binding`). */
