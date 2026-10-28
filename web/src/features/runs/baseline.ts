@@ -1,3 +1,4 @@
+import { formatNumber } from "@/lib/format";
 import type { ReplayInfo } from "@/types/generated/ReplayInfo";
 import type { RunConfig } from "@/types/generated/RunConfig";
 import type { RunInfo } from "@/types/generated/RunInfo";
@@ -95,4 +96,10 @@ export function findHealthy(cfg: RunConfig, runs: RunInfo[], replays: ReplayInfo
 export function change(value: number | undefined, base: number | undefined): number | null {
   if (value === undefined || base === undefined || base === 0) return null;
   return ((value - base) / Math.abs(base)) * 100;
+}
+
+/** A percent change as text ("+1.2 %", "−3 %"); one that rounds to zero reads "0 %", never "−0 %". */
+export function formatChange(pct: number): string {
+  const text = formatNumber(Math.abs(pct), 1);
+  return `${text === "0" ? "" : pct > 0 ? "+" : "−"}${text} %`;
 }

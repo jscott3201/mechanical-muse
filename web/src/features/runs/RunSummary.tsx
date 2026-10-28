@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatNumber } from "@/lib/format";
 import type { SequenceInfo } from "@/types/generated/SequenceInfo";
 
-import { change } from "./baseline";
+import { change, formatChange } from "./baseline";
 
 /** How a sequence's graph was made, in words (the same wording everywhere). */
 export function originLabel(s: SequenceInfo): string {
@@ -122,9 +122,9 @@ export function KpiTiles({ kpi, base }: { kpi: Record<string, number>; base: Rec
                   ? "no data"
                   : flat
                     ? "no change"
-                    : `${pct > 0 ? "+" : "−"}${formatNumber(Math.abs(pct), 1)} %`}
+                    : formatChange(pct)}
               </span>
-              <span className="text-xs text-muted-foreground">{flat ? "" : (pct as number) < 0 ? "lower" : "higher"}; lower is better</span>
+              <span className="text-xs text-muted-foreground">{flat ? "Lower is better" : `${(pct as number) < 0 ? "Lower" : "Higher"}; lower is better`}</span>
             </CardContent>
           </Card>
         );

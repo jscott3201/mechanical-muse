@@ -86,6 +86,9 @@ describe("WorkbenchPage", () => {
     rerender(<WorkbenchPage onOpenSpec={vi.fn()} />);
     expect(opened).toHaveBeenCalledTimes(1);
     expect(again).not.toHaveBeenCalled();
+    // Back on this page, accepting is done and drafting is next.
+    expect(screen.getByRole("link", { name: "Accept (done)" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Draft & verify (next)" })).toBeTruthy();
     const accept = calls.find((c) => c.url === "/api/workbench/accept")?.body as {
       key: string;
       draft: { scenarios: { name: string }[] };

@@ -3,6 +3,7 @@
  * (phases, the start receipt, KPIs, the end, any supervisor event) goes to a log that is never
  * trimmed, so a degraded or failed step is never dropped from view.
  */
+import { formatNumber } from "@/lib/format";
 import type { Envelope } from "@/types/generated/Envelope";
 import type { Phase } from "@/types/generated/Phase";
 import type { RunConfig } from "@/types/generated/RunConfig";
@@ -73,7 +74,7 @@ function describe(e: SupervisorEvent): LogEntry["text"] {
   const where = [e.sequence, e.point].filter(Boolean).join(" ");
   switch (e.kind) {
     case "clamped":
-      return `${where}: clamped ${e.value ?? "?"} to ${e.sent ?? "?"}`;
+      return `${where}: clamped ${e.value === undefined ? "?" : formatNumber(e.value, 3)} to ${e.sent === undefined ? "?" : formatNumber(e.sent, 3)}`;
     case "degraded":
       return `${where}: no new setpoints (${e.reason ?? "unknown reason"})`;
     case "held":
@@ -87,6 +88,41 @@ function describe(e: SupervisorEvent): LogEntry["text"] {
     default:
       return `${where}: ${e.kind}`;
   }
+}
+
+/** A log line shown once for a run of identical routine lines. */
+export interface LogGroup extends LogEntry {
+  count: number;
+  /** Simulation time of the last line in the group. */
+  lastT: number | null;
+}
+
+/**
+ * The log for display: identical routine (info) lines, such as the same clamp on every step,
+ * are shown once with a count, at their latest occurrence. A warning or error is never merged
+ * and ends every open group, so the order of anything that matters is kept.
+ */
+export function collapseLog(log: readonly LogEntry[]): LogGroup[] {
+  const groups: { g: LogGroup; at: number }[] = [];
+  let open = new Map<string, { g: LogGroup; at: number }>();
+  log.forEach((e, i) => {
+    if (e.severity !== "info") {
+      open = new Map();
+      groups.push({ g: { ...e, count: 1, lastT: e.t }, at: i });
+      return;
+    }
+    const same = open.get(e.text);
+    if (same) {
+      same.g.count += 1;
+      same.g.lastT = e.t;
+      same.at = i;
+      return;
+    }
+    const fresh = { g: { ...e, count: 1, lastT: e.t }, at: i };
+    open.set(e.text, fresh);
+    groups.push(fresh);
+  });
+  return groups.sort((a, b) => a.at - b.at).map((x) => x.g);
 }
 
 /**
