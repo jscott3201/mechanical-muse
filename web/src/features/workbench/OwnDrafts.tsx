@@ -14,6 +14,7 @@ import type { GraphView } from "@/types/generated/GraphView";
 import { ErrorNote } from "../ErrorNote";
 import { ExplanationPanel } from "../graph/ExplanationPanel";
 import { GraphCanvas } from "../graph/GraphCanvas";
+import { AttackPanel } from "./AttackPanel";
 
 /** One stored draft's graph, with Spark's explanation beside it. */
 function DraftGraph({ spec, draft }: { spec: string; draft: string }) {
@@ -113,6 +114,7 @@ export function OwnDrafts({
             <p className="text-sm text-muted-foreground">To run it on BOPTEST, bind the sequence to the building first (Building tab).</p>
           )}
         </div>
+        <AttackPanel key={`attack-${shown.content_id}`} spec={spec} draft={shown.content_id} />
         <DraftGraph key={shown.content_id} spec={spec} draft={shown.content_id} />
       </CardContent>
     </Card>

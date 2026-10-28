@@ -77,3 +77,24 @@ export function scenarioEnd(s: ScenarioDraft, horizon: number): number {
   const end = Math.max(0, ...times);
   return Math.min(horizon, Math.max(end * 1.05, 60));
 }
+
+/** Most scenarios an accepted sequence may have (the server's `check_task` limit). */
+export const MAX_SCENARIOS = 12;
+
+/** The next free revision name: `fan` gives `fan_r2`, `fan_r2` gives `fan_r3`, skipping `taken`. */
+export function revisionName(name: string, taken: readonly string[]): string {
+  const m = /^(.*)_r(\d+)$/.exec(name);
+  const base = m?.[1] ?? name;
+  let n = m?.[2] ? Number(m[2]) + 1 : 2;
+  while (taken.includes(`${base}_r${n}`)) n += 1;
+  return `${base}_r${n}`;
+}
+
+/** A new revision of `sequence`: its accepted scenarios plus the chosen proposals, under `name`. */
+export function revisionDraft(
+  sequence: SequenceDraft,
+  chosen: readonly ScenarioDraft[],
+  name: string,
+): SequenceDraft {
+  return { ...sequence, name, scenarios: [...sequence.scenarios, ...chosen] };
+}

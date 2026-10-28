@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import type { SequenceDraft } from "@/types/generated/SequenceDraft";
 
-import { MAX_TOTAL_BYTES, acceptedDraft, clock, totalProblem, withExpected } from "./workbench";
+import {
+  MAX_TOTAL_BYTES,
+  acceptedDraft,
+  clock,
+  revisionDraft,
+  revisionName,
+  totalProblem,
+  withExpected,
+} from "./workbench";
 
 const draft: SequenceDraft = {
   name: "fan",
@@ -41,5 +49,23 @@ describe("workbench helpers", () => {
   it("formats scenario times", () => {
     expect(clock(90)).toBe("1:30");
     expect(clock(3725)).toBe("1:02:05");
+  });
+});
+
+describe("revisions", () => {
+  it("names the next free revision", () => {
+    expect(revisionName("fan", [])).toBe("fan_r2");
+    expect(revisionName("fan", ["fan_r2"])).toBe("fan_r3");
+    expect(revisionName("fan_r2", [])).toBe("fan_r3");
+    expect(revisionName("fan_r9", ["fan_r10"])).toBe("fan_r11");
+  });
+
+  it("adds the chosen proposals after the accepted scenarios", () => {
+    const edge = { name: "edge", description: "", rationale: "", inputs: [], expect: [] };
+    const r = revisionDraft(draft, [edge], "fan_r2");
+    expect(r.name).toBe("fan_r2");
+    expect(r.scenarios.map((s) => s.name)).toEqual(["a", "b", "edge"]);
+    expect(draft.name).toBe("fan");
+    expect(draft.scenarios).toHaveLength(2);
   });
 });

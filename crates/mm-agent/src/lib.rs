@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+mod attack;
 mod binder;
 mod client;
 mod explain;
@@ -17,10 +18,15 @@ mod reader;
 mod recorded;
 mod repair;
 mod responses;
+mod scenario_reply;
 mod task_check;
 mod tool_loop;
 mod tools;
 
+pub use attack::{
+    Attack, AttackOutcome, MAX_PROPOSALS, Proposal, attack, attack_key, attack_request,
+    check_attack,
+};
 pub use binder::{bind_request, propose_binding};
 pub use client::{
     Effort, FunctionCall, ModelClient, ModelError, ModelReply, ModelRequest, OutputSchema, Usage,

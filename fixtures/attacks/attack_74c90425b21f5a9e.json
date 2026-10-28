@@ -1,0 +1,387 @@
+{
+  "key": "attack:74c90425b21f5a9e",
+  "model": "muse-spark-1.3",
+  "source": "live",
+  "proposals": [
+    {
+      "name": "oat_exact_limits",
+      "description": "After pulldown hold OAT at exactly 60 F then exactly 70 F to check inclusive limits.",
+      "rationale": "Probes inclusive OAT comparisons at exactly 60 F and 70 F which accepted hot and cold tests miss by using 55 F and 75 F.",
+      "inputs": [
+        {
+          "point": "ahuEnable",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": false
+            },
+            {
+              "t": 60.0,
+              "value": true
+            }
+          ]
+        },
+        {
+          "point": "oat",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 288.7055555555555
+            },
+            {
+              "t": 960.0,
+              "value": 294.2611111111111
+            }
+          ]
+        },
+        {
+          "point": "retHum",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 0.4
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "output": "datStpt",
+          "from_s": 780.0,
+          "to_s": 900.0,
+          "equals": 291.4833333333333,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 780.0,
+          "to_s": 900.0,
+          "equals": false
+        },
+        {
+          "output": "datStpt",
+          "from_s": 1080.0,
+          "to_s": 1260.0,
+          "equals": 285.9277777777778,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1080.0,
+          "to_s": 1260.0,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "humidity_exact_bounds",
+      "description": "Hold humidity at exactly 0.60 then high then exactly 0.55 to check strict entry and exit.",
+      "rationale": "Probes strict above 0.60 and below 0.55 boundaries which accepted scenarios miss by using only 0.65 and 0.50.",
+      "inputs": [
+        {
+          "point": "ahuEnable",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": false
+            },
+            {
+              "t": 60.0,
+              "value": true
+            }
+          ]
+        },
+        {
+          "point": "oat",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 285.9277777777778
+            }
+          ]
+        },
+        {
+          "point": "retHum",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 0.6
+            },
+            {
+              "t": 720.0,
+              "value": 0.65
+            },
+            {
+              "t": 1200.0,
+              "value": 0.55
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "output": "datStpt",
+          "from_s": 780.0,
+          "to_s": 900.0,
+          "equals": 291.4833333333333,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 780.0,
+          "to_s": 900.0,
+          "equals": false
+        },
+        {
+          "output": "datStpt",
+          "from_s": 1080.0,
+          "to_s": 1140.0,
+          "equals": 285.9277777777778,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1080.0,
+          "to_s": 1140.0,
+          "equals": true
+        },
+        {
+          "output": "datStpt",
+          "from_s": 1320.0,
+          "to_s": 1500.0,
+          "equals": 285.9277777777778,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1320.0,
+          "to_s": 1500.0,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "pulldown_tight_boundary",
+      "description": "Check pulldown hold through 600 s and release by 720 s to narrow expiry window.",
+      "rationale": "Probes last tick before 600 s pulldown expires and first tick after which accepted pulldown test misses with 540 s and 780 s checks.",
+      "inputs": [
+        {
+          "point": "ahuEnable",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": false
+            },
+            {
+              "t": 60.0,
+              "value": true
+            }
+          ]
+        },
+        {
+          "point": "oat",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 291.4833333333333
+            }
+          ]
+        },
+        {
+          "point": "retHum",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 0.4
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "output": "datStpt",
+          "from_s": 120.0,
+          "to_s": 600.0,
+          "equals": 285.9277777777778,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 120.0,
+          "to_s": 600.0,
+          "equals": false
+        },
+        {
+          "output": "datStpt",
+          "from_s": 720.0,
+          "to_s": 900.0,
+          "equals": 288.7055555555555,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 720.0,
+          "to_s": 900.0,
+          "equals": false
+        }
+      ]
+    },
+    {
+      "name": "dehum_interrupted_timer",
+      "description": "Interrupt high humidity for one sample to verify continuous 300 s timer restarts.",
+      "rationale": "Probes recovery after interruption of the continuous entry delay which accepted entry test misses by using uninterrupted high humidity.",
+      "inputs": [
+        {
+          "point": "ahuEnable",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": false
+            },
+            {
+              "t": 60.0,
+              "value": true
+            }
+          ]
+        },
+        {
+          "point": "oat",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 285.9277777777778
+            }
+          ]
+        },
+        {
+          "point": "retHum",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 0.4
+            },
+            {
+              "t": 720.0,
+              "value": 0.65
+            },
+            {
+              "t": 900.0,
+              "value": 0.4
+            },
+            {
+              "t": 960.0,
+              "value": 0.65
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "output": "datStpt",
+          "from_s": 1020.0,
+          "to_s": 1140.0,
+          "equals": 291.4833333333333,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1020.0,
+          "to_s": 1140.0,
+          "equals": false
+        },
+        {
+          "output": "datStpt",
+          "from_s": 1380.0,
+          "to_s": 1560.0,
+          "equals": 285.9277777777778,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1380.0,
+          "to_s": 1560.0,
+          "equals": true
+        }
+      ]
+    },
+    {
+      "name": "simultaneous_oat_humidity_step",
+      "description": "Step OAT and drop humidity on the same tick after dehumidification is active.",
+      "rationale": "Probes two inputs changing on the same tick with new reset value which no accepted scenario covers.",
+      "inputs": [
+        {
+          "point": "ahuEnable",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": false
+            },
+            {
+              "t": 60.0,
+              "value": true
+            }
+          ]
+        },
+        {
+          "point": "oat",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 285.9277777777778
+            },
+            {
+              "t": 1080.0,
+              "value": 291.4833333333333
+            }
+          ]
+        },
+        {
+          "point": "retHum",
+          "steps": [
+            {
+              "t": 0.0,
+              "value": 0.4
+            },
+            {
+              "t": 60.0,
+              "value": 0.65
+            },
+            {
+              "t": 1080.0,
+              "value": 0.4
+            }
+          ]
+        }
+      ],
+      "expect": [
+        {
+          "output": "datStpt",
+          "from_s": 720.0,
+          "to_s": 900.0,
+          "equals": 285.9277777777778,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 720.0,
+          "to_s": 900.0,
+          "equals": true
+        },
+        {
+          "output": "datStpt",
+          "from_s": 1200.0,
+          "to_s": 1380.0,
+          "equals": 288.7055555555555,
+          "tolerance": 1e-6
+        },
+        {
+          "output": "dehumActive",
+          "from_s": 1200.0,
+          "to_s": 1380.0,
+          "equals": false
+        }
+      ]
+    }
+  ],
+  "problems": []
+}

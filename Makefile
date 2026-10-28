@@ -1,6 +1,6 @@
 # Common commands. `make check` is the fast local gate; `make ci` runs what CI runs
 # (.github/workflows/ci.yml).
-.PHONY: live-tools live-tools-ab live-read mcp web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live docker-build docker-demo docker-demo-live docker-demo-down modal-demo
+.PHONY: live-tools live-tools-ab live-read live-attack mcp web check ci fmt fmt-check clippy test doctest specs types lint deny test-live live bench env-keys run fetch boptest-up boptest-down boptest-minio boptest-modal server server-live web-build demo demo-live docker-build docker-demo docker-demo-live docker-demo-down modal-demo
 
 check: fmt-check clippy test
 
@@ -159,6 +159,13 @@ live-read:
 	@set -a; . $(ENV_DIR)/.env; set +a; \
 	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
 	cargo test -p mm-agent --test read_live -- --ignored --nocapture
+
+# Muse Spark tries to break revision B of the sample (recorded reading and draft, live attack)
+# and records its checked proposals in fixtures/attacks/ for keyless demos.
+live-attack:
+	@set -a; . $(ENV_DIR)/.env; set +a; \
+	MODEL_API_KEY="$${MODEL_API_KEY:-$$META_API}" \
+	cargo test -p mm-server --test attack_live -- --ignored --nocapture
 
 # Benchmark run on a library checkout at the pinned commit. Example:
 #   make bench LIB=<open-control-library at 124427b> ARGS="--subset test_clean --tier b --out runs/x.json"
