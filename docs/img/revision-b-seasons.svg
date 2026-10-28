@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470" width="1000" height="470" role="img" aria-labelledby="t d">
+<title id="t">Revision B across the seasons</title>
+<desc id="d">HVAC energy change (as BOPTEST counts it) against BOPTEST's baseline controller in six windows. Day 110, April (8 h): our sequences alone −4.6 %, with revision B −54.4 %; Day 143, May (8 h, tuned on): our sequences alone −3.3 %, with revision B −37.3 %; Day 150, May–June (24 h): our sequences alone −3.2 %, with revision B −23.4 %; Day 157, June (8 h): our sequences alone −4.8 %, with revision B −4.9 %; Day 199, July (8 h): our sequences alone −5.6 %, with revision B −3.3 %; Day 262, September (8 h): our sequences alone −2.4 %, with revision B −55.4 %.</desc>
+<style>
+.card{fill:#f8fafc;stroke:#d0d7de}.h{fill:#1f2328;font:600 15px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}.c{fill:#1f2328;font:13px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+.v{fill:#1f2328;font:600 12.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}.m{fill:#57606a;font:12px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}.b{fill:#8c959f}.hi{fill:#5b5bd6}
+.z{stroke:#1f2328;stroke-width:1.5}.g{stroke:#d0d7de;stroke-width:1}
+@media (prefers-color-scheme: dark){.card{fill:#0d1117;stroke:#30363d}.h,.c,.v{fill:#e6edf3}.m{fill:#9198a1}
+.b{fill:#6e7681}.hi{fill:#8e8cf0}.z{stroke:#e6edf3}.g{stroke:#30363d}}
+</style>
+<rect class="card" x="0.5" y="0.5" width="999" height="469" rx="14"/>
+<text class="h" x="30" y="40">HVAC energy against the baseline controller, by window (lower is better)</text>
+<rect class="b" x="30" y="56" width="14" height="12" rx="2"/><text class="m" x="50" y="66">our sequences alone</text>
+<rect class="hi" x="190" y="56" width="14" height="12" rx="2"/><text class="m" x="210" y="66">+ revision B of the sheet</text>
+<line class="g" x1="300.0" y1="86" x2="300.0" y2="398"/>
+<text class="m" x="300.0" y="416" text-anchor="middle">−60 %</text>
+<line class="g" x1="410.0" y1="86" x2="410.0" y2="398"/>
+<text class="m" x="410.0" y="416" text-anchor="middle">−50 %</text>
+<line class="g" x1="520.0" y1="86" x2="520.0" y2="398"/>
+<text class="m" x="520.0" y="416" text-anchor="middle">−40 %</text>
+<line class="g" x1="630.0" y1="86" x2="630.0" y2="398"/>
+<text class="m" x="630.0" y="416" text-anchor="middle">−30 %</text>
+<line class="g" x1="740.0" y1="86" x2="740.0" y2="398"/>
+<text class="m" x="740.0" y="416" text-anchor="middle">−20 %</text>
+<line class="g" x1="850.0" y1="86" x2="850.0" y2="398"/>
+<text class="m" x="850.0" y="416" text-anchor="middle">−10 %</text>
+<line class="g" x1="960.0" y1="86" x2="960.0" y2="398"/>
+<text class="m" x="960.0" y="416" text-anchor="middle">0</text>
+<text class="c" x="30" y="114">Day 110, April (8 h)</text>
+<rect class="b" x="909.4" y="94" width="50.6" height="14" rx="3"/>
+<text class="v" x="903.4" y="106" text-anchor="end">−4.6 %</text>
+<rect class="hi" x="361.6" y="112" width="598.4" height="14" rx="3"/>
+<text class="v" x="355.6" y="124" text-anchor="end">−54.4 %</text>
+<text class="c" x="30" y="166">Day 143, May (8 h, tuned on)</text>
+<rect class="b" x="923.7" y="146" width="36.3" height="14" rx="3"/>
+<text class="v" x="917.7" y="158" text-anchor="end">−3.3 %</text>
+<rect class="hi" x="549.7" y="164" width="410.3" height="14" rx="3"/>
+<text class="v" x="543.7" y="176" text-anchor="end">−37.3 %</text>
+<text class="c" x="30" y="218">Day 150, May–June (24 h)</text>
+<rect class="b" x="924.8" y="198" width="35.2" height="14" rx="3"/>
+<text class="v" x="918.8" y="210" text-anchor="end">−3.2 %</text>
+<rect class="hi" x="702.6" y="216" width="257.4" height="14" rx="3"/>
+<text class="v" x="696.6" y="228" text-anchor="end">−23.4 %</text>
+<text class="c" x="30" y="270">Day 157, June (8 h)</text>
+<rect class="b" x="907.2" y="250" width="52.8" height="14" rx="3"/>
+<text class="v" x="901.2" y="262" text-anchor="end">−4.8 %</text>
+<rect class="hi" x="906.1" y="268" width="53.9" height="14" rx="3"/>
+<text class="v" x="900.1" y="280" text-anchor="end">−4.9 %</text>
+<text class="c" x="30" y="322">Day 199, July (8 h)</text>
+<rect class="b" x="898.4" y="302" width="61.6" height="14" rx="3"/>
+<text class="v" x="892.4" y="314" text-anchor="end">−5.6 %</text>
+<rect class="hi" x="923.7" y="320" width="36.3" height="14" rx="3"/>
+<text class="v" x="917.7" y="332" text-anchor="end">−3.3 %</text>
+<text class="c" x="30" y="374">Day 262, September (8 h)</text>
+<rect class="b" x="933.6" y="354" width="26.4" height="14" rx="3"/>
+<text class="v" x="927.6" y="366" text-anchor="end">−2.4 %</text>
+<rect class="hi" x="350.6" y="372" width="609.4" height="14" rx="3"/>
+<text class="v" x="344.6" y="384" text-anchor="end">−55.4 %</text>
+<line class="z" x1="960.0" y1="86" x2="960.0" y2="398"/>
+<text class="m" x="30" y="442">BOPTEST multizone office, three floors; BOPTEST computes the KPIs. Single windows in simulation, not a rate.</text>
+<text class="m" x="30" y="459">The saving is boiler gas for zone reheat: large in spring and autumn; in summer the reset sits at its cold end and adds nothing.</text>
+</svg>

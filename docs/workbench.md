@@ -119,6 +119,31 @@ The override came on only once, for 5 steps on floor 3 around 08:40, when that f
 air reached 70 %; it released below 65 %, as the sheet says. There was no fail-safe event and no clamp. This is one mild
 8-hour window on one day, not a rate; BOPTEST computes the KPIs.
 
+### Revision B on days it was not tuned on (2026-10-27)
+
+Revision B's thresholds were chosen after revision A failed on day 143, so day 143 alone says
+little. The same three runs (BOPTEST's baseline, our sequences alone, our sequences plus
+revision B) went over five more windows on Modal, using the recorded reading, draft and binding.
+Energy, and thermal discomfort, against the baseline over each window:
+
+| Window | Our sequences alone | + revision B | Thermal discomfort, + revision B |
+| --- | --- | --- | --- |
+| Day 110 (April), 06:00, 8 h | −4.6 % | **−54.4 %** | −48.5 % |
+| Day 143 (May), 06:00, 8 h (tuned on) | −3.3 % | −37.3 % | −10.7 % |
+| Day 150 (May–June), 00:00, 24 h | −3.2 % | **−23.4 %** | −66.0 % |
+| Day 157 (June), 06:00, 8 h | −4.8 % | −4.9 % | −9.4 % |
+| Day 199 (July), 06:00, 8 h | −5.6 % | −3.3 % | **+7.8 %** |
+| Day 262 (September), 06:00, 8 h | −2.4 % | **−55.4 %** | −76.2 % |
+
+The split by source (`docs/emissions.md`) shows where it comes from. On the cool days boiler gas,
+which feeds the zone reheat coils, falls by half to two thirds (Scope 1 on day 110: 2,587 to
+844 kgCO2e; day 262: 1,994 to 573), because a supply air 4 to 5 K warmer needs far less
+reheating at the zones. Electricity moves much less. In summer the outdoor air is above the
+reset band, so the sheet's reset sits at 55 °F, like the baseline, and adds nothing; on day 199
+it did slightly worse than our sequences alone. So the sheet's value depends on the season:
+large in spring and autumn, none in summer. These are single windows in simulation, and BOPTEST
+computes the KPIs. The run records are kept locally, not committed.
+
 Offline, revision B plays back under the name Spark gives it: recorded sessions and bindings
 are found by a digest of the task's content (`task_key`), not only by name.
 

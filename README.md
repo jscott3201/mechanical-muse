@@ -39,18 +39,25 @@ Building control sequences are written as prose by engineers. A controls contrac
   <img alt="A replayed run: the sequences that ran with their content ids, KPI tiles against the baseline, and chilled-water and pressure trends" src="docs/img/screens/run-light.png">
 </picture>
 
+**Scope 1 and 2.** Every run's energy, emissions and cost, split exactly into boiler gas (Scope 1) and purchased electricity (Scope 2) from BOPTEST's own KPIs and factors, against the same window's baseline. Here revision B halves the reheat gas. Coding agents get the same numbers over MCP (`run_ledger`, `compare_runs`), and Muse Spark's run explanations quote them without computing any.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/emissions-dark.png">
+  <img alt="Energy and emissions panel: Scope 1 796 kgCO2e (−848 kg, −51.6 % vs baseline), Scope 2 2,138 kgCO2e (−20.9 %), cost $695 (−$269), thermal discomfort lower; footer: simulation on BOPTEST's factors, HVAC loads only, no Scope 3" src="docs/img/screens/emissions-light.png">
+</picture>
+
 ## Results so far
 
 | What | Result | Where |
 | --- | --- | --- |
 | Muse Spark rebuilding 137 open fault-detection rules from scrubbed tasks, scored by replaying the library's 1,760 test vectors | First try 122 to 125 of 137 rules; after repair 130 to 132 (3 runs, `muse-spark-1.3-contributor`). Constant baselines pass 0 rules | [docs/benchmark-results.md](docs/benchmark-results.md) |
-| Chilled-water plant reset, verified, then run on BOPTEST against its baseline controller for 10 hours | Whole-building energy −4.7 %, chiller energy −14.2 %, thermal discomfort +2.0 % | [docs/runtime-results.md](docs/runtime-results.md) |
-| A photo of a supply-air reset sheet: read, scenarios accepted, drafted (red, then green), bound to BOPTEST, run; then the engineer revises the sheet and runs it again | Revision A ran but its humidity override latched, so its reset never acted. Revision B: energy −37.3 %, thermal discomfort −10.7 % over one 8-hour window | [docs/workbench.md](docs/workbench.md) |
+| Chilled-water plant reset, verified, then run on BOPTEST against its baseline controller for 10 hours | HVAC energy −4.7 %, chiller energy −14.2 %, thermal discomfort +2.0 % | [docs/runtime-results.md](docs/runtime-results.md) |
+| A photo of a supply-air reset sheet: read, scenarios accepted, drafted (red, then green), bound to BOPTEST, run; then the engineer revises the sheet and runs it again | Revision A ran but its humidity override latched, so its reset never acted. Revision B, re-tested on five windows it was not tuned on: HVAC energy −23 % to −55 % in spring and autumn (less reheat gas), no gain in summer | [docs/workbench.md](docs/workbench.md) |
 | Injected sensor fault (NaN supply-air temperature) during a live run | The reading shows as no data, the affected sequences go degraded, their setpoints are handed back to BOPTEST's own controllers, and the reset writes again once the sensor returns | [docs/runtime-results.md](docs/runtime-results.md) |
 
-![Revision B against revision A on day 143: energy −37.3 % and thermal discomfort −10.7 % with revision B, against −0.7 % and +6.7 % with revision A and −3.3 % and +0.5 % with our sequences alone](docs/img/revision-b-results.svg)
+![Revision B across six windows: HVAC energy −54.4 % (April), −37.3 % (May, tuned on), −23.4 % (24 h, late May), −4.9 % (June), −3.3 % (July), −55.4 % (September), against −2 % to −6 % for our sequences alone](docs/img/revision-b-seasons.svg)
 
-Every BOPTEST number is a short window, compared with BOPTEST's own baseline controller over the same window, and BOPTEST computes the KPIs. These are results from a simulation, not field measurements. The [results log](docs/results-log.md) lists every run, including the ones that went badly.
+Every BOPTEST number is a short window, compared with BOPTEST's own baseline controller over the same window, and BOPTEST computes the KPIs; energy is HVAC energy as BOPTEST counts it. Each run also gets a Scope 1 (boiler gas) and Scope 2 (electricity) emissions and cost ledger on BOPTEST's own factors ([docs/emissions.md](docs/emissions.md)). These are results from a simulation, not field measurements. The [results log](docs/results-log.md) lists every run, including the ones that went badly.
 
 ## Try it in two minutes
 
