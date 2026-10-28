@@ -12,7 +12,7 @@ use axum::response::Response;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 
-use mm_runtime::preset::{REQUESTS_SPEC, RESET_SPEC};
+use mm_runtime::preset::{PRESSURE_SPEC, REQUESTS_SPEC, RESET_SPEC, ZONE_PRESSURE_SPEC};
 
 use crate::journal;
 use crate::routes::{AppState, Failure};
@@ -113,6 +113,7 @@ async fn start_run(
 fn check_drafts(state: &AppState, request: &RunRequest) -> Result<(), Failure> {
     let bad = |m: String| Failure::new(StatusCode::BAD_REQUEST, "bad-request", m);
     let requests = request.requests.unwrap_or(true);
+    let pressure = request.pressure.unwrap_or(false);
     for (spec, id) in request.drafts.iter().flatten() {
         let own = state.spec(spec).is_some_and(|s| !s.detail.reference);
         if own && state.binding(spec).is_none() {
@@ -120,7 +121,10 @@ fn check_drafts(state: &AppState, request: &RunRequest) -> Result<(), Failure> {
                 "{spec} is not bound to BOPTEST yet; confirm a binding first"
             )));
         }
-        let used = own || spec == RESET_SPEC || (spec == REQUESTS_SPEC && requests);
+        let used = own
+            || spec == RESET_SPEC
+            || (spec == REQUESTS_SPEC && requests)
+            || ((spec == PRESSURE_SPEC || spec == ZONE_PRESSURE_SPEC) && pressure);
         if !used {
             return Err(bad(format!("this run does not use {spec}")));
         }

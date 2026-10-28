@@ -156,3 +156,87 @@ async fn the_pressure_resets_load_write_and_trim() {
     );
     let _ = std::fs::remove_dir_all(dir);
 }
+
+fn reference(spec: &str) -> mm_graph::BlockGraph {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../specs")
+        .join(spec)
+        .join("graph.json");
+    serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap()
+}
+
+/// The pressure sequences load verified drafts when `pressure` is on, so a run must accept
+/// drafts for them then, and refuse them when the run does not use them.
+#[tokio::test]
+async fn pressure_drafts_run_when_pressure_is_on() {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("pressure-drafts-{}", std::process::id()));
+    let state = state(dir.clone());
+    let mut drafts = serde_json::Map::new();
+    for spec in ["ahu_static_pressure_reset", "zone_pressure_requests"] {
+        let graph = reference(spec);
+        let (_, report) = state
+            .spec(spec)
+            .unwrap()
+            .replay_graph(&graph, state.palette())
+            .unwrap();
+        drafts.insert(spec.into(), json!(report.content_id));
+        state.authoring().drafts.insert(mm_server::drafts::Draft {
+            info: mm_server::author_dto::DraftInfo {
+                content_id: report.content_id.clone(),
+                spec: spec.into(),
+                scenarios: 1,
+                model: "muse-spark-1.3".into(),
+                source: mm_server::author_dto::ModelSource::Recorded,
+                session: "test".into(),
+                attempts_used: 1,
+            },
+            graph,
+        });
+    }
+    let (status, body) = call(
+        &state,
+        "POST",
+        "/api/runs",
+        Some(json!({"steps": 3, "drafts": drafts})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    assert!(
+        body["message"].as_str().unwrap().contains("does not use"),
+        "{body}"
+    );
+
+    let (status, run) = call(
+        &state,
+        "POST",
+        "/api/runs",
+        Some(json!({"steps": 3, "pressure": true, "drafts": drafts})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{run}");
+    let id = run["id"].as_str().unwrap().to_owned();
+    let mut info = Value::Null;
+    for _ in 0..600 {
+        (_, info) = call(&state, "GET", &format!("/api/runs/{id}"), None).await;
+        if info["state"] != "starting" && info["state"] != "running" {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+    assert_eq!(info["state"], "completed", "{info}");
+    let events: Vec<Value> = std::fs::read_to_string(dir.join(format!("{id}.jsonl")))
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    let started = events.iter().find(|e| e["kind"] == "started").unwrap();
+    for s in started["sequences"].as_array().unwrap() {
+        let drafted = matches!(
+            s["spec"].as_str().unwrap(),
+            "ahu_static_pressure_reset" | "zone_pressure_requests"
+        );
+        assert_eq!(s["origin"] == "drafted", drafted, "{s}");
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}
