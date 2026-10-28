@@ -9,19 +9,24 @@ import type { LedgerSubject } from "./LedgerSubject";
  */
 export type RunLedger = { subject: LedgerSubject, factors: LedgerFactors, 
 /**
- * Gas burnt on site (the boiler).
+ * Fuel burnt on site (the office's boiler); zero for an all-electric building.
  */
 scope1: Amounts, 
 /**
- * Electricity bought (chillers, pumps, towers, fans, freeze coils).
+ * Electricity bought.
  */
 scope2: Amounts, total: Amounts, 
 /**
- * BOPTEST's own operating cost KPI for the run.
+ * BOPTEST's own operating cost KPI for the run, in the factors' currency.
  */
-boptest_cost_usd: number, 
+boptest_cost: number, 
 /**
- * True when the exact split re-prices to BOPTEST's cost and neither scope is negative.
+ * BOPTEST's cost over the run's energy: what each kWh cost on average.
+ */
+average_price_per_kwh: number, 
+/**
+ * The split checks against BOPTEST (constant prices: re-prices to its cost; varying
+ * prices: its emissions equal the energy times the factor) and neither scope is negative.
  */
 reconciles: boolean, 
 /**

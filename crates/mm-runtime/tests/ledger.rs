@@ -57,8 +57,9 @@ fn the_split_is_exact_and_reprices_to_boptests_cost() {
     assert_eq!(l.kg_co2e(Carrier::Electricity).round(), 2705.0);
     assert_eq!(l.kg_co2e(Carrier::Gas).round(), 1644.0);
     assert!(l.reconciles);
-    assert!((l.repriced_cost_usd - 963.53).abs() < 0.01, "{l:?}");
-    assert!((l.boptest_cost_usd - l.repriced_cost_usd).abs() < 1e-9);
+    let repriced = l.cost(Carrier::Electricity) + l.cost(Carrier::Gas);
+    assert!((repriced - 963.53).abs() < 0.01, "{l:?}");
+    assert!((l.boptest_cost - repriced).abs() < 1e-9);
     assert!(!l.measured, "no ticks, no end uses");
     assert!(l.end_uses.is_empty());
     assert_eq!(l.missing.len(), 14);
@@ -134,7 +135,8 @@ fn end_uses_integrate_like_boptest_and_the_rest_is_unattributed() {
     );
     let boiler = &l.end_uses[7];
     assert_eq!(boiler.carrier, Carrier::Gas);
-    assert!((boiler.kg_co2e() - one * 0.18108).abs() < 1e-12);
+    assert!((boiler.kg_co2e - one * 0.18108).abs() < 1e-12);
+    assert!((boiler.cost - one * 0.024).abs() < 1e-12);
     let unattributed_gas = &l.end_uses[9];
     assert!(!unattributed_gas.measured);
     assert!((unattributed_gas.kwh - (l.gas_kwh - one)).abs() < 1e-9);
@@ -310,4 +312,79 @@ fn every_committed_record_reconciles() {
             path.display()
         );
     }
+}
+
+/// BOPTEST's KPIs of the recorded home baseline, typical heat window
+/// (`fixtures/replays/home-day108-baseline.jsonl`).
+fn home_day108_baseline() -> BTreeMap<String, f64> {
+    let text = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/replays/home-day108-baseline.jsonl"),
+    )
+    .unwrap();
+    text.lines()
+        .filter_map(|l| serde_json::from_str::<serde_json::Value>(l).ok())
+        .find(|v| v["kind"] == "kpi")
+        .map(|v| serde_json::from_value(v["values"].clone()).unwrap())
+        .unwrap()
+}
+
+#[test]
+fn the_home_is_all_electric_and_its_emissions_reconcile() {
+    let basis = ledger::Basis::home();
+    let l = ledger::compute_for(&basis, &home_day108_baseline(), &[]).unwrap();
+    assert!(l.reconciles, "{l:?}");
+    assert_eq!(l.gas_kwh, 0.0);
+    assert_eq!(l.gas_kg_co2e, 0.0);
+    assert_eq!(l.gas_cost, 0.0);
+    assert!((l.electricity_kwh - 340.4).abs() < 0.05, "{l:?}");
+    assert!((l.electricity_kg_co2e - 0.167 * l.electricity_kwh).abs() < 1e-9);
+    // Spot prices: BOPTEST's cost is the cost (EUR), about 0.233 per kWh on average.
+    assert_eq!(l.electricity_cost, l.boptest_cost);
+    assert!((l.boptest_cost - 79.21).abs() < 0.01, "{l:?}");
+    assert_eq!(basis.currency, "EUR");
+}
+
+#[test]
+fn home_emissions_that_do_not_match_the_factor_are_flagged() {
+    let mut k = home_day108_baseline();
+    *k.get_mut("emis_tot").unwrap() *= 1.01;
+    let l = ledger::compute_for(&ledger::Basis::home(), &k, &[]).unwrap();
+    assert!(!l.reconciles);
+}
+
+#[test]
+fn home_end_uses_come_from_its_three_signals() {
+    let basis = ledger::Basis::home();
+    assert_eq!(
+        basis.kpi_points(),
+        ["reaPFan_y", "reaPHeaPum_y", "reaPPumEmi_y"]
+    );
+    let r: BTreeMap<String, f64> = basis
+        .kpi_points()
+        .into_iter()
+        .map(|p| (p, 1000.0))
+        .collect();
+    let samples: Vec<(f64, &BTreeMap<String, f64>)> =
+        (0..5).map(|i| (900.0 * f64::from(i), &r)).collect();
+    let l = ledger::compute_for(&basis, &home_day108_baseline(), &samples).unwrap();
+    assert!(l.measured);
+    // 3 end uses and one unattributed electricity row; no gas row for an all-electric house.
+    let ids: Vec<&str> = l.end_uses.iter().map(|e| e.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "heat_pump",
+            "hp_fan",
+            "floor_pump",
+            "unattributed_electricity"
+        ]
+    );
+    // 1 kW for 3600 s each, priced at the run's average price paid.
+    let avg = l.boptest_cost / l.electricity_kwh;
+    let hp = &l.end_uses[0];
+    assert!((hp.kwh - 1.0).abs() < 1e-6);
+    assert!((hp.cost - avg).abs() < 1e-6);
+    let total: f64 = l.end_uses.iter().map(|e| e.kwh).sum();
+    assert!((total - l.electricity_kwh).abs() < 1e-9);
 }

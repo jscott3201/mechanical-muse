@@ -2,7 +2,9 @@
 
 Every BOPTEST run (live, or a recorded run) gets a ledger: how much energy the HVAC plant used,
 the emissions that energy stands for, and what it cost, split into Scope 1 (gas burnt on site)
-and Scope 2 (electricity bought). Two runs of the same window can be compared. The numbers are
+and Scope 2 (electricity bought). Each test case has its own basis of BOPTEST's constants
+(`crates/mm-runtime/src/ledger/basis.rs`): the office below, and the home (an all-electric house
+on spot prices, see [The home](#the-home)). Two runs of the same window can be compared. The numbers are
 simulation results; nothing reads them to decide a control action.
 
 Where it lives: the computation is `crates/mm-runtime/src/ledger.rs` (pure, no I/O); the HTTP
@@ -76,6 +78,33 @@ From BOPTEST v0.9.0, test case `multizone_office_complex_air`:
 
 Only the `Constant` price scenario is used; the runtime never selects another. BOPTEST also ships
 dynamic price profiles, which this ledger does not use.
+
+## The home
+
+From BOPTEST v0.9.0, test case `bestest_hydronic_heat_pump`:
+
+| Quantity | Value | BOPTEST file |
+|---|---|---|
+| Electricity emission factor | 0.167 kgCO2/kWh, the same every hour | `models/Resources/emissions.csv` (`EmissionsElectricPower`) |
+| Gas | none: the heat pump runs on electricity, so there is no Scope 1 | `models/kpis.json` (`ElectricPower` only) |
+| Electricity price | spot prices with fixed fees, in euros, varying hour by hour | `models/Resources/prices.csv` (`PriceElectricPowerHighlyDynamic`, the scenario the runtime selects) |
+| Floor area | 192 m2 | `models/config.json` (`area`) |
+| End uses | heat pump compressor, heat pump fan, floor heating pump | `models/kpis.json` (`reaPHeaPum_y`, `reaPFan_y`, `reaPPumEmi_y`) |
+
+Differences from the office:
+
+- **All electric.** `ener_tot` is all electricity; Scope 1 is shown as none rather than zero.
+- **Cost is BOPTEST's own.** With prices that change every hour the energy cannot be re-priced
+  at a constant rate, so the check is on emissions instead: BOPTEST's `emis_tot` must equal the
+  energy times 0.167 (it does, to rounding, on all four committed home records). End uses are
+  priced at the run's average price paid, and the ledger reports that average.
+- **Timing changes cost, not emissions.** BOPTEST gives this house one emission factor for the
+  whole year, so moving heat out of expensive hours lowers the bill and the average price paid
+  but cuts emissions only by the energy it saves. Typical heat window, price response against
+  BOPTEST's controller: 340.4 → 314.3 kWh, 56.9 → 52.5 kgCO2e (−7.7 %), €79.21 → €72.59, average
+  €0.2327 → €0.2310 per kWh. Peak heat window: 667.7 → 617.5 kWh, 111.5 → 103.1 kgCO2e
+  (−7.5 %), €174.47 → €160.02, average €0.2613 → €0.2592. A grid whose carbon intensity varies
+  through the day would reward the shift on emissions too; this simulation does not model that.
 
 ## Comparisons and test faults
 

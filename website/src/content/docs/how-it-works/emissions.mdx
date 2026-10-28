@@ -8,6 +8,8 @@ import emissionsLight from '@img/screens/emissions-light.png';
 import emissionsDark from '@img/screens/emissions-dark.png';
 import faultLight from '@img/screens/fault-cost-light.png';
 import faultDark from '@img/screens/fault-cost-dark.png';
+import homeLight from '@img/screens/home-emissions-light.png';
+import homeDark from '@img/screens/home-emissions-dark.png';
 
 Every BOPTEST run, live or recorded, gets a ledger: the HVAC plant's energy, the emissions it
 stands for, and its cost, split into **Scope 1** (gas burnt on site, the boiler) and **Scope 2**
@@ -49,6 +51,26 @@ On day 185 from noon (10 h), a 4 K high bias on floor 1's supply-air reading for
 plant reset drive the chilled water to its cold end: **+130 kWh, +44 kgCO2e and +$12.25**, nearly
 all chiller electricity. That is about a fifth of the ten hours' saving against BOPTEST's
 baseline. One window, one fault, in simulation.
+
+## The home
+
+The heat pump house has its own basis of BOPTEST's constants: all electric (no Scope 1), one
+emission factor all year (0.167 kgCO2/kWh), 192 m2, and spot prices in euros. Its cost is
+BOPTEST's own, and the check is that its emissions equal the energy times the factor.
+
+<Screenshot
+  light={homeLight}
+  dark={homeDark}
+  alt="Home energy and emissions panel: Scope 1 none, Scope 2 52.5 kgCO2e (314.3 kWh, €72.6, −7.7 % vs baseline), total €72.6 (−€6.6), average price paid €0.231 per kWh against €0.2327, end uses heat pump compressor, fan and floor pump"
+  caption="The price-response run against BOPTEST's controller, typical heating window."
+/>
+
+:::note[Timing changes cost, not emissions]
+With one carbon factor all year, moving heat out of expensive hours lowers the bill and the
+average price paid, but cuts emissions only by the energy saved (−7.7 % and −7.5 % in the two
+windows). A grid whose carbon intensity varies through the day would reward the shift on
+emissions too; this simulation does not model that.
+:::
 
 ## What this is not
 

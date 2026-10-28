@@ -71,8 +71,9 @@ async fn a_recorded_baseline_splits_into_scopes_that_reprice_to_boptests_cost() 
         "{}",
         l["scope2"]
     );
-    assert!(near(&l["total"]["usd"], 963.53, 0.005));
-    assert!(near(&l["boptest_cost_usd"], 963.53, 0.005));
+    assert!(near(&l["total"]["cost"], 963.53, 0.005));
+    assert!(near(&l["boptest_cost"], 963.53, 0.005));
+    assert_eq!(l["factors"]["currency"], "USD");
     assert_eq!(l["reconciles"], true);
     // Recorded before the fan and boiler readings: scope totals only.
     assert_eq!(l["measured"], false);
@@ -97,12 +98,12 @@ async fn two_runs_of_one_window_compare_and_others_are_refused() {
     assert_eq!(status, StatusCode::OK, "{c}");
     assert!(near(&c["b"]["scope1"]["kg_co2e"], 796.0, 0.5));
     assert!(near(&c["b"]["scope2"]["kg_co2e"], 2138.0, 0.5));
-    assert!(near(&c["b"]["total"]["usd"], 694.97, 0.005));
+    assert!(near(&c["b"]["total"]["cost"], 694.97, 0.005));
     let d = &c["delta"];
     let expect = c["b"]["scope1"]["kg_co2e"].as_f64().unwrap()
         - c["a"]["scope1"]["kg_co2e"].as_f64().unwrap();
     assert!(near(&d["scope1"]["kg_co2e"], expect, 1e-9));
-    assert!(d["total"]["usd"].as_f64().unwrap() < -268.0, "{d}");
+    assert!(d["total"]["cost"].as_f64().unwrap() < -268.0, "{d}");
     assert!(
         d["tdis_tot"].as_f64().unwrap() < 0.0,
         "comfort improved too"
@@ -240,4 +241,47 @@ async fn a_full_record_has_end_uses_and_a_replayed_run_has_the_same_ledger() {
     .await;
     assert_eq!(s, StatusCode::OK, "{c}");
     assert_eq!(c["delta"]["total"]["kwh"], 0.0);
+}
+
+/// The home's ledger: all electric (no Scope 1), BOPTEST's euro cost and its constant factor,
+/// and a typical-window comparison against the home baseline.
+#[tokio::test]
+async fn the_home_ledger_is_scope_2_only_in_euros() {
+    let state = state(repo("fixtures/replays"));
+    let (status, l) = get(&state, "/api/replays/home-day108-sequence/ledger").await;
+    assert_eq!(status, StatusCode::OK, "{l}");
+    assert_eq!(l["factors"]["currency"], "EUR");
+    assert_eq!(l["factors"]["electricity_kg_per_kwh"], 0.167);
+    assert!(
+        l["factors"].get("gas_kg_per_kwh").is_none(),
+        "{}",
+        l["factors"]
+    );
+    assert!(l["factors"].get("electricity_price_per_kwh").is_none());
+    assert_eq!(l["scope1"]["kwh"], 0.0);
+    assert_eq!(l["reconciles"], true);
+    assert!(near(&l["scope2"]["kwh"], 314.3, 0.05), "{}", l["scope2"]);
+    assert!(near(&l["boptest_cost"], 72.59, 0.005));
+    assert!(near(&l["average_price_per_kwh"], 0.2310, 0.0001));
+    // Three end uses and one unattributed electricity row.
+    assert_eq!(
+        l["end_uses"].as_array().unwrap().len(),
+        4,
+        "{}",
+        l["end_uses"]
+    );
+
+    let (status, c) = get(
+        &state,
+        "/api/ledger/compare?a=replay:home-day108-baseline&b=replay:home-day108-sequence",
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{c}");
+    let d = &c["delta"];
+    assert!(near(&d["total"]["kwh"], 314.3 - 340.4, 0.1), "{d}");
+    assert!(near(&d["total"]["cost"], 72.59 - 79.21, 0.01), "{d}");
+    assert!(
+        near(&d["total"]["kg_co2e"], 0.167 * (314.3 - 340.4), 0.02),
+        "{d}"
+    );
 }

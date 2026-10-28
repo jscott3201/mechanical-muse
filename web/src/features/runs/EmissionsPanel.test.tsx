@@ -9,7 +9,7 @@ import type { RunLedger } from "@/types/generated/RunLedger";
 import { EmissionsPanel, RunEmissions } from "./EmissionsPanel";
 import { faultRequest } from "./faults";
 
-const amounts = (kwh: number, kg: number, usd: number): Amounts => ({ kwh, kg_co2e: kg, usd });
+const amounts = (kwh: number, kg: number, cost: number): Amounts => ({ kwh, kg_co2e: kg, cost });
 
 /** The day-143 numbers the server computes from the committed replays (scope totals only). */
 function ledger(over: Partial<RunLedger>): RunLedger {
@@ -29,15 +29,17 @@ function ledger(over: Partial<RunLedger>): RunLedger {
     factors: {
       electricity_kg_per_kwh: 0.341,
       gas_kg_per_kwh: 0.18108,
-      electricity_usd_per_kwh: 0.094,
-      gas_usd_per_kwh: 0.024,
+      electricity_price_per_kwh: 0.094,
+      gas_price_per_kwh: 0.024,
+      currency: "USD",
       area_m2: 42757,
       source: "BOPTEST",
     },
     scope1: amounts(4395, 795.9, 105.5),
     scope2: amounts(6271, 2138.4, 589.5),
     total: amounts(10666, 2934.3, 694.97),
-    boptest_cost_usd: 694.97,
+    boptest_cost: 694.97,
+    average_price_per_kwh: 0.05,
     reconciles: true,
     measured: false,
     missing: ["floor1_reaAHU_PFanSup_y", "reaHotWatSys_reaPBoi_y"],
@@ -131,3 +133,41 @@ describe("RunEmissions", () => {
     expect(screen.getByText(/the run has no KPIs yet/)).toBeTruthy();
   });
 });
+
+describe("EmissionsPanel for the home", () => {
+  it("shows Scope 2 only, euros, the average price paid and the house's factor", () => {
+    const home = (kwh: number, cost: number): RunLedger =>
+      ledger({
+        subject: { ...ledger({}).subject, case: "bestest_hydronic_heat_pump", step_s: 900 },
+        factors: { electricity_kg_per_kwh: 0.167, currency: "EUR", area_m2: 192, source: "BOPTEST" },
+        scope1: amounts(0, 0, 0),
+        scope2: amounts(kwh, kwh * 0.167, cost),
+        total: amounts(kwh, kwh * 0.167, cost),
+        boptest_cost: cost,
+        average_price_per_kwh: cost / kwh,
+      });
+    const base = home(340.4, 79.21);
+    const b = home(314.3, 72.59);
+    const vs: LedgerComparison = {
+      a: base,
+      b,
+      delta: {
+        scope1: amounts(0, 0, 0),
+        scope2: amounts(-26.1, -4.36, -6.62),
+        total: amounts(-26.1, -4.36, -6.62),
+        end_uses: [],
+      },
+    };
+    render(<EmissionsPanel ledger={b} vsBaseline={vs} baselineSource="recorded baseline run run-b" fault={undefined} vsHealthy={null} healthySource={null} />);
+    expect(screen.getByText(/All electric: Scope 2/)).toBeTruthy();
+    expect(screen.getByText("None")).toBeTruthy();
+    expect(screen.getByText(/No fuel burnt on site/)).toBeTruthy();
+    expect(screen.getByText("52.5 kgCO₂e")).toBeTruthy();
+    expect(screen.getByText("€72.6")).toBeTruthy();
+    expect(screen.getByText("vs baseline: −€6.6")).toBeTruthy();
+    expect(screen.getByText(/Average price paid €0\.231\/kWh \(baseline €0\.2327\)/)).toBeTruthy();
+    expect(screen.getByText(/0\.167 kgCO₂\/kWh, the same every hour; spot electricity prices/)).toBeTruthy();
+    expect(screen.queryByText(/\$/)).toBeNull();
+  });
+});
+

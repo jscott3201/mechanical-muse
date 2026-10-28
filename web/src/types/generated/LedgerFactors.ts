@@ -3,7 +3,19 @@
 /**
  * The factors and prices every number here uses, and where they come from.
  */
-export type LedgerFactors = { electricity_kg_per_kwh: number, gas_kg_per_kwh: number, electricity_usd_per_kwh: number, gas_usd_per_kwh: number, 
+export type LedgerFactors = { electricity_kg_per_kwh: number, 
+/**
+ * Absent when the building burns no fuel on site.
+ */
+gas_kg_per_kwh?: number, 
+/**
+ * Constant prices per kWh; absent when the price varies (the home's spot prices).
+ */
+electricity_price_per_kwh?: number, gas_price_per_kwh?: number, 
+/**
+ * ISO code every cost here is in (BOPTEST's own for the test case).
+ */
+currency: string, 
 /**
  * Floor area BOPTEST divides its KPIs by (m2).
  */

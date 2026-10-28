@@ -39,7 +39,9 @@ nothing to stagger it.
 **What it does not show.** A perfect forecast (BOPTEST's default); one building, one climate,
 heating only; prices that swing little (with fixed fees, about €0.17 to €0.26 per kWh in the
 typical window and €0.22 to €0.32 in the peak one), so the per-home saving is small. Energy also falls, so part of the cost cut is plain saving rather
-than shifting. The office emissions ledger and the BACnet mirror do not cover the home yet.
+than shifting. The BACnet mirror does not cover the home yet. Its emissions ledger (Scope 2 only, euros) is in
+[emissions.md](emissions.md#the-home): emissions fall with energy only, since BOPTEST gives the
+house one carbon factor all year.
 Two windows the rule was not tuned on (from days 40 and 315) were run only through
 `reference.py`, not yet through the runtime (`docs/results-log.md`).
 
