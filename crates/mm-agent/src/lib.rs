@@ -10,6 +10,7 @@ mod binder;
 mod client;
 mod explain;
 mod feedback;
+mod fix_explain;
 mod numbers;
 mod prompt;
 mod reader;
@@ -28,6 +29,9 @@ pub use client::{
 pub use explain::{
     Explained, ExplainedPart, Explanation, RunExplainedItem, RunExplanation, check_explanation,
     check_run_explanation, explain, explain_request, explain_run, explain_run_request,
+};
+pub use fix_explain::{
+    FixChange, FixExplanation, check_fix_explanation, explain_fix, explain_fix_request,
 };
 pub use numbers::unsupported_numbers;
 pub use prompt::{

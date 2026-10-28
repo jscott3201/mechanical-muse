@@ -27,11 +27,11 @@ Building control sequences are written as prose by engineers. A controls contrac
   <img alt="The Bring your own page: Muse Spark's recorded reading of the revision B sheet, with the task, six open questions and the sequence's points" src="docs/img/screens/workbench-light.png">
 </picture>
 
-**Red, then green.** A recorded Muse Spark session on the chilled-water plant reset. The engine refuses attempt 1 (`algebraic-loop`, naming the blocks). Attempt 2 loads but fails 2 of 10 scenarios, each with the instant and the expected value. Attempt 3 passes all 10 and gets a content id.
+**Red, then green.** A recorded Muse Spark session on the chilled-water plant reset. The engine refuses attempt 1 (`algebraic-loop`, naming the blocks). Attempt 2 loads but fails 2 of 10 scenarios, each with the instant and the expected value. Attempt 3 passes all 10 and gets a content id. Under each repair, "Explain the fix" has Spark say what changed and why, from the exact difference between the two graphs (computed by the server, not the model) and the earlier failures; the engine's verdict stays the verdict.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/authoring-dark.png">
-  <img alt="Three authoring attempts: refused by the engine as an algebraic loop, then passing 8 of 10 scenarios, then 10 of 10 with a content id" src="docs/img/screens/authoring-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/authoring-fix-dark.png">
+  <img alt="Three authoring attempts with Muse Spark's explanation of each repair: attempt 2 broke the algebraic loop by inserting resetDelay; attempt 3 set stageHold's falseHoldDuration to 0.0 s, so TSupSet falls to the expected 279.6732 at 75.0 min, and passes 10 of 10" src="docs/img/screens/authoring-fix-light.png">
 </picture>
 
 **On the building.** A replay of revision B on BOPTEST beside our own sequences: each sequence's origin and content id, KPIs against the baseline over the same window, and live trends of what was sent against what the building measured.

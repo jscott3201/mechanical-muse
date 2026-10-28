@@ -3,6 +3,10 @@ title: Authoring and repair
 description: How Muse Spark drafts a block graph and repairs it against engine diagnostics and failing test scenarios.
 ---
 
+import Screenshot from '../../../components/Screenshot.astro';
+import fixLight from '@img/screens/authoring-fix-light.png';
+import fixDark from '@img/screens/authoring-fix-dark.png';
+
 Every model call the application makes goes to Muse Spark through the Meta Model API:
 drafting, repair, reading a sequence, proposing a point binding, explanations and the benchmark.
 
@@ -42,6 +46,18 @@ app labels every recording "recorded".
 The authoring panel follows a session attempt by attempt over server-sent events: engine
 refusals, failing scenarios with their instants, then the green receipt and content id. A
 verified draft is stored with its receipt and can be run on BOPTEST or downloaded as CXF.
+
+Under each repair, **Explain the fix** has Muse Spark say what changed and why. The server
+computes the exact difference between the two drafted graphs (blocks, parameters and wires
+added, removed or changed) and pairs it with the earlier draft's failures; Spark only explains
+it, quoting numbers from that input (a reply with any other number is refused).
+
+<Screenshot
+  light={fixLight}
+  dark={fixDark}
+  alt="Authoring attempts with Muse Spark's explanation of each repair: attempt 2 broke the algebraic loop by inserting resetDelay; attempt 3 set stageHold's falseHoldDuration to 0.0 s and passes 10 of 10"
+  caption="A recorded session: the engine's verdicts, and Spark's reading of each repair beneath them."
+/>
 
 Muse Spark can also explain a graph or a run's events in plain words. Explanations are
 model-written, labelled as such, and never used for control.
