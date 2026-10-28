@@ -218,6 +218,27 @@ engine `fa5cb19`.
   Constant baselines pass 1 of 9. Tokens 12k to 14k input and 10k to 19k output per run.
 - Tokens: 3.3k to 14.5k input and 9.7k to 16.7k output per run.
 
+## Control sequence: home price response (run of 2026-10-28)
+
+Our own spec `specs/home_price_response/`: a stateless heating setpoint for BOPTEST's home heat
+pump that coasts through peak-price hours and preheats before them, from 24 hourly prices and
+the comfort limits for the next hours. It was validated before any model saw it: the hand-built
+graph (33 blocks) passes every scenario and 18 deliberate mistakes each fail one. It is the
+first spec that needs `Reals.MultiMax` and `Reals.MultiMin` (added to the palette the same day).
+
+**Run setup:** `muse-spark-1.3`, high effort, up to 5 attempts, repair feedback with vectors,
+3 runs, zero-shot; prompt hash `fnv1a64:1e0d36a8bb893716` (55-class palette); engine `fa5cb19`.
+
+| Spec | First try | After repair | Best scenarios per run | Constant baselines |
+| --- | --- | --- | --- | --- |
+| Home price response | 3 of 3 | 3 of 3 | 17, 17, 17 of 17 | 0 of 17 |
+
+- Every draft used the width blocks as intended: max and min over the 24 prices, max over the
+  next three hours and over the coming floors, min over the coming ceilings (33 to 35 blocks).
+- An easy spec for the model: no timers, no stored values, and the task states each formula.
+  It shows the new blocks are usable, not that the model is strong on hard sequences.
+- Tokens: 4.4k input and 10.8k to 13.6k output per run.
+
 ## Control sequence: air handler chilled-water requests (run of 2026-10-26)
 
 Our own spec (`specs/ahu_chw_requests/`): one air handler's chilled-water reset requests (0 to

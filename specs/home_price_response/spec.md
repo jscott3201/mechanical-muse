@@ -74,7 +74,10 @@ A peak-price hour now takes precedence over one coming.
 
 ## Caveats
 
-- Tuned on BOPTEST's two heating windows for this building with a perfect price forecast. A
-  check on weeks it was not tuned on is still to do.
+- Tuned on BOPTEST's two heating windows for this building with a perfect price forecast. On two
+  windows it was not tuned on (14 days from day 40 and from day 315) the rule, run from
+  `reference.py`, still beat BOPTEST's controller on cost (−6.9 %, −6.0 %) and discomfort
+  (−45 %, −72 %) and cut power in peak-price hours by 37 % and 23 % (`docs/results-log.md`).
+  Live runs of the verified graph through the runtime are still to do.
 - Prices in this building swing little (about 0.17 to 0.26 euro per kWh including fixed fees),
   so the per-home saving is small; the point is the power moved out of peak-price hours.
