@@ -167,7 +167,8 @@ async fn read(
     if request.text.trim().is_empty() && request.attachments.is_empty() {
         return Err(bad("send the sequence as text or attach a PDF or image"));
     }
-    if request.text.len() > MAX_TEXT || request.attachments.len() > MAX_ATTACHMENTS {
+    // Characters, as the message says and as the accepted task is counted (not UTF-8 bytes).
+    if request.text.chars().count() > MAX_TEXT || request.attachments.len() > MAX_ATTACHMENTS {
         return Err(bad(format!(
             "at most {MAX_TEXT} characters of text and {MAX_ATTACHMENTS} attachments"
         )));

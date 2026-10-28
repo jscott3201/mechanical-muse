@@ -9,9 +9,14 @@ use crate::plant::{Measurements, Plant, PlantError, Writes};
 
 /// Per request; a hung advance should fail in minutes, not hours.
 const STEP_TIMEOUT: Duration = Duration::from_secs(300);
-/// Initialization runs the whole warm-up inside one request, and select waits for a free worker
-/// (an abandoned select still creates a test, which then holds that worker).
+/// Initialization runs the whole warm-up inside one request (13 to 19 min measured with a 1-day
+/// warm-up, docs/DECISIONS.md), so it keeps a generous hour.
 const INIT_TIMEOUT: Duration = Duration::from_secs(3600);
+/// Select waits for a free worker: 2.5 min measured on a free one, 17 min queued behind an
+/// orphaned test (docs/DECISIONS.md). An abandoned select still creates a test, which then holds
+/// the worker, so the limit stays well above the queued case (15 min would abandon exactly that
+/// case) while a dead service no longer holds a live run for an hour.
+const SELECT_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 
 /// A selected BOPTEST test, ready to initialize and advance.
 #[derive(Debug)]
@@ -88,7 +93,7 @@ impl BoptestClient {
         let base = base.trim_end_matches('/').to_owned();
         let select = http
             .post(format!("{base}/testcases/{testcase}/select"))
-            .timeout(INIT_TIMEOUT);
+            .timeout(SELECT_TIMEOUT);
         let body = send_raw(select).await?;
         let testid = body
             .get("testid")
@@ -175,5 +180,19 @@ impl Plant for BoptestClient {
     async fn advance(&mut self, writes: &Writes) -> Result<Measurements, PlantError> {
         let url = format!("{}/advance/{}", self.base, self.testid);
         measurements(&send(self.http.post(url).json(writes)).await?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Select may queue 17 min behind an orphaned test (measured); giving up sooner would
+    /// abandon a select that then creates a test of its own. It must still end well before the
+    /// warm-up's hour.
+    #[test]
+    fn select_outlasts_a_queued_select_but_not_an_hour() {
+        assert!(SELECT_TIMEOUT > Duration::from_secs(17 * 60));
+        assert!(SELECT_TIMEOUT < INIT_TIMEOUT);
     }
 }

@@ -25,6 +25,7 @@ mod run_facts;
 mod run_routes;
 pub mod runs;
 mod session;
+pub mod shutdown;
 pub mod specs;
 mod web;
 pub mod workbench;

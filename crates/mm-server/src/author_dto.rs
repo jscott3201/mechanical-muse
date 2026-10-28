@@ -164,6 +164,15 @@ pub struct AttemptView {
     pub graph: Option<GraphView>,
 }
 
+/// Which recorded sessions a spec can play back without a model key: a plain one, and one where
+/// Spark checked its own drafts with tools.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[ts(export)]
+pub struct RecordedSessions {
+    pub plain: bool,
+    pub tools: bool,
+}
+
 /// A stored draft that passed every scenario. Runs may load it only after its vectors replay
 /// green again (AGENTS.md hard rule 5).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -176,6 +185,12 @@ pub struct DraftInfo {
     pub source: ModelSource,
     pub session: String,
     pub attempts_used: u32,
+    /// Store order: each stored draft gets a number one above every draft before it, so lists
+    /// can show the newest first (a content id is a hash and says nothing about age). Drafts
+    /// stored before this field existed read as 0, the oldest. Not part of any receipt.
+    #[serde(default)]
+    #[ts(type = "number")]
+    pub stored_seq: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, TS)]

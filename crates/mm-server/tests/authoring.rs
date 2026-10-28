@@ -274,11 +274,8 @@ async fn bad_requests_are_refused_before_any_model_call() {
         Some(json!({})),
     )
     .await;
-    assert_eq!(
-        status,
-        StatusCode::BAD_REQUEST,
-        "no recording for this spec"
-    );
+    assert_eq!(status, StatusCode::NOT_FOUND, "no recording for this spec");
+    assert_eq!(err["code"], "no-recording", "{err}");
     assert!(err["message"].as_str().unwrap().contains("no recorded run"));
     let (status, _) = call(&state, "POST", "/api/specs/nope/author", Some(json!({}))).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
@@ -360,6 +357,7 @@ fn stored(state: &AppState, content_id: &str, graph: mm_graph::BlockGraph) {
             source: mm_server::author_dto::ModelSource::Recorded,
             session: "test".into(),
             attempts_used: 1,
+            stored_seq: 0,
         },
         graph,
     });

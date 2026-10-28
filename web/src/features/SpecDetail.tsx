@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAction, useResource } from "@/hooks/useResource";
+import { draftsOf } from "@/lib/drafts";
 import { formatWithUnit } from "@/lib/format";
 import { format, type Section } from "@/lib/route";
 import type { BindingView } from "@/types/generated/BindingView";
@@ -133,7 +134,7 @@ export function SpecDetail({
   if (spec.status === "loading") return <Skeleton className="h-64 w-full" />;
   if (spec.status === "error") return <ErrorNote error={spec.error} onRetry={spec.reload} />;
   const { summary, about, description, params, scenarios, reference } = spec.data;
-  const ownDrafts = drafts.status === "ready" ? drafts.data.filter((d) => d.spec === name) : [];
+  const ownDrafts = drafts.status === "ready" ? draftsOf(drafts.data, name) : [];
   const bound = binding.status === "ready";
   const units = Object.fromEntries(summary.outputs.map((p) => [p.name, p.unit]));
   // An engineer's own sequence has no hand-built graph: Muse Spark's drafts are the point.

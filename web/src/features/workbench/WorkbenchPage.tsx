@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useResource } from "@/hooks/useResource";
 import { useAcceptSequence, useReadSequence } from "@/hooks/useWorkbench";
+import { newestDraft } from "@/lib/drafts";
 import { formatWithUnit } from "@/lib/format";
 import {
   ACCEPTED_TYPES,
@@ -480,7 +481,7 @@ function useAcceptedFacts(spec: string | null, active: boolean) {
       reloadBinding();
     }
   }, [active, spec, reloadDrafts, reloadBinding]);
-  const verified = drafts.status === "ready" ? (drafts.data.find((d) => d.spec === spec)?.content_id ?? null) : null;
+  const verified = drafts.status === "ready" && spec ? (newestDraft(drafts.data, spec)?.content_id ?? null) : null;
   return { verified, bound: binding.status === "ready" };
 }
 

@@ -504,6 +504,23 @@ async fn bad_faults_are_refused() {
     }
 }
 
+/// A run length out of range is the problem to report, not a fault that "starts after" it.
+#[tokio::test]
+async fn a_bad_run_length_is_reported_before_the_fault() {
+    let state = state(None);
+    let body = json!({"steps": 0,
+        "fault": {"point": "floor1_reaAHU_TSup_y", "from_step": 1, "steps": 2}});
+    let (status, err) = call(&state, "POST", "/api/runs", Some(body)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{err}");
+    assert!(
+        err["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("steps must be 1 to"),
+        "{err}"
+    );
+}
+
 /// Without the request sequences, the reset reads occupancy: a NaN there degrades it too.
 #[tokio::test]
 async fn an_occupancy_fault_without_requests_degrades_the_reset() {

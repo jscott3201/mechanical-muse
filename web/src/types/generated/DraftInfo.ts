@@ -5,4 +5,10 @@ import type { ModelSource } from "./ModelSource";
  * A stored draft that passed every scenario. Runs may load it only after its vectors replay
  * green again (AGENTS.md hard rule 5).
  */
-export type DraftInfo = { content_id: string, spec: string, scenarios: number, model: string, source: ModelSource, session: string, attempts_used: number, };
+export type DraftInfo = { content_id: string, spec: string, scenarios: number, model: string, source: ModelSource, session: string, attempts_used: number, 
+/**
+ * Store order: each stored draft gets a number one above every draft before it, so lists
+ * can show the newest first (a content id is a hash and says nothing about age). Drafts
+ * stored before this field existed read as 0, the oldest. Not part of any receipt.
+ */
+stored_seq: number, };

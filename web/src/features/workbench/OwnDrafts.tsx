@@ -72,7 +72,7 @@ export function OwnDrafts({
       <CardHeader>
         <CardTitle>Verified drafts</CardTitle>
         <CardDescription className="max-w-prose">
-          Muse Spark's drafts of your sequence that passed every accepted scenario on the engine, listed by content id.
+          Muse Spark's drafts of your sequence that passed every accepted scenario on the engine, newest first.
           There is no hand-built graph to compare with.
         </CardDescription>
       </CardHeader>

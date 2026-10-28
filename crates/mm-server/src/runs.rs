@@ -1,4 +1,6 @@
-//! Run sessions. One run at a time (BOPTEST has one worker). Each run is one task that owns its
+//! Run sessions. One live run at a time (BOPTEST has one worker) and, beside it, one replay at a
+//! time (a replay drives no plant, so a live run stuck selecting or initializing must not block
+//! it). Each run is one task that owns its
 //! engines and its plant; it publishes events to a log (for late subscribers and reconnects), a
 //! broadcast channel (for live subscribers) and, if configured, a JSON-lines record on disk.
 
@@ -79,6 +81,9 @@ pub enum StartError {
     Active(String),
     #[error("{0}")]
     Invalid(String),
+    /// A recorded authoring session was asked for and none exists for that spec.
+    #[error("{0}")]
+    NoRecording(String),
 }
 
 pub struct RunHandle {
@@ -89,6 +94,8 @@ pub struct RunHandle {
     stop: watch::Sender<bool>,
     ticks: AtomicU32,
     kpis: Mutex<Option<BTreeMap<String, f64>>>,
+    /// The BOPTEST test this run selected, once it has one (for logs at exit).
+    testid: Mutex<Option<String>>,
 }
 
 impl RunHandle {
@@ -109,6 +116,20 @@ impl RunHandle {
 
     pub(crate) fn set_state(&self, state: RunState) {
         *lock(&self.state) = state;
+    }
+
+    pub(crate) fn set_testid(&self, testid: &str) {
+        *lock(&self.testid) = Some(testid.to_owned());
+    }
+
+    /// The BOPTEST test this run selected, if it got that far.
+    pub fn testid(&self) -> Option<String> {
+        lock(&self.testid).clone()
+    }
+
+    /// True for a replay of a recorded run (no plant).
+    pub fn is_replay(&self) -> bool {
+        self.config.replay.is_some()
     }
 
     pub(crate) fn count_tick(&self) {
@@ -162,13 +183,23 @@ impl Runs {
         }
     }
 
-    /// The run that is starting or running, if any.
+    /// The live (BOPTEST) run that is starting or running, if any. Replays are not counted.
     pub fn active(&self) -> Option<Arc<RunHandle>> {
         lock(&self.registry)
             .runs
             .values()
-            .find(|r| matches!(r.state(), RunState::Starting | RunState::Running))
+            .find(|r| !r.is_replay() && is_active(r))
             .cloned()
+    }
+
+    /// Every run that is starting or running, live or replay.
+    pub fn all_active(&self) -> Vec<Arc<RunHandle>> {
+        lock(&self.registry)
+            .runs
+            .values()
+            .filter(|r| is_active(r))
+            .cloned()
+            .collect()
     }
 
     pub fn get(&self, id: &str) -> Option<Arc<RunHandle>> {
@@ -183,28 +214,25 @@ impl Runs {
             .collect()
     }
 
-    /// Registers a new run if none is active. The caller spawns its task.
+    /// Registers a new live run if no other live run is active. The caller spawns its task.
     pub fn create(&self, request: &RunRequest) -> Result<Arc<RunHandle>, StartError> {
         self.register(resolve(request)?)
     }
 
-    /// Registers a run with a settled configuration (a live run, or a replay).
+    /// Registers a run with a settled configuration (a live run, or a replay). A live run waits
+    /// for no replay and a replay for no live run: each kind is refused only while another run
+    /// of its own kind is active.
     pub(crate) fn register(&self, config: RunConfig) -> Result<Arc<RunHandle>, StartError> {
         let mut reg = lock(&self.registry);
+        let replay = config.replay.is_some();
         if let Some(active) = reg
             .runs
             .values()
-            .find(|r| matches!(r.state(), RunState::Starting | RunState::Running))
+            .find(|r| r.is_replay() == replay && is_active(r))
         {
             return Err(StartError::Active(active.id.clone()));
         }
-        reg.next += 1;
-        // Ids sort in start order; the prefix keeps them unique across server restarts.
-        let started = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or_default();
-        let id = format!("run-{started}-{}", reg.next);
+        let id = crate::journal::fresh_id("run", &mut reg.next, self.config.records.as_deref());
         let journal = Arc::new(Journal::new(&id, self.config.records.as_deref()));
         let (stop, _) = watch::channel(false);
         let handle = Arc::new(RunHandle {
@@ -215,6 +243,7 @@ impl Runs {
             stop,
             ticks: AtomicU32::new(0),
             kpis: Mutex::new(None),
+            testid: Mutex::new(None),
         });
         reg.runs.insert(id, Arc::clone(&handle));
         Ok(handle)
@@ -235,6 +264,10 @@ impl Runs {
     }
 }
 
+fn is_active(run: &RunHandle) -> bool {
+    matches!(run.state(), RunState::Starting | RunState::Running)
+}
+
 pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
     let start_s = r.start_s.unwrap_or(185.0 * 86_400.0 + 12.0 * 3_600.0);
     let warmup_s = r.warmup_s.unwrap_or(86_400.0);
@@ -251,6 +284,11 @@ pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
         return Err(StartError::Invalid(
             "start_s must be at least warmup_s (the warm-up runs before the start)".into(),
         ));
+    }
+    if !(1..=MAX_STEPS).contains(&steps) {
+        return Err(StartError::Invalid(format!(
+            "steps must be 1 to {MAX_STEPS}"
+        )));
     }
     if let Some(f) = &r.fault {
         if r.baseline.unwrap_or(false) {
@@ -286,11 +324,6 @@ pub(crate) fn resolve(r: &RunRequest) -> Result<RunConfig, StartError> {
                 "a held value or bias must be a finite number".into(),
             ));
         }
-    }
-    if !(1..=MAX_STEPS).contains(&steps) {
-        return Err(StartError::Invalid(format!(
-            "steps must be 1 to {MAX_STEPS}"
-        )));
     }
     let baseline = r.baseline.unwrap_or(false);
     if baseline && r.drafts.as_ref().is_some_and(|d| !d.is_empty()) {

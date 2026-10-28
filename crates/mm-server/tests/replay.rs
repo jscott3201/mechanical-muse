@@ -178,7 +178,7 @@ async fn a_replay_resends_the_record_under_a_new_run_that_says_so() {
 }
 
 #[tokio::test]
-async fn a_replay_can_be_stopped_and_holds_the_one_run_slot() {
+async fn a_replay_can_be_stopped_and_holds_the_replay_slot() {
     let state = state(Some(replays()), Duration::from_millis(300));
     let (_, run) = call(
         &state,
@@ -188,13 +188,49 @@ async fn a_replay_can_be_stopped_and_holds_the_one_run_slot() {
     )
     .await;
     let id = run["id"].as_str().unwrap().to_owned();
-    let (status, body) = call(&state, "POST", "/api/runs", Some(json!({}))).await;
+    let (status, body) = call(
+        &state,
+        "POST",
+        "/api/runs/replay",
+        Some(json!({"record": "short"})),
+    )
+    .await;
     assert_eq!(status, StatusCode::CONFLICT, "{body}");
+    assert_eq!(body["code"], "run-active", "{body}");
     let (status, _) = call(&state, "POST", &format!("/api/runs/{id}/stop"), None).await;
     assert_eq!(status, StatusCode::ACCEPTED);
     let all = events(&state, &id).await;
     assert_eq!(all.last().unwrap()["state"], "stopped");
     assert!(all.iter().filter(|e| e["kind"] == "tick").count() < 3);
+}
+
+/// A live run stuck selecting or initializing in BOPTEST (up to half an hour) must not refuse
+/// replays, which touch no plant; a second live run is still refused.
+#[tokio::test]
+async fn a_stuck_live_run_does_not_block_a_replay() {
+    let state = state(Some(replays()), Duration::ZERO);
+    // Registered and never driven: it stays "starting", as one waiting on BOPTEST does.
+    let stuck = state
+        .runs()
+        .create(&mm_server::run_dto::RunRequest::default())
+        .unwrap();
+    let (status, run) = call(
+        &state,
+        "POST",
+        "/api/runs/replay",
+        Some(json!({"record": "short"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{run}");
+    let (status, body) = call(&state, "POST", "/api/runs", Some(json!({}))).await;
+    assert_eq!(status, StatusCode::CONFLICT, "{body}");
+    assert!(
+        body["message"].as_str().unwrap().contains(&stuck.id),
+        "{body}"
+    );
+    let all = events(&state, run["id"].as_str().unwrap()).await;
+    assert_eq!(all.last().unwrap()["kind"], "ended");
+    assert_eq!(state.runs().active().unwrap().id, stuck.id);
 }
 
 #[tokio::test]

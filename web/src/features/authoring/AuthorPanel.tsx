@@ -18,11 +18,13 @@ import type { AuthorInfo } from "@/types/generated/AuthorInfo";
 import type { AuthorRequest } from "@/types/generated/AuthorRequest";
 import type { ModelSource } from "@/types/generated/ModelSource";
 import type { Problem } from "@/types/generated/Problem";
+import type { RecordedSessions } from "@/types/generated/RecordedSessions";
 
 import { ErrorNote } from "../ErrorNote";
 import { ExplanationPanel } from "../graph/ExplanationPanel";
 import { GraphCanvas } from "../graph/GraphCanvas";
 import { Outcome, type OutputUnits } from "../Receipt";
+import { recordedBlocks } from "./recorded";
 import { SparkChecks } from "./SparkChecks";
 
 /**
@@ -253,7 +255,11 @@ export function AuthorPanel({
   const source: ModelSource = chosen ?? (live || health.status !== "ready" ? "live" : "recorded");
   const setSource = setChosen;
   const [tools, setTools] = useState(false);
-  const body = useMemo<AuthorRequest>(() => (tools ? { source, tools: true } : { source }), [source, tools]);
+  // Only some specs have a recorded session; say so before a Draft click, not after.
+  const recordings = useResource<RecordedSessions>(`/api/specs/${encodeURIComponent(spec)}/recordings`);
+  const blocked = recordedBlocks(recordings.status === "ready" ? recordings.data : null, source, tools);
+  const sendTools = tools && blocked.tools === null;
+  const body = useMemo<AuthorRequest>(() => (sendTools ? { source, tools: true } : { source }), [source, sendTools]);
   const start = useAction<AuthorInfo>(`/api/specs/${encodeURIComponent(spec)}/author`, body);
   const [sessionId, setSessionId] = useState<string | null>(null);
   useEffect(() => {
@@ -306,7 +312,11 @@ export function AuthorPanel({
               <History aria-hidden="true" /> Recorded session
             </Button>
           </div>
-          <Button onClick={start.run} disabled={running || (source === "live" && !live && health.status === "ready")}>
+          <Button
+            onClick={start.run}
+            disabled={running || (source === "live" && !live && health.status === "ready") || blocked.draft !== null}
+            title={blocked.draft ?? undefined}
+          >
             {running ? <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" /> : <Sparkles aria-hidden="true" />}
             {running ? "Authoring…" : "Draft"}
           </Button>
@@ -314,11 +324,18 @@ export function AuthorPanel({
             <span className="text-xs text-muted-foreground">No model key on this server: recorded sessions only.</span>
           )}
         </div>
+        {blocked.draft && <p className="text-sm text-muted-foreground">{blocked.draft}</p>}
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <Switch id={`author-tools-${spec}`} checked={tools} onCheckedChange={setTools} disabled={running} />
+            <Switch
+              id={`author-tools-${spec}`}
+              checked={sendTools}
+              onCheckedChange={setTools}
+              disabled={running || blocked.tools !== null}
+            />
             <Label htmlFor={`author-tools-${spec}`}>Let Spark check its work (tools)</Label>
           </div>
+          {blocked.tools && <p className="text-xs text-muted-foreground">{blocked.tools}</p>}
           <p className="max-w-prose text-xs text-muted-foreground">
             Before it answers, Spark may run our checks on its own draft: structure, one scenario at a
             time, and block lookups. Its checks are shown inline; only the receipt below each attempt

@@ -22,6 +22,11 @@ Decisions for Mechanical Muse. Muse Code's `/grill-with-docs` writes here. Newes
   on a weekday near the peak cooling day (day 185, a Monday) with a 1-day warm-up. An x86 VM stays the fallback if a longer episode is needed.
   (2026-10-26)
 
+- Runs: one live BOPTEST run at a time; one replay at a time may play beside it, since a replay
+  drives no plant (a live run stuck selecting or warming up no longer blocks replays). BOPTEST
+  select gives up after 30 min (above the 17 min measured when queued behind an orphan, since an
+  abandoned select still creates a test); initialize keeps its hour. (2026-10-28)
+
 - CI: GitHub Actions adapted from rusty-bacnet (`docs/ci.md`): pinned toolchain, SHA-checked
   tools, SHA-pinned actions, nextest as the test runner, cargo-deny, and one aggregate `CI OK`
   status. (2026-10-26)
