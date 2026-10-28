@@ -1,0 +1,551 @@
+{
+ "name": "home_price_response",
+ "inputs": [
+  {
+   "name": "pri00",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 0 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri01",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 1 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri02",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 2 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri03",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 3 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri04",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 4 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri05",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 5 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri06",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 6 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri07",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 7 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri08",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 8 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri09",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 9 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri10",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 10 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri11",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 11 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri12",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 12 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri13",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 13 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri14",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 14 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri15",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 15 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri16",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 16 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri17",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 17 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri18",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 18 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri19",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 19 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri20",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 20 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri21",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 21 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri22",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 22 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "pri23",
+   "type": "real",
+   "unit": "1/kWh",
+   "description": "Electricity price for the hour starting 23 h from now (hour 0 is the current hour)"
+  },
+  {
+   "name": "TLo00",
+   "type": "real",
+   "unit": "K",
+   "description": "Lower comfort limit (floor) 0 h from now"
+  },
+  {
+   "name": "TLo01",
+   "type": "real",
+   "unit": "K",
+   "description": "Lower comfort limit (floor) 1 h from now"
+  },
+  {
+   "name": "TLo02",
+   "type": "real",
+   "unit": "K",
+   "description": "Lower comfort limit (floor) 2 h from now"
+  },
+  {
+   "name": "THi00",
+   "type": "real",
+   "unit": "K",
+   "description": "Upper comfort limit (ceiling) 0 h from now"
+  },
+  {
+   "name": "THi01",
+   "type": "real",
+   "unit": "K",
+   "description": "Upper comfort limit (ceiling) 1 h from now"
+  },
+  {
+   "name": "THi02",
+   "type": "real",
+   "unit": "K",
+   "description": "Upper comfort limit (ceiling) 2 h from now"
+  },
+  {
+   "name": "THi03",
+   "type": "real",
+   "unit": "K",
+   "description": "Upper comfort limit (ceiling) 3 h from now"
+  },
+  {
+   "name": "TZon",
+   "type": "real",
+   "unit": "K",
+   "description": "Zone (room) temperature now"
+  }
+ ],
+ "outputs": [
+  {
+   "name": "TSet",
+   "type": "real",
+   "description": "Heating setpoint for the zone"
+  }
+ ],
+ "blocks": [
+  {
+   "id": "dayMax",
+   "class": "Reals.MultiMax",
+   "params": [
+    {
+     "name": "nin",
+     "value": 24
+    }
+   ]
+  },
+  {
+   "id": "dayMin",
+   "class": "Reals.MultiMin",
+   "params": [
+    {
+     "name": "nin",
+     "value": 24
+    }
+   ]
+  },
+  {
+   "id": "spread",
+   "class": "Reals.Subtract",
+   "params": []
+  },
+  {
+   "id": "peakPart",
+   "class": "Reals.MultiplyByParameter",
+   "params": [
+    {
+     "name": "k",
+     "value": 0.75
+    }
+   ]
+  },
+  {
+   "id": "threshold",
+   "class": "Reals.Add",
+   "params": []
+  },
+  {
+   "id": "hasPeak",
+   "class": "Reals.GreaterThreshold",
+   "params": [
+    {
+     "name": "t",
+     "value": 0.01
+    }
+   ]
+  },
+  {
+   "id": "nowBelow",
+   "class": "Reals.Less",
+   "params": []
+  },
+  {
+   "id": "nowAtPeak",
+   "class": "Logical.Not",
+   "params": []
+  },
+  {
+   "id": "peakNow",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "soonMax",
+   "class": "Reals.MultiMax",
+   "params": [
+    {
+     "name": "nin",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": "soonBelow",
+   "class": "Reals.Less",
+   "params": []
+  },
+  {
+   "id": "soonAtPeak",
+   "class": "Logical.Not",
+   "params": []
+  },
+  {
+   "id": "peakSoon",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "floorSoon",
+   "class": "Reals.MultiMax",
+   "params": [
+    {
+     "name": "nin",
+     "value": 3
+    }
+   ]
+  },
+  {
+   "id": "ceilingSoon",
+   "class": "Reals.MultiMin",
+   "params": [
+    {
+     "name": "nin",
+     "value": 4
+    }
+   ]
+  },
+  {
+   "id": "floorNowPlus",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": 0.2
+    }
+   ]
+  },
+  {
+   "id": "awaySet",
+   "class": "Reals.Sources.Constant",
+   "params": [
+    {
+     "name": "k",
+     "value": 293.65
+    }
+   ]
+  },
+  {
+   "id": "base",
+   "class": "Reals.Max",
+   "params": []
+  },
+  {
+   "id": "floorSoonPlus",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": 0.2
+    }
+   ]
+  },
+  {
+   "id": "normal",
+   "class": "Reals.Max",
+   "params": []
+  },
+  {
+   "id": "coastBase",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": -1.5
+    }
+   ]
+  },
+  {
+   "id": "coastFloor",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": 0.1
+    }
+   ]
+  },
+  {
+   "id": "coast",
+   "class": "Reals.Max",
+   "params": []
+  },
+  {
+   "id": "boost",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": 1.0
+    }
+   ]
+  },
+  {
+   "id": "ceilingCap",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": -2.0
+    }
+   ]
+  },
+  {
+   "id": "boostCapped",
+   "class": "Reals.Min",
+   "params": []
+  },
+  {
+   "id": "preheat",
+   "class": "Reals.Max",
+   "params": []
+  },
+  {
+   "id": "warmLine",
+   "class": "Reals.AddParameter",
+   "params": [
+    {
+     "name": "p",
+     "value": 0.5
+    }
+   ]
+  },
+  {
+   "id": "warm",
+   "class": "Reals.Greater",
+   "params": []
+  },
+  {
+   "id": "notWarm",
+   "class": "Logical.Not",
+   "params": []
+  },
+  {
+   "id": "doPreheat",
+   "class": "Logical.And",
+   "params": []
+  },
+  {
+   "id": "beforePeak",
+   "class": "Reals.Switch",
+   "params": []
+  },
+  {
+   "id": "choose",
+   "class": "Reals.Switch",
+   "params": []
+  }
+ ],
+ "connections": [
+  "pri00 -> dayMax.u1",
+  "pri00 -> dayMin.u1",
+  "pri01 -> dayMax.u2",
+  "pri01 -> dayMin.u2",
+  "pri02 -> dayMax.u3",
+  "pri02 -> dayMin.u3",
+  "pri03 -> dayMax.u4",
+  "pri03 -> dayMin.u4",
+  "pri04 -> dayMax.u5",
+  "pri04 -> dayMin.u5",
+  "pri05 -> dayMax.u6",
+  "pri05 -> dayMin.u6",
+  "pri06 -> dayMax.u7",
+  "pri06 -> dayMin.u7",
+  "pri07 -> dayMax.u8",
+  "pri07 -> dayMin.u8",
+  "pri08 -> dayMax.u9",
+  "pri08 -> dayMin.u9",
+  "pri09 -> dayMax.u10",
+  "pri09 -> dayMin.u10",
+  "pri10 -> dayMax.u11",
+  "pri10 -> dayMin.u11",
+  "pri11 -> dayMax.u12",
+  "pri11 -> dayMin.u12",
+  "pri12 -> dayMax.u13",
+  "pri12 -> dayMin.u13",
+  "pri13 -> dayMax.u14",
+  "pri13 -> dayMin.u14",
+  "pri14 -> dayMax.u15",
+  "pri14 -> dayMin.u15",
+  "pri15 -> dayMax.u16",
+  "pri15 -> dayMin.u16",
+  "pri16 -> dayMax.u17",
+  "pri16 -> dayMin.u17",
+  "pri17 -> dayMax.u18",
+  "pri17 -> dayMin.u18",
+  "pri18 -> dayMax.u19",
+  "pri18 -> dayMin.u19",
+  "pri19 -> dayMax.u20",
+  "pri19 -> dayMin.u20",
+  "pri20 -> dayMax.u21",
+  "pri20 -> dayMin.u21",
+  "pri21 -> dayMax.u22",
+  "pri21 -> dayMin.u22",
+  "pri22 -> dayMax.u23",
+  "pri22 -> dayMin.u23",
+  "pri23 -> dayMax.u24",
+  "pri23 -> dayMin.u24",
+  "dayMax.y -> spread.u1",
+  "dayMin.y -> spread.u2",
+  "spread.y -> peakPart.u",
+  "dayMin.y -> threshold.u1",
+  "peakPart.y -> threshold.u2",
+  "spread.y -> hasPeak.u",
+  "pri00 -> nowBelow.u1",
+  "threshold.y -> nowBelow.u2",
+  "nowBelow.y -> nowAtPeak.u",
+  "nowAtPeak.y -> peakNow.u1",
+  "hasPeak.y -> peakNow.u2",
+  "pri01 -> soonMax.u1",
+  "pri02 -> soonMax.u2",
+  "pri03 -> soonMax.u3",
+  "soonMax.y -> soonBelow.u1",
+  "threshold.y -> soonBelow.u2",
+  "soonBelow.y -> soonAtPeak.u",
+  "soonAtPeak.y -> peakSoon.u1",
+  "hasPeak.y -> peakSoon.u2",
+  "TLo00 -> floorSoon.u1",
+  "TLo01 -> floorSoon.u2",
+  "TLo02 -> floorSoon.u3",
+  "THi00 -> ceilingSoon.u1",
+  "THi01 -> ceilingSoon.u2",
+  "THi02 -> ceilingSoon.u3",
+  "THi03 -> ceilingSoon.u4",
+  "TLo00 -> floorNowPlus.u",
+  "floorNowPlus.y -> base.u1",
+  "awaySet.y -> base.u2",
+  "floorSoon.y -> floorSoonPlus.u",
+  "base.y -> normal.u1",
+  "floorSoonPlus.y -> normal.u2",
+  "base.y -> coastBase.u",
+  "floorSoon.y -> coastFloor.u",
+  "coastBase.y -> coast.u1",
+  "coastFloor.y -> coast.u2",
+  "normal.y -> boost.u",
+  "ceilingSoon.y -> ceilingCap.u",
+  "boost.y -> boostCapped.u1",
+  "ceilingCap.y -> boostCapped.u2",
+  "boostCapped.y -> preheat.u1",
+  "normal.y -> preheat.u2",
+  "normal.y -> warmLine.u",
+  "TZon -> warm.u1",
+  "warmLine.y -> warm.u2",
+  "warm.y -> notWarm.u",
+  "peakSoon.y -> doPreheat.u1",
+  "notWarm.y -> doPreheat.u2",
+  "preheat.y -> beforePeak.u1",
+  "doPreheat.y -> beforePeak.u2",
+  "normal.y -> beforePeak.u3",
+  "coast.y -> choose.u1",
+  "peakNow.y -> choose.u2",
+  "beforePeak.y -> choose.u3",
+  "choose.y -> TSet"
+ ]
+}
