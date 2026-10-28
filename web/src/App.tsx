@@ -8,11 +8,10 @@ import { AppHeader } from "@/features/shell/AppHeader";
 import { SpecDetail } from "@/features/SpecDetail";
 import { SpecList } from "@/features/SpecList";
 import { WorkbenchPage } from "@/features/workbench/WorkbenchPage";
-import { useResource } from "@/hooks/useResource";
+import { useHealth } from "@/hooks/useHealth";
 import { useRoute } from "@/hooks/useRoute";
 import { useTheme } from "@/hooks/useTheme";
 import type { Page, Route } from "@/lib/route";
-import type { Health } from "@/types/generated/Health";
 
 const PAGES: readonly Page[] = ["overview", "sequences", "workbench", "runs"];
 const PAGE_TITLES: Record<Page, string> = {
@@ -45,7 +44,7 @@ function Pane({ value, visited, children }: { value: Page; visited: ReadonlySet<
 export function App() {
   const [route, go] = useRoute();
   const page = route.page;
-  const health = useResource<Health>("/api/health");
+  const health = useHealth();
   // Bumped when the workbench adds a sequence, so the list reloads.
   const [listVersion, setListVersion] = useState(0);
   const [theme, toggleTheme] = useTheme();
