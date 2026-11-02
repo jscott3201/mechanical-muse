@@ -30,6 +30,9 @@ The port is published on 127.0.0.1 only. Use another host port with `MM_PORT=909
 - Recorded BOPTEST runs replay over the same event stream, labelled "replay", including the
   labelled test fault that shows the fail-safe (`day186-midnight-fault-demo`).
 - Recorded plain-language explanations, labelled as model-written.
+- Bring your own, for the sample sheet and its revision B: recorded readings, binding proposals
+  and "Try to break it" proposals (`fixtures/readings`, `bindings`, `attacks`), labeled
+  "recorded"; accepting, drafting and every check still run in the container.
 
 ### Live mode (optional)
 
@@ -80,7 +83,7 @@ module's docstring has the details.
 | --- | --- | --- |
 | web | `node:26.12.1-trixie-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec` | `npm ci --ignore-scripts && npm run build` (Node per `web/.nvmrc`) |
 | server | `rust:1.97.1-slim-trixie@sha256:8e8cf8f7fd54a2d23d5a743b3a03f56e26b6c774276c33fa0595111704ebb15c` | `cargo build --release --locked -p mm-server` (Rust per `rust-toolchain.toml`) |
-| runtime | `debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad` | `mm-server`, `web/dist`, `specs/`, `fixtures/{recordings,replays,explanations}`; curl for the health check |
+| runtime | `debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad` | `mm-server`, `web/dist`, `specs/`, `fixtures/{recordings,replays,explanations,readings,bindings,attacks}`; curl for the health check |
 
 These are ordinary third-party base images (Node.js, Rust and Debian official images), used
 unmodified. The runtime runs as an unprivileged user (uid 10001); in Compose its filesystem is
