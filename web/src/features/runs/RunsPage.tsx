@@ -507,7 +507,7 @@ export function RunsPage({
               <p className="font-medium text-foreground">No runs on this server yet</p>
               <p className="mt-1">
                 Start one on BOPTEST with a preset on the left, or replay a recorded run: it plays through this same view,
-                labelled as a replay.
+                labeled as a replay.
               </p>
             </div>
           </div>

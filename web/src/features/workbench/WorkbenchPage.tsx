@@ -182,7 +182,7 @@ function SourceStep({
         <p className="text-xs text-muted-foreground">
           The sample is a one-page sheet we wrote for this demo (an AHU supply air temperature reset, in °F); revision B
           raises its humidity thresholds to suit this building. Without a model key, the server answers with its recorded
-          reading of either, labelled recorded.
+          reading of either, labeled recorded.
         </p>
       </CardContent>
     </Card>
