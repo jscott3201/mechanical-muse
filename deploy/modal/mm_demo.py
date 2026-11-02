@@ -67,6 +67,9 @@ def web():
         "MM_RECORDINGS_DIR": "/app/fixtures/recordings",
         "MM_REPLAYS_DIR": "/app/fixtures/replays",
         "MM_EXPLANATIONS_DIR": "/app/fixtures/explanations",
+        "MM_READINGS_DIR": "/app/fixtures/readings",
+        "MM_BINDINGS_DIR": "/app/fixtures/bindings",
+        "MM_ATTACKS_DIR": "/app/fixtures/attacks",
     }.items():
         env.setdefault(key, value)
     subprocess.Popen(["/usr/local/bin/mm-entrypoint"], cwd="/app", env=env)

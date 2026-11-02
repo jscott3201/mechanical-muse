@@ -1,6 +1,7 @@
 # Coding agents: Muse Code and Claude Code
 
-How this repo is set up for the two coding harnesses we switch between during the build.
+Muse Code and Claude Code both helped build this repository; this page describes how it is set up
+for the two coding harnesses, which we switch between during the build.
 Agent-facing rules live in `AGENTS.md`; this page is for the human driving the sessions. Any tool
 may build the repo (the organizers confirmed this on 2026-10-26), but every model call the
 application makes goes to Meta's models: today that is Muse Spark through the Model API (Muse
@@ -77,7 +78,7 @@ without the Stop hook or skills; run the checks yourself before merging their wo
 
 - Name the finish line in the prompt ("done when `cargo test --workspace` passes and the new golden
   test exists"). The Stop hook enforces the checks; it does not judge whether the work is right.
-- Commit from your own terminal in small, labelled commits. Note in the message which harness and
+- Commit from your own terminal in small, labeled commits. Note in the message which harness and
   model produced a change if it helps the provenance story.
 - Writers in parallel get isolated worktrees; read-only explorers share the checkout; merge one
   child at a time.

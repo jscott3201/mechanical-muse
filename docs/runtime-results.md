@@ -126,7 +126,7 @@ the same window (the local run of this morning, record `fixtures/replays/day185-
 and so were the BOPTEST KPIs (`ener_tot` 0.3101, `cost_tot` 0.0213, `tdis_tot` 0.1564). No
 fail-safe event fired. Record: `fixtures/replays/day185-noon-spark-draft.jsonl`.
 
-**What it does not show.** Identical behaviour on this window, where the draft and the reference
+**What it does not show.** Identical behavior on this window, where the draft and the reference
 receive the same inputs; not equivalence in general (the vectors are the stronger evidence of
 that, and they are conformance tests, not proof). The draft came from a recorded session: the
 model call happened earlier the same day; the checks and the run were live.

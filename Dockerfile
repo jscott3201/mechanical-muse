@@ -42,6 +42,9 @@ COPY specs ./specs
 COPY fixtures/recordings ./fixtures/recordings
 COPY fixtures/replays ./fixtures/replays
 COPY fixtures/explanations ./fixtures/explanations
+COPY fixtures/readings ./fixtures/readings
+COPY fixtures/bindings ./fixtures/bindings
+COPY fixtures/attacks ./fixtures/attacks
 COPY deploy/docker/entrypoint.sh /usr/local/bin/mm-entrypoint
 RUN mkdir -p runs && chown muse:muse runs && chmod 0755 /usr/local/bin/mm-entrypoint
 USER muse
@@ -51,7 +54,10 @@ ENV MM_ADDR=0.0.0.0:8080 \
     MM_RUNS_DIR=/app/runs \
     MM_RECORDINGS_DIR=/app/fixtures/recordings \
     MM_REPLAYS_DIR=/app/fixtures/replays \
-    MM_EXPLANATIONS_DIR=/app/fixtures/explanations
+    MM_EXPLANATIONS_DIR=/app/fixtures/explanations \
+    MM_READINGS_DIR=/app/fixtures/readings \
+    MM_BINDINGS_DIR=/app/fixtures/bindings \
+    MM_ATTACKS_DIR=/app/fixtures/attacks
 EXPOSE 8080
 # mm-server stops cleanly (closing streams, stopping an active BOPTEST test) on SIGINT.
 STOPSIGNAL SIGINT

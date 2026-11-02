@@ -1,4 +1,4 @@
-# Mechanical Muse: plant reset prep research
+# Mechanical Muse: plant reset reference notes
 
 Subject: `Buildings.Templates.Plants.Controls.Setpoints.PlantReset` (MBL) as the reference for the CHW and HW plant reset
 hero sequence; engine = open-control-engine (OCE); plant = BOPTEST `multizone_office_complex_air`.
@@ -8,12 +8,12 @@ Prepared 2026-10-26. All prose below is paraphrase; no ASHRAE Guideline 36 text 
 
 | Item | Source | Pin / hash |
 | --- | --- | --- |
-| PlantReset.mo | raw.githubusercontent.com/lbl-srg/modelica-buildings, `Buildings/Templates/Plants/Controls/Setpoints/PlantReset.mo` | Identical bytes at `master` (fetched today) and at the engine's vendored MBL commit `a131864e4c4df22ebcd52bb8da439de0087ac365`; sha256 `110f00c5bd12431f9a2bce6094bdba0ee7ab84a596b3a5080d5fa567eb853d6a`, 13,930 bytes. Revision notes in the file: first implementation 2024-03-29, hold logic updated 2024-06-07. |
+| PlantReset.mo | raw.githubusercontent.com/lbl-srg/modelica-buildings, `Buildings/Templates/Plants/Controls/Setpoints/PlantReset.mo` | Identical bytes at `master` (fetched 2026-10-26) and at the engine's vendored MBL commit `a131864e4c4df22ebcd52bb8da439de0087ac365`; sha256 `110f00c5bd12431f9a2bce6094bdba0ee7ab84a596b3a5080d5fa567eb853d6a`, 13,930 bytes. Revision notes in the file: first implementation 2024-03-29, hold logic updated 2024-06-07. |
 | MBL validation model | `.../Setpoints/Validation/PlantReset.mo` | same commit; identical to master |
 | TrimAndRespond.mo | engine `third_party/modelica-buildings-cdl/Buildings/Controls/OBC/ASHRAE/G36/Generic/TrimAndRespond.mo` | byte-identical to upstream at the pin (checked) |
 | MBL license | `Buildings/legal.html` (vendored in the engine, and upstream) | see section 2 |
-| Engine facts | a local clone of open-control-engine (clean, `git status` empty) | `tools/reference-catalog/*`, `docs/cxf-composite-subset.md`, `TESTING.md`, `crates/oce-cxf/tests/*` |
-| BOPTEST case | `ibpsa/project1-boptest` raw: `testcases/multizone_office_complex_air/doc/index.html`, `models/wrapped.mo`, `models/MultizoneOfficeComplexAir/{TestCases/TestCase.mo, BaseClasses/ChillerPlant.mo, BaseClasses/BoilerPlant.mo}` | master as of today |
+| Engine facts | open-control-engine source, a clean checkout | `tools/reference-catalog/*`, `docs/cxf-composite-subset.md`, `TESTING.md`, `crates/oce-cxf/tests/*` |
+| BOPTEST case | `ibpsa/project1-boptest` raw: `testcases/multizone_office_complex_air/doc/index.html`, `models/wrapped.mo`, `models/MultizoneOfficeComplexAir/{TestCases/TestCase.mo, BaseClasses/ChillerPlant.mo, BaseClasses/BoilerPlant.mo}` | master as of 2026-10-26 |
 
 The MBL docs web page (simulationresearch.lbl.gov ... `Buildings_Templates_Plants_Controls_Setpoints.html`) matches the source;
 it adds no version history for the block beyond what the `.mo` revision notes say.
@@ -68,14 +68,14 @@ and HW (the only difference is which end of the temperature range is the "easy" 
 | `rsp` | 0.03 | 1 | Respond per excess request (opposite sign to trim) |
 | `rsp_max` | 0.07 | 1 | Cap on the response per sample (same sign as respond) |
 
-### 1.3 T&R behaviour, as implemented (paraphrase of the source recurrence)
+### 1.3 T&R behavior, as implemented (paraphrase of the source recurrence)
 
-Verified by reading `TrimAndRespond.mo` and by cross-checking my own reference model against the engine (section 1.6).
+Verified by reading `TrimAndRespond.mo` and by cross-checking our own reference model against the engine (section 1.6).
 
 - Sample clock: a pulse every `dtRes`, **anchored to simulation time zero**, not to the enable instant.
 - While the plant is disabled: output = `res_init` immediately (no delay), internal memory re-armed.
 - After enable: output stays at `res_init` until the device has been on for `dtDel + dtRes`. The first trim lands at that instant
-  (1,200 s with defaults). By my reading of the block diagram, if that instant is not a tick the first trim still applies at that instant, then continues on the absolute tick grid
+  (1,200 s with defaults). On our reading of the block diagram, if that instant is not a tick the first trim still applies at that instant, then continues on the absolute tick grid
   (off-tick effect, ambiguity A8). The reference model encodes this reading; it has not been run through the engine off-tick.
 - At each tick, with `R` = sampled request count and `I` = ignored count:
   - `R <= I`: `r` changes by `tri` only.
@@ -133,7 +133,7 @@ Caveats that are not "missing classes" but matter:
     ambiguous in exactly this way (A1).
   - `G36.Plants.Chillers.SetPoints.ChilledWaterSupply`: maps the reset value to CHW supply temperature and dp setpoints with Line blocks and a "half" knee (0.5); defaults dp min 34,473.8 Pa and plant max CHW supply 288.706 K (60 F).
   - `G36.Plants.Chillers.Pumps.ChilledWater.*`: pump control subsequences.
-- **No HW plant reset sequence exists in MBL G36 packages today.** `Templates.Plants.Controls.Setpoints.PlantReset` is the only MBL block whose docs cover HW. That
+- **No HW plant reset sequence exists in MBL G36 packages (as of 2026-10-26).** `Templates.Plants.Controls.Setpoints.PlantReset` is the only MBL block whose docs cover HW. That
   makes PlantReset the right single reference for both loops.
 
 ### 1.6 Engine probe: does a `have_hol=true` TrimAndRespond load and behave? (a throwaway probe outside the repo)
@@ -160,7 +160,7 @@ Results (the probe code was throwaway and is not in the repository):
 paragraph about "Enhancements". Copyright: Modelica Association, IBPSA, The Regents of the University of California through LBNL, and contributors.
 The README says "3-clause BSD". The `.mo` documentation strings are part of the same source files and are covered by the same license.
 
-What it permits (my reading, not legal advice):
+What it permits (our reading, not legal advice):
 
 | Use | Allowed? | Obligation |
 | --- | --- | --- |

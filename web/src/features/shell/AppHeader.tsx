@@ -76,7 +76,7 @@ export function AppHeader({ health, theme, onToggleTheme }: { health: Resource<H
                   icon={<Sparkles aria-hidden="true" />}
                   label={health.data.recorded_model ? "recorded model only" : "no model"}
                   tone="secondary"
-                  detail={health.data.recorded_model ? "No model key on the server: authoring plays back recorded sessions, labelled as such" : "Authoring is off on this server"}
+                  detail={health.data.recorded_model ? "No model key on the server: authoring plays back recorded sessions, labeled as such" : "Authoring is off on this server"}
                 />
               )}
               {health.data.boptest ? (

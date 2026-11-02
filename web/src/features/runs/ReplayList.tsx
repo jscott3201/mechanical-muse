@@ -93,7 +93,7 @@ export function ReplayList({ highlight, onStarted }: { highlight: string | null;
       <CardHeader>
         <CardTitle>Replay a recorded run</CardTitle>
         <CardDescription>
-          Sends a recorded run's events again through the same view, labelled as a replay. Nothing
+          Sends a recorded run's events again through the same view, labeled as a replay. Nothing
           runs against BOPTEST.
         </CardDescription>
       </CardHeader>

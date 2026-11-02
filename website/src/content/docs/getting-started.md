@@ -7,7 +7,7 @@ There is no hosted public instance: the app runs on your machine. Without a mode
 BOPTEST everything plays back from recordings, and the UI labels each one "recorded" or
 "replay". Verification is always real: every spec's vectors replay through the engine.
 
-## Recorded mode in two minutes
+## Recorded mode
 
 With Docker only:
 
@@ -15,7 +15,7 @@ With Docker only:
 make docker-demo        # same as: docker compose -f compose.demo.yaml up --build
 ```
 
-Or with Rust (`rust-toolchain.toml`) and Node (`web/.nvmrc`):
+Or with Rust (`rust-toolchain.toml`) and Node 26+ (`web/.nvmrc`):
 
 ```sh
 make demo               # builds the web app and serves it from mm-server
@@ -26,7 +26,7 @@ build takes several minutes.
 
 Then try:
 
-1. **Sequences** → *Chilled-water plant reset* → *Muse Spark* → *Recorded run*, then *Draft*.
+1. **Sequences** → *Chilled-water plant reset* → *Muse Spark* → *Recorded session*, then *Draft*.
    Watch a draft fail its vectors and get repaired to a green receipt.
 2. **Bring your own** → *Use the sample sequence sheet*, then *Read with Muse Spark*: Spark's
    recorded reading of a photo of a sequence, its proposed scenarios and the open questions it
