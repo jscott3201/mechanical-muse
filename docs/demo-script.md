@@ -34,7 +34,7 @@ for a three-minute video that shows only work built during the event, so the cut
 | 1:41–1:56 | Revision B (10×): the reset moves 13→18 °C (55→65 °F); tiles beside the baseline | Revision B's recorded run on the same spring morning: thirty-seven percent less energy than BOPTEST's own controller, with less discomfort. On days it wasn't tuned on, a quarter to a half less in spring and fall, nothing in summer. | 3 (`…-rev-b`), else 1 |
 | 1:56–2:22 | Runs → Home → `home-day108-sequence` (10×): peak-price power card 1.17 → 0.87 kW, fleet line, rebound note | Same gate, second building, recorded: a heat pump house on spot electricity prices. The sequence preheats before the priciest hours and coasts through them. Over two simulated weeks, power in those hours drops twenty-six percent and the bill eight percent, with less discomfort. Utilities add thousands of homes together; the fleet line is an illustration, and we show the rebound too. | 3 (`home-day108-sequence`) |
 | 2:22–2:36 (optional) | Blank-reading replay at 4× (setpoints handed back), then the sensor-bias replay at 10× priced against the same run without it | In recorded runs, a blank sensor is refused, and control goes back to BOPTEST. A sensor reading four kelvin, seven Fahrenheit, high is worse, because it's believed: two hours of it cost about twelve dollars and forty-four kilograms of carbon. | 3 (`day186-midnight-fault-demo`, `day185-noon-fault-sensor-bias`) |
-| 2:36–2:49 | README results table (muse-spark-1.3-contributor, 3 runs); a short Muse Code clip calling the MCP tools; BACnet mirror still | On a hundred thirty-seven fault rules, Spark's drafts pass the library's test vectors on at least a hundred thirty after repair, never seeing the tests. Muse Code helped build this, and coding agents get the same checks over MCP. | — |
+| 2:36–2:49 | README results table (muse-spark-1.3-contributor, 3 runs); a short Muse Code clip calling the MCP tools (or the Muse Code and MCP card); BACnet mirror still only if a live run produces one | On a hundred thirty-seven fault rules, Spark's drafts pass the library's test vectors on at least a hundred thirty after repair, never seeing the tests. Muse Code helped build this, and coding agents get the same checks over MCP. | — |
 | 2:49–2:56 | Repo and docs URLs; Muse Spark via the Meta Model API | Muse Spark proposes, the engine checks, and only verified logic runs. Links below. | — |
 
 Cut order when over time: the fault scene; the Try to break it sentence; the binding sentence;
@@ -48,6 +48,29 @@ answered 19 s after start. Waits on screen: reading 0.1 s; revision A draft 2.1 
 1 s; revision A replay 6.5 s at 10× (15.6 s at 4×); revision B read and draft 4.1 s; revision B
 replay 6.5 s at 10×; blank-reading fault 1.8 s at 10× (60 steps: play it at 4×); sensor-bias
 replay 8.3 s at 10×. About 30 s of waiting in all, so the three minutes are set by the narration.
+
+## Recording with the driver
+
+`scripts/demo/take.sh` plays the whole cut in one take while the presenter narrates. Every scene is
+rung 2 or 3 (recorded model sessions and replays, labeled on screen). From the repo root:
+
+```bash
+bash scripts/demo/take.sh            # add --no-fault to skip the optional scene
+```
+
+It restarts `make demo` on a fresh state folder under `runs/demo-takes/`, so both sample revisions
+can be accepted again, with replays ticking every 100 ms instead of 250 ms so the two-week home
+replay fits its scene (the recorded events are the same). It then opens a 1280×720 Chrome window
+at the top left of the screen, dark theme, with a drawn cursor. The title, pipeline diagram, sample
+sheet, benchmark results and closing are full-window cards. The terminal shows each line of the
+Say column: press Enter, and the screen plays that step while you speak. `--clip <file.mp4>` plays
+a recorded Muse Code clip in place of the Muse Code card. Record only the Chrome window, with
+microphone and camera, and keep your own mouse over the terminal.
+
+Dry run: `bash scripts/demo/take.sh --headless --auto --shots <dir>` plays every step on the
+script's timings without a window and saves a screenshot after each. On 2026-11-02 (main at
+590a0b6) all 24 steps passed, about 3:15 on those timings with the fault scene. The driver keeps
+its own copy of the Say column: change both together.
 
 ## Claims check before recording
 
