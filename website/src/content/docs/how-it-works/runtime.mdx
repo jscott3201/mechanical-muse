@@ -38,7 +38,7 @@ Tests drive this path without BOPTEST, through a fake plant behind the same trai
 
 ## Test faults
 
-A run can inject a labelled test fault on one reading: blank (NaN), stuck at a value, or biased
+A run can inject a labeled test fault on one reading: blank (NaN), stuck at a value, or biased
 by an offset. A blank reading triggers the fail-safe. A biased reading is believed, so it shows
 what a drifted sensor costs (see [Emissions ledger](/mechanical-muse/how-it-works/emissions/)).
 
@@ -52,7 +52,7 @@ what a drifted sensor costs (see [Emissions ledger](/mechanical-muse/how-it-work
 ## Runs, replays and baselines
 
 - One live BOPTEST run at a time; one replay may play beside it.
-- Recorded runs replay over the same event stream, labelled "replay", at 1×, 4× or 10×.
+- Recorded runs replay over the same event stream, labeled "replay", at 1×, 4× or 10×.
 - KPIs come from BOPTEST itself and are compared with a baseline run (BOPTEST's own
   controllers, nothing written) over the same window.
 

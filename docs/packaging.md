@@ -26,10 +26,10 @@ The port is published on 127.0.0.1 only. Use another host port with `MM_PORT=909
 
 - Every spec loads and its test vectors replay through the engine (real verification, live in the
   container).
-- The recorded Muse Spark authoring session plays back attempt by attempt, labelled "recorded".
-- Recorded BOPTEST runs replay over the same event stream, labelled "replay", including the
-  labelled test fault that shows the fail-safe (`day186-midnight-fault-demo`).
-- Recorded plain-language explanations, labelled as model-written.
+- The recorded Muse Spark authoring session plays back attempt by attempt, labeled "recorded".
+- Recorded BOPTEST runs replay over the same event stream, labeled "replay", including the
+  labeled test fault that shows the fail-safe (`day186-midnight-fault-demo`).
+- Recorded plain-language explanations, labeled as model-written.
 - Bring your own, for the sample sheet and its revision B: recorded readings, binding proposals
   and "Try to break it" proposals (`fixtures/readings`, `bindings`, `attacks`), labeled
   "recorded"; accepting, drafting and every check still run in the container.

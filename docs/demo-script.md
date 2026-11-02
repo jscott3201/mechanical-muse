@@ -10,8 +10,8 @@ before recording. Spoken lines are guides, not a teleprompter.
 | Rung | Model | Plant | How |
 | --- | --- | --- | --- |
 | 1 live | Muse Spark via the Meta Model API | BOPTEST on Modal | `make boptest-modal`, then `MM_BOPTEST_URL=… MM_BACNET_ADDR=0.0.0.0:47808 make demo-live` |
-| 2 recorded model | recorded replies (`fixtures/recordings/`), labelled "recorded" | BOPTEST on Modal, live | same; choose "Recorded run" in the authoring panel |
-| 3 recorded run | — | recorded run events (`fixtures/replays/`), labelled "replay" | `make demo` (no key, no BOPTEST), "Replay" in the run form |
+| 2 recorded model | recorded replies (`fixtures/recordings/`), labeled "recorded" | BOPTEST on Modal, live | same; choose "Recorded session" in the authoring panel |
+| 3 recorded run | — | recorded run events (`fixtures/replays/`), labeled "replay" | `make demo` (no key, no BOPTEST), "Replay" in the run form |
 | 4 | screen recording of rung 1 or 2 | | made during rehearsal |
 
 Decide the rung per scene the day before recording. Never call rung 2 to 4 "live".
@@ -25,7 +25,7 @@ for a three-minute video that shows only work built during the event, so the cut
 
 | Time | On screen | Say (guide) | Rung |
 | --- | --- | --- | --- |
-| 0:00–0:17 | Title card (Push the Frontier; Muse Spark via the Meta Model API), then the README's pipeline diagram with two labelled columns: built during the hackathon, and existing open source we call | Mechanical Muse uses Muse Spark, through the Meta Model API, to turn a written building control sequence into a verified controller. Everything shown was built during this hackathon; the engine, BOPTEST and the BACnet stack are existing open-source projects we call. | — |
+| 0:00–0:17 | Title card (Push the Frontier; Muse Spark via the Meta Model API), then the README's pipeline diagram with two labeled columns: built during the hackathon, and existing open source we call | Mechanical Muse uses Muse Spark, through the Meta Model API, to turn a written building control sequence into a verified controller. Everything shown was built during this hackathon; the engine, BOPTEST and the BACnet stack are existing open-source projects we call. | — |
 | 0:17–0:26 | The sample sheet (`fixtures/sequences/ahu-sat-reset-sample.png`) | Sequences arrive as sheets like this. Each building's are programmed by hand and rarely tested against the sheet before they run. | — |
 | 0:26–0:42 | Bring your own → "Use the sample sequence sheet" → the task, what the sheet leaves open, proposed scenarios as timelines; accept | Spark reads the photo into a precise task, lists what the sheet leaves open instead of guessing, and proposes test scenarios. The engineer accepts them; only then do they become the gate. | 2 (recorded), or 1 sped up and said so |
 | 0:42–0:55 | Draft revision A: 7 of 7 first try, content id. Building tab: Spark's proposed points, the server's checks, confirm | Each draft is replayed on the engine: seven of seven, with a content id. Spark proposes which building points to use; the server checks units and limits, and the engineer confirms. | 2, or 1 |
@@ -71,7 +71,7 @@ replay 8.3 s at 10×. About 30 s of waiting in all, so the three minutes are set
    `fixtures/replays/day185-noon-baseline.jsonl`, `ener_tot` 0.3255).
 2. Rung 2 today plays back a recorded session with a real red-to-green (the engine refuses a
    loop, then 8 of 10, then 10 of 10), from before the loop rule was in the prompt; it is
-   labelled "recorded". The server now keeps every live session's replies
+   labeled "recorded". The server now keeps every live session's replies
    (`runs/recordings/<session>.json`); to switch the fallback to a session on the current
    prompt, copy one to `fixtures/recordings/chw_plant_reset.json` and update the tests that
    pin its outcomes.

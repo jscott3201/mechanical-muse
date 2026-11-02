@@ -1,9 +1,9 @@
 # BOPTEST point map and G36 wiring: `multizone_office_complex_air`
 
-Prepared for Justin Scott (Aionforge Labs), project Mechanical Muse. Date: 2026-10-26.
-Companion files in the same folder: `boptest-points.csv` (all 386 point names with unit, min, max, group, floor, zone, role) and `bacnet-device-table.md` / `bacnet-objects.csv` (BACnet side). For the plant-reset block itself see the other agent's `plant-reset.md` in this folder; I reuse its baseline facts and proposed values instead of repeating its analysis.
+Mechanical Muse design note, written 2026-10-26.
+Companion files in `docs/`: `boptest-points.csv` (all 386 point names with unit, min, max, group, floor, zone, role) and `bacnet-device-table.md` (BACnet side). For the plant-reset block itself see `plant-reset.md`; this note reuses its baseline facts and proposed values instead of repeating its analysis.
 
-Method and limits: I read the BOPTEST clone (`testcases/multizone_office_complex_air/` models, `testcase.py`, `bacnet/`), the published case documentation (byte-identical to the repo copy), and the open-control-engine G36 fixtures plus vendored Modelica sources. **Nothing was executed against a live BOPTEST or a live engine.** Every statement about runtime behavior is a reading of source; section 10 lists what to check on the first run. Anything I inferred rather than read is marked "inferred" or "proposal".
+Method and limits: this note is a reading of the BOPTEST v0.9.0 source (`testcases/multizone_office_complex_air/` models, `testcase.py`, `bacnet/`), the published case documentation (byte-identical to the repo copy), and the open-control-engine G36 fixtures plus vendored Modelica sources. **Nothing was executed against a live BOPTEST or a live engine.** Every statement about runtime behavior is a reading of source; section 10 lists what to check on the first run. Anything inferred rather than read is marked "inferred" or "proposal".
 
 ## 0. Headline
 
@@ -208,7 +208,7 @@ Plants: 3 chillers at 2.6 MW, CHW secondary pumps 155 kg/s at 478,000 Pa, CHW pr
 
 ## 5. Wiring of each G36 subsequence
 
-Conventions. "Effective `_u`" means the value of that `_u` key in the latest `/advance` or `/initialize` payload. "SYNTHESIZE" refers to the recipes in section 6. Instance counts assume one instance per zone (15) or per AHU (3). Parameter values in the engine fixtures are G36 defaults unless I say otherwise. Block and fixture names are the engine's: `crates/oce-cxf/tests/fixtures/g36/*.jsonld`.
+Conventions. "Effective `_u`" means the value of that `_u` key in the latest `/advance` or `/initialize` payload. "SYNTHESIZE" refers to the recipes in section 6. Instance counts assume one instance per zone (15) or per AHU (3). Parameter values in the engine fixtures are G36 defaults unless stated otherwise. Block and fixture names are the engine's: `crates/oce-cxf/tests/fixtures/g36/*.jsonld`.
 
 ### 5.1 `Generic.TimeSuppression` (15 instances, one per zone; fixture `generic_time_suppression`)
 
@@ -279,7 +279,7 @@ Logic (vendored documentation): in the occupied modes the setpoint falls linearl
 
 | Parameter | Value | Note |
 |---|---|---|
-| `TSupCoo_min` | 285.95 K (12.8 C) | **proposal**: the baseline SAT. G36 advises not going below the design coil leaving temperature, which I take to be the baseline 12.8 C (inferred; the case doc gives no coil leaving-air design value). The fixture default is 285.15 K, which is also BOPTEST's lower bound |
+| `TSupCoo_min` | 285.95 K (12.8 C) | **proposal**: the baseline SAT. G36 advises not going below the design coil leaving temperature, taken here to be the baseline 12.8 C (inferred; the case doc gives no coil leaving-air design value). The fixture default is 285.15 K, which is also BOPTEST's lower bound |
 | `TSupCoo_max` | 291.15 K (18 C) | fixture default and G36 typical ceiling |
 | `TOut_min`, `TOut_max` | 289.15 K, 294.15 K | fixture defaults (16 C, 21 C) |
 | `delTim`, `samplePeriod` | 600 s, 120 s | |
@@ -311,7 +311,7 @@ Output `TAirSupSet` (K) goes to `floorN_TSupAirSet_u` (7). **Gate the write:** a
 | `triAmo`, `resAmo`, `maxRes` | -12 Pa, +15 Pa, +32 Pa | `SupplyFan` defaults |
 | `have_hol` | false | as in all vendored fixtures |
 
-- **(b): use `SupplyFan` unchanged** (inputs: `uOpeMod` from 6.3, `dpDuc` = `floorN_reaAHU_dp_y` in Pa, `uZonPreResReq` = the per-AHU sum) and read the internal connector `staPreSetRes.y` with the engine's `get_output`/`watch`. This keeps the fixture byte-for-byte but depends on addressing a nested connector; I have not run it.
+- **(b): use `SupplyFan` unchanged** (inputs: `uOpeMod` from 6.3, `dpDuc` = `floorN_reaAHU_dp_y` in Pa, `uZonPreResReq` = the per-AHU sum) and read the internal connector `staPreSetRes.y` with the engine's `get_output`/`watch`. This keeps the fixture byte-for-byte but depends on addressing a nested connector; it was not run when this note was written (2026-10-26).
 
 Output (Pa) goes to `floorN_dpSet_u`, clamped to 50..410, and is gated with the same occupied-only rule as 5.4.
 
@@ -347,7 +347,7 @@ The reset block is `Buildings.Templates.Plants.Controls.Setpoints.PlantReset`, w
 
 Values proposed in `plant-reset.md` section 4.2 (reproduced so this file stands alone; they are that file's proposals, not mine): CHW design supply 278.71 K and relaxed limit 282.15 K, dp from 239,125 Pa down to 95,650 Pa; HW design 353.15 K and limit 343.15 K, dp from 119,562.5 Pa down to 47,825 Pa; trim -0.02, respond +0.03 per excess request (cap 0.07), ignore 2 requests, delay 900 s, sample period 300 s, hold 900 s. Note that the PlantReset sample period (300 s) is not a multiple of the 120 s control step: use a 60 s or 300 s step for an exact grid, or accept that its sampling lands on the first tick at or after each 300 s boundary (inferred from how sample timers work on a tick grid; check on the first run).
 
-**Stand-in if PlantReset is not ported: two `Generic.TrimAndRespond` per loop** (this is in the vendored set). I derived these amounts from the PlantReset values: the temperature rows reproduce its temperature slope (reset value r from 1 to 0.5 over 25 samples) and the dp rows its dp slope (r from 0.5 to 0). Run as separate loops, dp starts relaxing at the same time as temperature instead of after it, so the "temperature first, then pressure" coupling is lost:
+**Stand-in if PlantReset is not ported: two `Generic.TrimAndRespond` per loop** (this is in the vendored set). These amounts are derived from the PlantReset values: the temperature rows reproduce its temperature slope (reset value r from 1 to 0.5 over 25 samples) and the dp rows its dp slope (r from 0.5 to 0). Run as separate loops, dp starts relaxing at the same time as temperature instead of after it, so the "temperature first, then pressure" coupling is lost:
 
 | Loop and variable | iniSet | minSet | maxSet | triAmo | resAmo | maxRes | delTim / samplePeriod |
 |---|---|---|---|---|---|---|---|
@@ -370,7 +370,7 @@ Values proposed in `plant-reset.md` section 4.2 (reproduced so this file stands 
 
 ### 6.1 Zone cooling-loop signal `uCoo` (15 signals)
 
-Two options; (a) is my default.
+Two options; (a) is the default.
 
 - **(a) From the baseline flow ratio.** In cooling state BOPTEST maps the cooling loop to airflow between 0.3 and 1.0 of design; in deadband and heating it holds 0.3. So `uCoo = clamp((V_flowSet_y / Vdes - 0.3) / 0.7, 0, 1)` using `floorN_reaZon<Z>_V_flowSet_y` and the `Vdes` column of section 4. This follows what BOPTEST's VAV is actually doing. Caveat: the baseline cooling PI is stiff (k = 11 per kelvin), so `uCoo` reaches 1 with a zone only a few tenths of a kelvin above setpoint and the "above 95%" rule produces 1 request often. The 3-request and 2-request rules (temperature based) are unaffected.
 - **(b) G36 loop.** Feed the engine's `ThermalZones.ControlLoops` block (fixture `thermal_zones_control_loops`, `kCooCon` 0.1, `TiCooCon` 900 s, `kHeaCon` 0.1, `TiHeaCon` 900 s) with `TZon` = `..._TZon_y`, `TCooSet` and `THeaSet` = effective `_u` setpoints, and use its `yCoo` output. Slower and closer to G36, but it is a parallel model that BOPTEST's boxes do not follow.
@@ -423,7 +423,7 @@ Timer resolution at a 120 s step: the engine evaluates timers on ticks, so a 60 
 1. **HW request path is authored, not vendored.** No AHU hot-water coil; the engine has no Reheat `SystemRequests` and no Plants package. The reheat requests in 5.3 are a simplification of G36 and need a note in the demo.
 2. **PlantReset is outside the vendored set.** Port required (see `plant-reset.md`), or use the stand-in T&R pairs with the coupling lost.
 3. **`SupplyFan` hides its dp setpoint.** Standalone T&R is the safe route (5.5).
-4. **Operation-mode numbering mismatch.** The engine maps `coolDown` = 2, `setUp` = 3 (`oce-model/src/types.rs`), while `SupplyTemperature.mo` hard-codes cool-down as 3 and treats 1..2 as occupied, 4..5 as warm-up/setback. With only mode 1 (occupied) driving writes this is harmless today, but it will bite if modes 2 to 5 are produced. I could not fetch the upstream `OperationModes` type to settle which numbering is canonical (the fetch failed).
+4. **Operation-mode numbering mismatch.** The engine maps `coolDown` = 2, `setUp` = 3 (`oce-model/src/types.rs`), while `SupplyTemperature.mo` hard-codes cool-down as 3 and treats 1..2 as occupied, 4..5 as warm-up/setback. With only mode 1 (occupied) driving writes this was harmless as of 2026-10-26, but it will bite if modes 2 to 5 are produced. The upstream `OperationModes` type could not be fetched then to settle which numbering is canonical.
 5. **`uCoo` is synthesized,** and the baseline PI is stiff; expect more "1 request" states than a G36 loop would give. Option (b) in 6.1 is the cross-check.
 6. **Plant dp upper bound is a placeholder** (19.13 MPa = 40 x pump head). A bad sequence could write a very large value that BOPTEST accepts. Clamp in the host (section 7).
 7. **Floor 2 is ten times the load** but counts once in every request sum; equal weighting is the G36 convention, but plant behavior will follow floor 2.

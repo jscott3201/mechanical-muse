@@ -461,7 +461,7 @@ because of that edge.
   `UPDATE_GOLDEN=1` env flag.
 - Round-trip test: `load_cxf` the emitted bytes with the receipt, assert `records()` is empty, then
   `export_cxf()` and compare `content_id()` stability across two runs (determinism check).
-- Replay `ReplayRecord::verify` for a short run to prove frame-level determinism in CI.
+- Replay `ReplayRecord::verify` for a short run to check frame-level determinism in CI.
 
 ## 12. Verified snippet: load a CXF, replay a CSV of inputs, print outputs
 
@@ -667,7 +667,7 @@ rusty-bacnet notes:
   `HashMap<path, (ObjectIdentifier, kind)>` table in `mm-bacnet`; generate it from
   `engine.point_list(None)`.
 - The Device identity vendor id `999` above is a placeholder, not a registered vendor id. Keep it as
-  a clearly labelled constant (`PLACEHOLDER_VENDOR_ID`) and say so in the README.
+  a clearly labeled constant (`PLACEHOLDER_VENDOR_ID`) and say so in the README.
 - `MutationPolicy::DenyAll` refuses every covered network mutation (WriteProperty, CreateObject,
   etc.). Use it for the default read-only mirror. For an operator-override demo, use
   `MutationPolicy::Permissive` plus a `FnPolicy` (`.policy(...)`) that allows writes only to the

@@ -44,4 +44,4 @@ way.
 - [docs/mcp.md](https://github.com/jscott3201/mechanical-muse/blob/main/docs/mcp.md):
   protocol revisions, error codes and an example session.
 - [docs/coding-agents.md](https://github.com/jscott3201/mechanical-muse/blob/main/docs/coding-agents.md):
-  how the repository is set up for Muse Code and Claude Code.
+  how Muse Code and Claude Code, which both helped build the repository, are set up in it.

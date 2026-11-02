@@ -93,7 +93,7 @@ every step it sent 55 °F (12.78 °C), as the sheet says for each condition it m
 So the drafted logic does what the sheet says, and running it closed-loop shows that the sheet's
 humidity thresholds keep its reset from ever acting in this building. A reviewer would want to
 know that before deploying it. The day 185 and day 143 runs are replays in `fixtures/replays/`
-(labelled "with your sequence").
+(labeled "with your sequence").
 
 ### Revision B: the engineer adjusts the sheet (2026-10-27)
 `fixtures/sequences/ahu-sat-reset-sample-v2.md` raises the dehumidification thresholds to suit
@@ -141,7 +141,7 @@ which feeds the zone reheat coils, falls by half to two thirds (Scope 1 on day 1
 reheating at the zones. Electricity moves much less. In summer the outdoor air is above the
 reset band, so the sheet's reset sits at 55 °F, like the baseline, and adds nothing; on day 199
 it did slightly worse than our sequences alone. So the sheet's value depends on the season:
-large in spring and autumn, none in summer. These are single windows in simulation, and BOPTEST
+large in spring and fall, none in summer. These are single windows in simulation, and BOPTEST
 computes the KPIs. The run records are kept locally, not committed.
 
 Offline, revision B plays back under the name Spark gives it: recorded sessions and bindings
@@ -192,7 +192,7 @@ it (the button sits with the verified drafts on the sequence's Graph tab):
 It answers 404 for an unknown sequence and 400 for one of our own specs or a content id that is
 not a verified draft of this sequence. It answers 409 `model-busy` while another model call for the workbench is under way, and 503 `no-model` without a key and without a
 recorded reply for that key. Replies are cached by key: in memory, under `<runs>/attacks/`, and
-read-only from `fixtures/attacks/`, which is served labelled recorded. Replays are never cached.
+read-only from `fixtures/attacks/`, which is served labeled recorded. Replays are never cached.
 
 ### First live attack (2026-10-28)
 `make live-attack` asked Spark to break revision B's verified draft. It used the committed reading
@@ -218,7 +218,7 @@ sequence, not a rate.
 (an AHU supply air temperature reset in °F, with a start-up hold and a dehumidification override).
 `fixtures/readings/` holds Spark's live reading of the PNG. `fixtures/recordings/ahu1_sat_stpt.json`
 holds Spark's live drafting session for the accepted reading. So `make demo` plays the whole flow
-back, labelled recorded, and every check still runs. For revision B accepted as `ahu1_sat_rev_b`,
+back, labeled recorded, and every check still runs. For revision B accepted as `ahu1_sat_rev_b`,
 `fixtures/attacks/` also plays back Spark's attempt to break its verified draft.
 
 ## Results so far (one document, written by us; a small sample)

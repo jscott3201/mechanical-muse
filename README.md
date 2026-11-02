@@ -48,18 +48,18 @@ Building control sequences are written as prose by engineers. A controls contrac
   <img alt="Energy and emissions panel: Scope 1 796 kgCO2e (−848 kg, −51.6 % vs baseline), Scope 2 2,138 kgCO2e (−20.9 %), cost $695 (−$269), thermal discomfort lower; footer: simulation on BOPTEST's factors, HVAC loads only, no Scope 3" src="docs/img/screens/emissions-light.png">
 </picture>
 
-**What a fault costs.** A labelled test fault makes floor 1's supply-air reading drift 4 K high for two hours. The sequences believe it, the plant runs colder, and the ledger prices the difference against the same ten hours without the fault: +130 kWh, +$12, +44 kgCO2e, almost all chiller electricity.
+**What a fault costs.** A labeled test fault makes floor 1's supply-air reading drift 4 K high for two hours. The sequences believe it, the plant runs colder, and the ledger prices the difference against the same ten hours without the fault: +130 kWh, +$12, +44 kgCO2e, almost all chiller electricity.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/fault-cost-dark.png">
   <img alt="Energy and emissions panel of the sensor-bias replay: an injected test fault banner with +130 kWh, +$12 and +44 kgCO2e against the healthy run, scope cards and the end-use table" src="docs/img/screens/fault-cost-light.png">
 </picture>
 
-**A home on spot prices.** The same gate, a second building: a heating sequence for BOPTEST's simulated house in Brussels (heat pump, floor heating) preheats before the most expensive hours and coasts through them, inside the comfort band. Demand response programs add many such homes up, so the headline is the power moved out of peak-price hours; the fleet line is a labelled illustration, not a forecast.
+**A home on spot prices.** The same gate, a second building: a heating sequence for BOPTEST's simulated house in Brussels (heat pump, floor heating) preheats before the most expensive hours and coasts through them, inside the comfort band. Demand response programs add many such homes up, so the headline is the power moved out of peak-price hours; the fleet line is a labeled illustration, not a forecast.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/screens/home-run-dark.png">
-  <img alt="A replayed home run: KPI tiles against BOPTEST's own controller (energy −7.7 %, cost −8.4 %, thermal discomfort −14.8 %), and the peak-price power card: 0.87 kW against 1.17 kW in the most expensive quarter of prices, −26 %, with a fleet view labelled as an illustration" src="docs/img/screens/home-run-light.png">
+  <img alt="A replayed home run: KPI tiles against BOPTEST's own controller (energy −7.7 %, cost −8.4 %, thermal discomfort −14.8 %), and the peak-price power card: 0.87 kW against 1.17 kW in the most expensive quarter of prices, −26 %, with a fleet view labeled as an illustration" src="docs/img/screens/home-run-light.png">
 </picture>
 
 ## Results so far
@@ -69,18 +69,18 @@ Building control sequences are written as prose by engineers. A controls contrac
 | Muse Spark rebuilding 137 open fault-detection rules from scrubbed tasks, scored by replaying the library's 1,760 test vectors | First try 122 to 125 of 137 rules; after repair 130 to 132 (3 runs, `muse-spark-1.3-contributor`). Constant baselines pass 0 rules | [docs/benchmark-results.md](docs/benchmark-results.md) |
 | Chilled-water plant reset, verified, then run on BOPTEST against its baseline controller for 10 hours | HVAC energy −4.7 %, chiller energy −14.2 %, thermal discomfort +2.0 % | [docs/runtime-results.md](docs/runtime-results.md) |
 | A photo of a supply-air reset sheet: read, scenarios accepted, drafted (red, then green), bound to BOPTEST, run; then the engineer revises the sheet and runs it again | Revision A ran but its humidity override latched, so its reset never acted. Revision B, re-tested on five windows it was not tuned on: HVAC energy −23 % to −55 % in spring and fall (less reheat gas), no gain over our own sequences in summer | [docs/workbench.md](docs/workbench.md) |
-| A drifted sensor (floor 1 supply-air reading 4 K high for 2 hours, a labelled test fault) against the same 10 hours without it | The plant reset drove the chilled water to its cold end: +130 kWh, +44 kgCO2e, +$12 of chiller electricity, about a fifth of the ten hours' saving | [docs/emissions.md](docs/emissions.md) |
-| Home price response on BOPTEST's heat pump house, spot prices, two weeks per window, against its own controller | Typical heat: cost −8.4 %, thermal discomfort −14.8 %, power in the most expensive quarter of prices −26 %; peak heat: −8.3 %, −81.9 %, −37 %; two weeks it was not tuned on: cost −6.9 % and −6.0 %, peak-price power −34 % and −24 %. Every setpoint matches the independent reference. The single highest 15-minute draw rose (+16 %, +4 %): a rebound before the expensive hours. Emissions fall only with energy (−7.7 %, −7.5 %): BOPTEST gives the house one carbon factor all year, so the shift lowers the bill, not the carbon per kWh. Spark drafted the spec right first time in 3 of 3 sessions | [docs/runtime-results.md](docs/runtime-results.md) |
+| A drifted sensor (floor 1 supply-air reading 4 K high for 2 hours, a labeled test fault) against the same 10 hours without it | The plant reset drove the chilled water to its cold end: +130 kWh, +44 kgCO2e, +$12, nearly all chiller electricity, about a fifth of the ten hours' saving | [docs/emissions.md](docs/emissions.md) |
+| Home price response on BOPTEST's heat pump house, spot prices, two weeks per window, against its own controller | Typical heat: cost −8.4 %, thermal discomfort −14.8 %, power in the most expensive quarter of prices −26 %; peak heat: −8.3 %, −81.9 %, −37 %; two weeks it was not tuned on: cost −6.9 % and −6.0 %, peak-price power −34 % and −24 %. Every setpoint matches the independent reference. The single highest 15-minute draw rose (+16 %, +4 %): a rebound before the expensive hours. Emissions fall only with energy (−7.7 %, −7.5 %): BOPTEST gives the house one carbon factor all year, so the shift lowers the bill, not the carbon per kWh. Spark drafted the spec right the first time in 3 of 3 sessions | [docs/runtime-results.md](docs/runtime-results.md) |
 | Injected sensor fault (NaN supply-air temperature) during a live run | The reading shows as no data, the affected sequences go degraded, their setpoints are handed back to BOPTEST's own controllers, and the reset writes again once the sensor returns | [docs/runtime-results.md](docs/runtime-results.md) |
 
 ![Revision B across six windows: HVAC energy −54.4 % (April), −37.3 % (May, tuned on), −23.4 % (24 h, late May), −4.9 % (June), −3.3 % (July), −55.4 % (September), against −2 % to −6 % for our sequences alone](docs/img/revision-b-seasons.svg)
 
 Every BOPTEST number is a short window, compared with BOPTEST's own baseline controller over the same window, and BOPTEST computes the KPIs; energy is HVAC energy as BOPTEST counts it. Each run also gets a Scope 1 (boiler gas) and Scope 2 (electricity) emissions and cost ledger on BOPTEST's own factors ([docs/emissions.md](docs/emissions.md)). These are results from a simulation, not field measurements. The [results log](docs/results-log.md) lists every run, including the ones that went badly.
 
-## Try it in two minutes
+## Try it
 
-1. `make docker-demo` (only Docker needed), or `make demo` with Rust and Node. Open http://localhost:8080.
-2. **Sequences** → *Chilled-water plant reset* → *Muse Spark* → choose *Recorded run*, then *Draft*. You can watch a draft fail its vectors and get repaired to a green receipt.
+1. `make docker-demo` (only Docker needed), or `make demo` with Rust and Node 26+. Open http://localhost:8080.
+2. **Sequences** → *Chilled-water plant reset* → *Muse Spark* → choose *Recorded session*, then *Draft*. You can watch a draft fail its vectors and get repaired to a green receipt.
 3. **Bring your own** → *Use the sample sequence sheet*, then *Read with Muse Spark*. Spark's reading of a photo of a sequence (recorded), its proposed scenarios and the open questions it lists.
 4. **Runs** → replay the day 143 morning run with revision B: trends, and KPIs beside the baseline over the same window. The day 186 fault demo shows the fail-safe handing control back, and the day 185 sensor-bias record shows what a fault costs.
 
@@ -90,7 +90,7 @@ Without a model key or BOPTEST everything above plays back from recordings, and 
 
 Quickest: `make demo`, then open http://127.0.0.1:8080. It builds the web app and serves it from
 the API on one address. With no model key and no BOPTEST it still verifies every spec, plays back
-a recorded Muse Spark session, recorded BOPTEST runs and recorded explanations, all labelled as
+a recorded Muse Spark session, recorded BOPTEST runs and recorded explanations, all labeled as
 recorded. `make demo-live` adds live Muse Spark from a key in `.env`; set `MM_BOPTEST_URL` for
 live runs (without it, live runs are off and the header says "BOPTEST off"; replays still work)
 and `MM_BACNET_ADDR` for the BACnet mirror. Replays can be sped up 4× or 10× from the replay list.
@@ -105,7 +105,7 @@ Details, live mode and troubleshooting: [docs/packaging.md](docs/packaging.md).
 
 ### Full setup
 
-You need Rust (see `rust-toolchain.toml`), Node (`web/.nvmrc`) and a BOPTEST v0.9.0 checkout
+You need Rust (see `rust-toolchain.toml`), Node 26+ (`web/.nvmrc`) and a BOPTEST v0.9.0 checkout
 (`git clone --branch v0.9.0 --depth 1 https://github.com/ibpsa/project1-boptest`).
 
 1. BOPTEST, either locally with Docker (`export BOPTEST_DIR=<checkout>; make boptest-up`, slow on
@@ -119,7 +119,7 @@ You need Rust (see `rust-toolchain.toml`), Node (`web/.nvmrc`) and a BOPTEST v0.
    server ([docs/bacnet-mirror.md](docs/bacnet-mirror.md)).
 
 Without BOPTEST or a model key, the web app can still verify the specs, play back the recorded
-Muse Spark session (labelled "recorded"), and replay recorded BOPTEST runs (labelled "replay").
+Muse Spark session (labeled "recorded"), and replay recorded BOPTEST runs (labeled "replay").
 
 ## Built during the hackathon
 
@@ -133,15 +133,15 @@ Everything in this repository was written during the event, starting October 26,
 | Control sequence specs: our own text, independent reference models, test vectors, hand-built graphs | `specs/` | Five specs, each gated by a test that its reference graph passes every vector and that common mistakes fail: chilled-water plant reset and air handler chilled-water requests (running on BOPTEST); duct static pressure reset and zone static pressure requests (validated and wired into the runtime: the `pressure` run option); home price response (BOPTEST's heat pump house: the `building: home` run option) |
 | Library benchmark harness: scrubbed tasks, baselines, run records | `crates/mm-bench` | Working: all 137 library rules, 3 runs each on the current engine and prompt, plus vector-feedback runs on the chilled-water plant reset; results and failure analysis in `docs/benchmark-results.md` |
 | BOPTEST runtime host: supervisory loop, BOPTEST client, fail-safe | `crates/mm-runtime` | Runs the verified AHU requests and CHW plant reset against BOPTEST live; 10-hour comparison with the baseline in `docs/runtime-results.md`. Also runs the home price response on the heat pump house, passing BOPTEST's forecast in as readings |
-| HTTP API: specs, typed block graphs, verification receipts | `crates/mm-server` | Working: spec, graph and verify endpoints; authoring sessions (Muse Spark, or a labelled recorded run) streamed as server-sent events, with verified drafts stored with their receipts; BOPTEST run sessions that can run a drafted sequence after replaying its vectors again, or inject a labelled test fault (a blank, stuck or biased reading); a Scope 1 and 2 energy, emissions and cost ledger per run from BOPTEST's KPIs and recorded power readings, and comparisons of runs of the same window ([docs/emissions.md](docs/emissions.md)); labelled replays of recorded runs; run records; generated TypeScript types |
+| HTTP API: specs, typed block graphs, verification receipts | `crates/mm-server` | Working: spec, graph and verify endpoints; authoring sessions (Muse Spark, or a labeled recorded run) streamed as server-sent events, with verified drafts stored with their receipts; BOPTEST run sessions that can run a drafted sequence after replaying its vectors again, or inject a labeled test fault (a blank, stuck or biased reading); a Scope 1 and 2 energy, emissions and cost ledger per run from BOPTEST's KPIs and recorded power readings, and comparisons of runs of the same window ([docs/emissions.md](docs/emissions.md)); labeled replays of recorded runs; run records; generated TypeScript types |
 | MCP server for coding agents: specs, palette, validator, CXF emitter, vector replay as tools | `crates/mm-mcp` | Working offline over stdio, on the official MCP Rust SDK (`rmcp`): Muse Code or any MCP client drafts a block graph and our tools check it (passes X of Y scenarios, with the same repair text our agent gets); no model calls of its own ([docs/mcp.md](docs/mcp.md)) |
 | BACnet device mirror | `crates/mm-bacnet` | Working: live runs served read-only as one BACnet/IP device (55 objects: BOPTEST readings, sequence outputs, setpoints sent); remote writes refused; tested over UDP ([docs/bacnet-mirror.md](docs/bacnet-mirror.md)) |
-| Web app | `web/` | Working: specs and verification receipts; Muse Spark authoring followed attempt by attempt (engine refusals, failing scenarios, the green receipt; recorded runs labelled); start BOPTEST runs on reference or drafted graphs and follow them live (status, receipts, trends, KPIs beside a baseline run of the same window, Scope 1 and 2 energy and emissions with end uses and a test fault's cost against the same run without it, event log); block graph view of reference and drafted graphs, with the blocks a problem names outlined; plain-language explanations written by Muse Spark (labelled; recorded copies for use without a key) of a graph, reference or drafted, whose parts outline their blocks, and of a run's events (faults, handbacks) in an operator's words; replays of recorded runs; bring your own sequence: Muse Spark reads pasted text, a PDF or a photo of a sequence of operations, lists what it leaves open and proposes test scenarios, the engineer reviews and accepts them, then Spark drafts against them, a verified draft downloads as CXF, and once Spark's proposed binding to BOPTEST's points is checked and confirmed it runs on the emulated building beside our own sequences; Spark can also try to break a verified draft with new edge-case scenarios, each replayed against it, which the engineer may accept as a new revision ([docs/workbench.md](docs/workbench.md)) |
+| Web app | `web/` | Working: specs and verification receipts; Muse Spark authoring followed attempt by attempt (engine refusals, failing scenarios, the green receipt; recorded runs labeled); start BOPTEST runs on reference or drafted graphs and follow them live (status, receipts, trends, KPIs beside a baseline run of the same window, Scope 1 and 2 energy and emissions with end uses and a test fault's cost against the same run without it, event log); block graph view of reference and drafted graphs, with the blocks a problem names outlined; plain-language explanations written by Muse Spark (labeled; recorded copies for use without a key) of a graph, reference or drafted, whose parts outline their blocks, and of a run's events (faults, handbacks) in an operator's words; replays of recorded runs; bring your own sequence: Muse Spark reads pasted text, a PDF or a photo of a sequence of operations, lists what it leaves open and proposes test scenarios, the engineer reviews and accepts them, then Spark drafts against them, a verified draft downloads as CXF, and once Spark's proposed binding to BOPTEST's points is checked and confirmed it runs on the emulated building beside our own sequences; Spark can also try to break a verified draft with new edge-case scenarios, each replayed against it, which the engineer may accept as a new revision ([docs/workbench.md](docs/workbench.md)) |
 | Design notes, API references and results | `docs/` | Working: engine, model API and schema references, benchmark, runtime, emissions and workbench results, a results log of every run, packaging, CI and the demo script |
 | Documentation site: overview, getting started, how it works, one page per sequence, results, provenance | `website/` | Working: a Starlight site in our own words that summarizes `docs/` and `specs/` and links to them, built on every PR that touches it and published to [GitHub Pages](https://jscott3201.github.io/mechanical-muse/) from `main` (`.github/workflows/docs-pages.yml`) |
 | Coding-agent setup: agent context, project skills, verification hook | `AGENTS.md`, `.agents/skills/`, `.muse/`, `.mcp.json`, `scripts/` | Working: one shared `AGENTS.md` for Muse Code and Claude Code, `mm-*` project skills, and a Stop hook that runs fmt, clippy, tests and the web checks before a turn ends ([docs/coding-agents.md](docs/coding-agents.md)) |
 
-Every model call the application makes goes to Muse Spark through the Meta Model API: drafting, repair, reading a sequence, proposing a point binding, explanations and the benchmark. The repository is set up for Meta's Muse Code and for Claude Code as coding tools (one shared `AGENTS.md`, project skills and a verification hook), and coding agents can use the MCP server above.
+Every model call the application makes goes to Muse Spark through the Meta Model API: drafting, repair, reading a sequence, proposing a point binding, explanations and the benchmark. Meta's Muse Code and Claude Code helped build the repository, which is set up for both (one shared `AGENTS.md`, project skills and a verification hook), and coding agents can use the MCP server above.
 
 
 ## Related work
@@ -166,9 +166,9 @@ These are public, open-source projects used unmodified, each pinned to one commi
 | [Modal](https://modal.com) (`modal` Python SDK and CLI) | Modal Labs | Apache-2.0 (client); hosted service | Not pinned (the developer's installed CLI) | A test host: BOPTEST on native x86 for our own live runs (`deploy/modal/mm_boptest.py`, [docs/boptest-on-modal.md](docs/boptest-on-modal.md)) and an x86 build check of the app image (`deploy/modal/mm_demo.py`); not a hosted demo, and nothing in the app depends on it |
 | Node.js, Rust and Debian official container images | OpenJS Foundation, Rust project, Debian (Docker Official Images) | MIT, MIT OR Apache-2.0, DFSG licenses | `node:26.12.1-trixie-slim`, `rust:1.97.1-slim-trixie`, `debian:trixie-slim`, each pinned by digest in `Dockerfile` | Build and runtime base images for the packaged app (`Dockerfile`, [docs/packaging.md](docs/packaging.md)); unmodified |
 
-Ordinary crates.io libraries (such as serde, reqwest, tokio and thiserror) and npm packages (such as React, Vite, Tailwind CSS and Radix UI) are used unmodified under their own licenses; `Cargo.lock`, `web/package-lock.json` and `website/package-lock.json` pin every version. The Geist font (`@fontsource-variable/geist`) is under the SIL Open Font License 1.1.
+Ordinary crates.io libraries (such as serde, reqwest, tokio and thiserror) and npm packages (such as React, Vite, Tailwind CSS, Radix UI and the `lucide-react` icons, ISC) are used unmodified under their own licenses; `Cargo.lock`, `web/package-lock.json` and `website/package-lock.json` pin every version. The Geist font (`@fontsource-variable/geist`) is under the SIL Open Font License 1.1.
 
-The five control sequence specs in `specs/` are written in our own words (the home price response is our own design, not based on a library sequence). The [Modelica Buildings Library](https://github.com/lbl-srg/modelica-buildings) (BSD-3-Clause) served as a behavioural reference for how such sequences act; nothing from it is copied into this repository, and no endorsement by its authors is implied.
+The five control sequence specs in `specs/` are written in our own words (the home price response is our own design, not based on a library sequence). The [Modelica Buildings Library](https://github.com/lbl-srg/modelica-buildings) (BSD-3-Clause) served as a behavioral reference for how such sequences act; nothing from it is copied into this repository, and no endorsement by its authors is implied.
 
 ## License
 

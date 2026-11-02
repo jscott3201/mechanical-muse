@@ -117,7 +117,7 @@ A test fault (`docs/runtime-results.md`) changes one reading the sequences see: 
 stuck at a value, or biased by an offset. Nothing is written to BOPTEST for the faulted reading
 itself; the setpoints the sequences compute from it still reach BOPTEST, within their clamps,
 which is how a fault costs energy. A held value on a point the plant did not report in a step
-invents a labelled reading for that step, so the stale-data check does not fire for it. When a
+invents a labeled reading for that step, so the stale-data check does not fire for it. When a
 run with a fault has a twin of the same window without it (same switches, same drafted graphs by
 content id), the run view prices the fault against that twin; without one it only labels the
 fault.
@@ -146,7 +146,7 @@ One window, one fault, in simulation. The cost is measured as the difference of 
 BOPTEST computed, not estimated from a formula.
 
 Muse Spark's explanation of the fault replay, written live with the ledger as given facts, is
-recorded (`fixtures/explanations/run_4520f56cccb2b064.json`) and served, labelled recorded,
+recorded (`fixtures/explanations/run_4520f56cccb2b064.json`) and served, labeled recorded,
 without a key. It quotes the cost (+44 kg, +$12, +130 kWh against the run without the fault)
 and passes the number check.
 

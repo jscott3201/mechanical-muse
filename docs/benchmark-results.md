@@ -152,7 +152,7 @@ is "repaired against the scoring vectors", not a blind score.
   prompt is graph JSON and scenario values; we have no explanation for the filter.
 - Run 3's replies are committed as `fixtures/recordings/chw_plant_reset.json`; a test replays
   them through the loop on the pinned engine and checks the same three outcomes, so the demo
-  can show this run without a model call (labelled "recorded").
+  can show this run without a model call (labeled "recorded").
 - Tokens: 28,001 / 111,874 / 55,963 input and 31,164 / 63,206 / 41,321 output per run.
 
 ### Live sessions through the server, and loop-aware feedback (2026-10-27)
@@ -340,7 +340,7 @@ where our records say `load-failed-schedule` (our fallback when the old engine g
   means the graph behaves as those scenarios expect, not that it equals the reference
   everywhere.
 - **The repair loop saw one pass/fail bit from the scoring vectors.** First-try numbers are
-  free of that; after-repair numbers are labelled.
+  free of that; after-repair numbers are labeled.
 - **Small held-out set.** test_clean has 37 rules and only one over 16 blocks, which is why the
   whole-library breakdown above leads this page.
 - **Two control sequences so far.** The plant reset results are 12 runs on one spec; the air

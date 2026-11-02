@@ -5,7 +5,6 @@ Decisions for Mechanical Muse. Muse Code's `/grill-with-docs` writes here. Newes
 ## Pending (do not guess: ask, or pick the default and note it here)
 
 - TODO(decision): clippy strictness (pedantic subset) and the allowed-warning list for loads.
-- TODO(decision): BACnet device instance, UDP port, and the placeholder vendor id constant.
 - TODO(decision): Glimmer serving stack on Modal (vLLM | SGLang) and its OpenAI-compatible URL.
 
 ## Decided
@@ -26,6 +25,11 @@ Decisions for Mechanical Muse. Muse Code's `/grill-with-docs` writes here. Newes
   drives no plant (a live run stuck selecting or warming up no longer blocks replays). BOPTEST
   select gives up after 30 min (above the 17 min measured when queued behind an orphan, since an
   abandoned select still creates a test); initialize keeps its hour. (2026-10-28)
+
+- BACnet mirror: device instance 599, name `MECHANICAL-MUSE`, vendor id 65535 as a placeholder
+  (the project has no vendor id; not 0). The mirror is off unless `MM_BACNET_ADDR` gives an IPv4
+  `ip:port` (47808 in our examples); it is read-only and refuses remote writes
+  (`docs/bacnet-mirror.md`). (2026-10-27)
 
 - CI: GitHub Actions adapted from rusty-bacnet (`docs/ci.md`): pinned toolchain, SHA-checked
   tools, SHA-pinned actions, nextest as the test runner, cargo-deny, and one aggregate `CI OK`

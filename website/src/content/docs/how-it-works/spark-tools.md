@@ -23,7 +23,7 @@ verification. Every final draft still goes through the full
 - **Never in benchmark runs.** `replay_scenario` would show the scoring vectors to the model, so
   `mm-bench` never offers tools, and a test checks that.
 - Off by default. The web app has a switch, and shows Spark's tool calls in a dashed box
-  labelled as tool calls, not the receipt.
+  labeled as tool calls, not the receipt.
 
 ## A small live A/B (2026-10-27)
 

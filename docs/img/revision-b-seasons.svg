@@ -58,5 +58,5 @@
 <text class="v" x="344.6" y="384" text-anchor="end">−55.4 %</text>
 <line class="z" x1="960.0" y1="86" x2="960.0" y2="398"/>
 <text class="m" x="30" y="442">BOPTEST multizone office, three floors; BOPTEST computes the KPIs. Single windows in simulation, not a rate.</text>
-<text class="m" x="30" y="459">The saving is boiler gas for zone reheat: large in spring and autumn; in summer the reset sits at its cold end and adds nothing.</text>
+<text class="m" x="30" y="459">The saving is boiler gas for zone reheat: large in spring and fall; in summer the reset sits at its cold end and adds nothing.</text>
 </svg>

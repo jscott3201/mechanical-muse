@@ -38,7 +38,7 @@ Safeguards:
 `tool-call` event (`name`, a short argument summary, `ok`, a one-line `summary`); each checked
 attempt also carries its model calls and its tool calls. The web authoring panel has a switch,
 "Let Spark check its work (tools)", and lists Spark's checks inside each attempt in a dashed box
-labelled as its tool calls, not the receipt. The attempt's verdict below it is the receipt.
+labeled as its tool calls, not the receipt. The attempt's verdict below it is the receipt.
 
 Recordings keep tool turns (tool name and arguments; no call ids, no reasoning) and play back
 without a key: the checks run again on this server. A recorded session with tools reads
